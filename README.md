@@ -16,8 +16,16 @@ Gebouwd met de native **sections view** (HA ≥ 2024.3) en zwaar gebruik van
 │   └── claude_dark.yaml          # Custom HA theme
 ├── dashboards/
 │   └── claude_dashboard.yaml     # Lovelace dashboard (storage-vrij, YAML-mode)
+├── preview/
+│   └── index.html                # Statische browser-preview (geen HA nodig)
 └── configuration_snippet.yaml    # Toe te voegen aan configuration.yaml
 ```
+
+## Preview
+
+Open `preview/index.html` in een browser voor een statische voorvertoning met
+mock-data — exact dezelfde fonts, kleuren, cards en layout als in HA. Klik door
+de zes views in de zijbalk om alles te bekijken vóór je installeert.
 
 ## Installatie
 

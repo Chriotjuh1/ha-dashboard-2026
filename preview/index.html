@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Claude Dashboard — Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..600&family=Inter:wght@300..600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --claude-bg: #262624;
+      --claude-bg-deep: #1F1E1C;
+      --claude-surface: #30302E;
+      --claude-surface-2: #3A3936;
+      --claude-surface-3: #46443F;
+      --claude-primary: #C96342;
+      --claude-primary-soft: #D97757;
+      --claude-primary-deep: #A84F32;
+      --claude-cream: #F0EEE6;
+      --claude-cream-dim: #D6D2C8;
+      --claude-muted: #A8A29E;
+      --claude-muted-2: #7A7570;
+      --claude-border: rgba(240, 238, 230, 0.07);
+      --claude-border-hover: rgba(240, 238, 230, 0.14);
+      --claude-success: #7FB069;
+      --claude-warning: #E8B86E;
+      --claude-danger: #D96D6D;
+      --claude-info: #7BA7C9;
+      --serif: 'Fraunces', Georgia, serif;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: var(--claude-bg);
+      color: var(--claude-cream);
+      font-family: var(--sans);
+      font-size: 14px;
+      letter-spacing: -0.005em;
+      min-height: 100vh;
+    }
+
+    /* ── Layout shell ─────────────────────────────────────────── */
+    .app {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      background: var(--claude-bg-deep);
+      border-right: 1px solid var(--claude-border);
+      padding: 24px 16px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      margin-bottom: 28px;
+    }
+    .brand-mark {
+      width: 28px; height: 28px;
+      background: var(--claude-primary);
+      border-radius: 8px;
+      display: grid; place-items: center;
+      font-family: var(--serif);
+      font-size: 18px;
+      color: var(--claude-cream);
+    }
+    .brand-name {
+      font-family: var(--serif);
+      font-size: 18px;
+      font-weight: 400;
+    }
+
+    .nav { display: flex; flex-direction: column; gap: 2px; }
+    .nav button {
+      all: unset;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      color: var(--claude-cream-dim);
+      font-size: 14px;
+      transition: background 150ms ease, color 150ms ease;
+    }
+    .nav button:hover { background: var(--claude-surface); color: var(--claude-cream); }
+    .nav button.active {
+      background: var(--claude-surface);
+      color: var(--claude-primary);
+    }
+    .nav button .icon { width: 18px; height: 18px; opacity: 0.85; }
+
+    .main {
+      padding: 32px 48px 64px;
+      max-width: 1400px;
+    }
+
+    /* ── Hero ────────────────────────────────────────────────── */
+    .hero { padding: 24px 4px 28px; }
+    .hero h1 {
+      font-family: var(--serif);
+      font-weight: 400;
+      font-size: clamp(34px, 5vw, 52px);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      color: var(--claude-cream);
+      margin-bottom: 12px;
+    }
+    .hero p {
+      color: var(--claude-muted);
+      font-size: 16px;
+      line-height: 1.5;
+      max-width: 680px;
+    }
+    .hero .accent { color: var(--claude-primary); }
+
+    /* ── Card ────────────────────────────────────────────────── */
+    .card {
+      background: var(--claude-surface);
+      border: 1px solid var(--claude-border);
+      border-radius: 16px;
+      padding: 20px 22px;
+      transition: border-color 200ms ease, background 200ms ease;
+    }
+    .card:hover {
+      border-color: var(--claude-border-hover);
+      background: var(--claude-surface-2);
+    }
+
+    .section-title {
+      font-family: var(--serif);
+      font-weight: 400;
+      font-size: 28px;
+      letter-spacing: -0.01em;
+      margin: 28px 0 14px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .subsection-title {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--claude-muted);
+      margin: 22px 0 10px;
+    }
+
+    .grid { display: grid; gap: 14px; }
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    @media (max-width: 1100px) {
+      .grid-3, .grid-4 { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 720px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .main { padding: 20px; }
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    }
+
+    /* ── Stat ────────────────────────────────────────────────── */
+    .stat .label {
+      font-size: 12px; font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--claude-muted);
+      margin-bottom: 12px;
+    }
+    .stat .figure {
+      font-family: var(--serif);
+      font-size: 40px;
+      font-weight: 400;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+    .stat .figure.small { font-size: 28px; }
+    .stat .unit {
+      font-size: 14px;
+      color: var(--claude-muted);
+      margin-left: 4px;
+    }
+    .stat .delta {
+      font-size: 13px;
+      color: var(--claude-primary);
+      margin-top: 6px;
+    }
+    .stat .delta.muted { color: var(--claude-muted); }
+    .stat .delta.cream { color: var(--claude-cream-dim); }
+
+    /* ── Person ──────────────────────────────────────────────── */
+    .person {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 10px;
+      padding: 20px 16px;
+    }
+    .person .avatar {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--claude-primary) 0%, var(--claude-primary-deep) 100%);
+      display: grid; place-items: center;
+      font-family: var(--serif);
+      font-size: 24px;
+      color: var(--claude-cream);
+    }
+    .person .name {
+      font-family: var(--serif);
+      font-size: 18px;
+    }
+    .person .state {
+      font-size: 12px;
+      color: var(--claude-muted);
+    }
+
+    /* ── Tile ────────────────────────────────────────────────── */
+    .tile {
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px 18px;
+    }
+    .tile .icon-circle {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      background: var(--claude-surface-2);
+      display: grid; place-items: center;
+      transition: background 200ms;
+    }
+    .tile.on .icon-circle {
+      background: rgba(201, 99, 66, 0.18);
+      color: var(--claude-primary);
+    }
+    .tile .info { flex: 1; }
+    .tile .info .name { font-size: 14px; }
+    .tile .info .state { font-size: 12px; color: var(--claude-muted); }
+    .switch {
+      width: 36px; height: 20px;
+      background: var(--claude-surface-3);
+      border-radius: 999px;
+      position: relative;
+      transition: background 200ms;
+    }
+    .switch::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 16px; height: 16px;
+      background: var(--claude-muted);
+      border-radius: 50%;
+      transition: all 200ms;
+    }
+    .tile.on .switch { background: var(--claude-primary-deep); }
+    .tile.on .switch::after { left: 18px; background: var(--claude-primary-soft); }
+
+    /* ── Pill button ─────────────────────────────────────────── */
+    .pill {
+      padding: 24px 12px;
+      border-radius: 16px;
+      text-align: center;
+      cursor: pointer;
+      border: 1px solid;
+      transition: all 200ms ease;
+    }
+    .pill .pill-icon { font-size: 28px; display: block; margin-bottom: 8px; }
+    .pill .pill-label { font-family: var(--serif); font-size: 18px; }
+    .pill.primary {
+      background: var(--claude-primary);
+      border-color: var(--claude-primary);
+      color: var(--claude-cream);
+    }
+    .pill.primary:hover { background: var(--claude-primary-soft); }
+    .pill.secondary {
+      background: var(--claude-surface);
+      border-color: var(--claude-border-hover);
+    }
+    .pill.secondary:hover { background: var(--claude-surface-2); }
+    .pill.secondary .pill-icon { color: var(--claude-primary-soft); }
+    .pill.ghost {
+      background: transparent;
+      border-color: var(--claude-border-hover);
+    }
+    .pill.ghost:hover { border-color: var(--claude-danger); }
+    .pill.ghost .pill-icon { color: var(--claude-muted); }
+    .pill.ghost .pill-label { color: var(--claude-cream-dim); }
+
+    /* ── Alert banner ────────────────────────────────────────── */
+    .alert {
+      background: linear-gradient(135deg, rgba(201, 99, 66, 0.18) 0%, rgba(201, 99, 66, 0.04) 100%);
+      border: 1px solid var(--claude-primary);
+      border-radius: 16px;
+      padding: 18px 22px;
+    }
+    .alert h2 {
+      font-family: var(--serif);
+      font-size: 24px;
+      font-weight: 400;
+      margin-bottom: 6px;
+    }
+    .alert p { color: var(--claude-cream-dim); }
+
+    /* ── Gauge (mock SVG) ────────────────────────────────────── */
+    .gauge { display: flex; flex-direction: column; align-items: center; padding: 24px; }
+    .gauge svg { width: 200px; height: 130px; }
+    .gauge .gauge-value {
+      font-family: var(--serif);
+      font-size: 32px;
+      margin-top: 8px;
+    }
+    .gauge .gauge-label { font-size: 12px; color: var(--claude-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+    /* ── Mini graph ──────────────────────────────────────────── */
+    .graph { padding: 16px; }
+    .graph svg { width: 100%; height: 140px; }
+
+    /* ── Entity list ─────────────────────────────────────────── */
+    .entity-list { padding: 4px 8px; }
+    .entity-list .row {
+      display: flex; align-items: center;
+      padding: 12px 12px;
+      border-bottom: 1px solid var(--claude-border);
+    }
+    .entity-list .row:last-child { border-bottom: none; }
+    .entity-list .row .name { flex: 1; }
+    .entity-list .row .value { color: var(--claude-cream-dim); font-variant-numeric: tabular-nums; }
+    .entity-list .divider {
+      height: 1px; background: var(--claude-border);
+      margin: 8px 12px;
+    }
+
+    /* ── Thermostat (mock) ──────────────────────────────────── */
+    .thermostat { padding: 24px; text-align: center; }
+    .thermostat .ring {
+      width: 160px; height: 160px;
+      border-radius: 50%;
+      background: conic-gradient(var(--claude-primary) 0% 65%, var(--claude-surface-3) 65% 100%);
+      margin: 0 auto 12px;
+      display: grid; place-items: center;
+      position: relative;
+    }
+    .thermostat .ring::before {
+      content: '';
+      position: absolute; inset: 12px;
+      background: var(--claude-surface);
+      border-radius: 50%;
+    }
+    .thermostat .temp {
+      position: relative;
+      font-family: var(--serif);
+      font-size: 38px;
+    }
+
+    /* ── Forecast ────────────────────────────────────────────── */
+    .forecast { display: flex; gap: 12px; padding: 16px; overflow-x: auto; }
+    .forecast .day {
+      flex: 1;
+      text-align: center;
+      padding: 10px 6px;
+      border-radius: 10px;
+      min-width: 70px;
+    }
+    .forecast .day .dow { font-size: 12px; color: var(--claude-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .forecast .day .ico { font-size: 24px; margin: 8px 0; }
+    .forecast .day .hi { font-family: var(--serif); font-size: 16px; }
+    .forecast .day .lo { font-size: 12px; color: var(--claude-muted); }
+
+    /* ── Map placeholder ─────────────────────────────────────── */
+    .map-placeholder {
+      height: 300px;
+      background: linear-gradient(135deg, #2A3A4A 0%, #1F2A35 100%);
+      border-radius: 16px;
+      display: grid; place-items: center;
+      color: var(--claude-muted);
+      position: relative;
+      overflow: hidden;
+    }
+    .map-placeholder::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(240,238,230,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(240,238,230,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+    .map-pin {
+      position: absolute;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--claude-primary);
+      box-shadow: 0 0 0 6px rgba(201,99,66,0.18);
+    }
+
+    /* ── View switching ──────────────────────────────────────── */
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ── Banner ──────────────────────────────────────────────── */
+    .preview-banner {
+      background: var(--claude-surface-2);
+      border-bottom: 1px solid var(--claude-border);
+      padding: 8px 24px;
+      font-size: 12px;
+      color: var(--claude-muted);
+      text-align: center;
+    }
+    .preview-banner .accent { color: var(--claude-primary); }
+  </style>
+</head>
+<body>
+  <div class="preview-banner">
+    Static preview — geen live data. Open
+    <span class="accent">dashboards/claude_dashboard.yaml</span> in Home Assistant voor de echte versie.
+  </div>
+
+  <div class="app">
+    <!-- ══════════════════════ SIDEBAR ══════════════════════ -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">✻</div>
+        <div class="brand-name">Claude</div>
+      </div>
+      <nav class="nav">
+        <button class="active" data-view="start">
+          <span class="icon">⌂</span> Start
+        </button>
+        <button data-view="zon">
+          <span class="icon">☀</span> Zonnepanelen
+        </button>
+        <button data-view="tv">
+          <span class="icon">◐</span> TV &amp; Klimaat
+        </button>
+        <button data-view="afval">
+          <span class="icon">♺</span> Afval
+        </button>
+        <button data-view="weer">
+          <span class="icon">☁</span> Weer
+        </button>
+        <button data-view="benzine">
+          <span class="icon">⛽</span> Benzine
+        </button>
+      </nav>
+    </aside>
+
+    <!-- ══════════════════════ MAIN ══════════════════════ -->
+    <main class="main">
+
+      <!-- ─── START ─── -->
+      <section class="view active" id="view-start">
+        <div class="hero">
+          <h1>Goedenavond, Chris.</h1>
+          <p>Donderdag 7 mei · <span class="accent">helder</span> · 19°C buiten</p>
+        </div>
+
+        <div class="grid grid-3">
+          <div class="card person"><div class="avatar">CJ</div><div class="name">Chris</div><div class="state">Thuis</div></div>
+          <div class="card person"><div class="avatar" style="background: linear-gradient(135deg, #7BA7C9, #4A6E8A);">MJ</div><div class="name">Marion</div><div class="state">Thuis</div></div>
+          <div class="card person"><div class="avatar" style="background: linear-gradient(135deg, #7FB069, #4A7B4A);">EJ</div><div class="name">Edwin</div><div class="state">Onderweg</div></div>
+        </div>
+
+        <h2 class="section-title">Vandaag</h2>
+        <div class="grid grid-4">
+          <div class="card stat">
+            <div class="label">Zonneproductie</div>
+            <div><span class="figure">12.4</span><span class="unit">kWh</span></div>
+            <div class="delta">Nu 2 380 W</div>
+          </div>
+          <div class="card stat">
+            <div class="label">Buitentemperatuur</div>
+            <div><span class="figure">19</span><span class="unit">°C</span></div>
+            <div class="delta">helder</div>
+          </div>
+          <div class="card stat">
+            <div class="label">Volgende afval</div>
+            <div><span class="figure small">PMD</span></div>
+            <div class="delta cream">Morgen</div>
+          </div>
+          <div class="card stat">
+            <div class="label">Lampen aan</div>
+            <div><span class="figure">2</span></div>
+            <div class="delta muted">van 4 schakelaars</div>
+          </div>
+        </div>
+
+        <h2 class="section-title">Verlichting</h2>
+        <div class="grid grid-4">
+          <div class="card tile on">
+            <div class="icon-circle">◐</div>
+            <div class="info"><div class="name">Woonkamer</div><div class="state">Aan</div></div>
+            <div class="switch"></div>
+          </div>
+          <div class="card tile on">
+            <div class="icon-circle">◐</div>
+            <div class="info"><div class="name">Overkapping</div><div class="state">Aan</div></div>
+            <div class="switch"></div>
+          </div>
+          <div class="card tile">
+            <div class="icon-circle">○</div>
+            <div class="info"><div class="name">Oprit</div><div class="state">Uit</div></div>
+            <div class="switch"></div>
+          </div>
+          <div class="card tile">
+            <div class="icon-circle">○</div>
+            <div class="info"><div class="name">Spotjes</div><div class="state">Uit</div></div>
+            <div class="switch"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── ZONNEPANELEN ─── -->
+      <section class="view" id="view-zon">
+        <div class="hero">
+          <h1>Zonnepanelen</h1>
+          <p>Live opbrengst, opbrengstgeschiedenis en handmatige limietsturing voor de SMA-omvormer. Status nu: <span class="accent">Aan</span>, limiet <span class="accent">100%</span>.</p>
+        </div>
+
+        <div class="grid grid-4">
+          <div class="card stat"><div class="label">Vermogen nu</div><div><span class="figure">2 380</span><span class="unit">W</span></div></div>
+          <div class="card stat"><div class="label">Vandaag</div><div><span class="figure">12.4</span><span class="unit">kWh</span></div></div>
+          <div class="card stat"><div class="label">Totaal</div><div><span class="figure">8 234</span><span class="unit">kWh</span></div></div>
+          <div class="card stat"><div class="label">Limiet</div><div><span class="figure">100</span><span class="unit">%</span></div><div class="delta">Aan</div></div>
+        </div>
+
+        <div class="grid grid-2" style="margin-top: 20px;">
+          <div>
+            <div class="subsection-title">Huidig vermogen</div>
+            <div class="card gauge">
+              <svg viewBox="0 0 200 130">
+                <path d="M 20 110 A 80 80 0 0 1 180 110" stroke="#46443F" stroke-width="14" fill="none" stroke-linecap="round" />
+                <path d="M 20 110 A 80 80 0 0 1 130 30" stroke="#C96342" stroke-width="14" fill="none" stroke-linecap="round" />
+                <line x1="100" y1="110" x2="135" y2="50" stroke="#F0EEE6" stroke-width="2" stroke-linecap="round" />
+                <circle cx="100" cy="110" r="5" fill="#F0EEE6" />
+              </svg>
+              <div class="gauge-value">2 380 W</div>
+              <div class="gauge-label">van max 6 000 W</div>
+            </div>
+          </div>
+          <div>
+            <div class="subsection-title">Verloop vandaag</div>
+            <div class="card graph">
+              <svg viewBox="0 0 400 140" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="solarGrad" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stop-color="#C96342" stop-opacity="0.4" />
+                    <stop offset="100%" stop-color="#C96342" stop-opacity="0" />
+                  </linearGradient>
+                </defs>
+                <path d="M 0 130 L 0 120 L 30 115 L 60 105 L 90 85 L 120 60 L 150 40 L 180 30 L 210 35 L 240 50 L 270 65 L 300 80 L 330 95 L 360 110 L 400 125 L 400 130 Z" fill="url(#solarGrad)" />
+                <path d="M 0 120 L 30 115 L 60 105 L 90 85 L 120 60 L 150 40 L 180 30 L 210 35 L 240 50 L 270 65 L 300 80 L 330 95 L 360 110 L 400 125" stroke="#C96342" stroke-width="2" fill="none" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <h2 class="section-title">Limiet instellen</h2>
+        <div class="grid grid-3">
+          <div class="pill primary"><span class="pill-icon">☀</span><span class="pill-label">Volledig</span></div>
+          <div class="pill secondary"><span class="pill-icon">◐</span><span class="pill-label">Halve kracht</span></div>
+          <div class="pill ghost"><span class="pill-icon">⏻</span><span class="pill-label">Uit</span></div>
+        </div>
+
+        <div class="subsection-title">Details</div>
+        <div class="card entity-list">
+          <div class="row"><span class="name">Status</span><span class="value">Aan</span></div>
+          <div class="row"><span class="name">Vermogenslimiet</span><span class="value">100 %</span></div>
+          <div class="row"><span class="name">DC string A</span><span class="value">1 240 W</span></div>
+          <div class="divider"></div>
+          <div class="row"><span class="name">Raw AC vermogen</span><span class="value">2 378 W</span></div>
+          <div class="row"><span class="name">Raw limiet</span><span class="value">100.0</span></div>
+        </div>
+      </section>
+
+      <!-- ─── TV & KLIMAAT ─── -->
+      <section class="view" id="view-tv">
+        <div class="hero">
+          <h1>Verlichting &amp; schema's</h1>
+          <p>Schakel lampen handmatig of laat ze op de ingestelde tijden draaien.</p>
+        </div>
+        <div class="grid grid-3">
+          <div>
+            <div class="subsection-title">Lampen</div>
+            <div class="grid">
+              <div class="card tile on"><div class="icon-circle">◐</div><div class="info"><div class="name">Woonkamer</div><div class="state">Aan</div></div><div class="switch"></div></div>
+              <div class="card tile on"><div class="icon-circle">◐</div><div class="info"><div class="name">Overkapping</div><div class="state">Aan</div></div><div class="switch"></div></div>
+              <div class="card tile"><div class="icon-circle">○</div><div class="info"><div class="name">Oprit</div><div class="state">Uit</div></div><div class="switch"></div></div>
+              <div class="card tile"><div class="icon-circle">○</div><div class="info"><div class="name">Spotjes overkapping</div><div class="state">Uit</div></div><div class="switch"></div></div>
+            </div>
+          </div>
+          <div>
+            <div class="subsection-title">Woonkamer schema</div>
+            <div class="card entity-list">
+              <div class="row"><span class="name">Aan om</span><span class="value">19:30</span></div>
+              <div class="row"><span class="name">Uit om</span><span class="value">23:45</span></div>
+            </div>
+          </div>
+          <div>
+            <div class="subsection-title">Buitenlampen schema</div>
+            <div class="card entity-list">
+              <div class="row"><span class="name">Aan om</span><span class="value">21:00</span></div>
+              <div class="row"><span class="name">Uit om</span><span class="value">06:30</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── AFVAL ─── -->
+      <section class="view" id="view-afval">
+        <div class="hero">
+          <h1>Afvalkalender</h1>
+          <p>De volgende ophaaldagen volgens de gemeentekalender.</p>
+        </div>
+        <div class="alert">
+          <h2>✱ Morgen buitenzetten</h2>
+          <p>PMD</p>
+        </div>
+        <div class="grid grid-3" style="margin-top: 20px;">
+          <div class="card stat"><div class="label">PMD</div><div><span class="figure small">Morgen</span></div><div class="delta">Plastic, metaal &amp; drinkpakken</div></div>
+          <div class="card stat"><div class="label">Restafval</div><div><span class="figure small">Over 9 dagen</span></div><div class="delta">Niet recyclebaar</div></div>
+          <div class="card stat"><div class="label">Papier</div><div><span class="figure small">Over 16 dagen</span></div><div class="delta">Karton &amp; papier</div></div>
+        </div>
+      </section>
+
+      <!-- ─── WEER ─── -->
+      <section class="view" id="view-weer">
+        <div class="hero">
+          <h1>Weer &amp; klimaat</h1>
+          <p>Het is nu <span class="accent">19°C</span> · helder. Binnen op 21.4°C.</p>
+        </div>
+        <div class="grid grid-3">
+          <div>
+            <div class="subsection-title">Thermostaat</div>
+            <div class="card thermostat">
+              <div class="ring"><div class="temp">21.4°</div></div>
+              <div style="font-family: var(--serif); font-size: 18px;">Woonkamer</div>
+              <div style="color: var(--claude-muted); font-size: 13px; margin-top: 4px;">Doel 22.0° · Verwarmen</div>
+            </div>
+          </div>
+          <div style="grid-column: span 2;">
+            <div class="subsection-title">5-daagse voorspelling</div>
+            <div class="card forecast">
+              <div class="day"><div class="dow">Don</div><div class="ico">☀</div><div class="hi">19°</div><div class="lo">11°</div></div>
+              <div class="day"><div class="dow">Vrij</div><div class="ico">⛅</div><div class="hi">21°</div><div class="lo">12°</div></div>
+              <div class="day"><div class="dow">Zat</div><div class="ico">🌧</div><div class="hi">17°</div><div class="lo">10°</div></div>
+              <div class="day"><div class="dow">Zon</div><div class="ico">☁</div><div class="hi">15°</div><div class="lo">9°</div></div>
+              <div class="day"><div class="dow">Maa</div><div class="ico">☀</div><div class="hi">20°</div><div class="lo">11°</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="subsection-title">Neerslag radar</div>
+        <div class="card graph">
+          <svg viewBox="0 0 400 100" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="rainGrad" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="#7BA7C9" stop-opacity="0.5" />
+                <stop offset="100%" stop-color="#7BA7C9" stop-opacity="0" />
+              </linearGradient>
+            </defs>
+            <rect x="0" y="80" width="20" height="20" fill="url(#rainGrad)" />
+            <rect x="20" y="70" width="20" height="30" fill="url(#rainGrad)" />
+            <rect x="40" y="60" width="20" height="40" fill="url(#rainGrad)" />
+            <rect x="60" y="50" width="20" height="50" fill="url(#rainGrad)" />
+            <rect x="80" y="65" width="20" height="35" fill="url(#rainGrad)" />
+            <rect x="100" y="80" width="20" height="20" fill="url(#rainGrad)" />
+            <rect x="120" y="90" width="20" height="10" fill="url(#rainGrad)" />
+            <rect x="140" y="95" width="260" height="5" fill="url(#rainGrad)" />
+          </svg>
+          <div style="text-align: center; font-size: 12px; color: var(--claude-muted); margin-top: 8px;">Lichte regen tot 14:30, daarna droog</div>
+        </div>
+      </section>
+
+      <!-- ─── BENZINE ─── -->
+      <section class="view" id="view-benzine">
+        <div class="hero">
+          <h1>Brandstofprijzen</h1>
+          <p>Live prijzen van Euro 95 (E10) bij grenstankstations in <span class="accent">Duitsland</span> en <span class="accent">België</span>.</p>
+        </div>
+
+        <h2 class="section-title">⚐ Duitsland</h2>
+        <div class="grid grid-2">
+          <div class="card stat">
+            <div class="label">OIL · Steyler Strasse 157</div>
+            <div><span class="figure">1.749</span><span class="unit">€/L</span></div>
+            <div class="delta">Euro 95 · E10</div>
+          </div>
+          <div class="card stat">
+            <div class="label">Shell · Steyler Str 179</div>
+            <div><span class="figure">1.769</span><span class="unit">€/L</span></div>
+            <div class="delta">Euro 95 · E10</div>
+          </div>
+        </div>
+
+        <h2 class="section-title">⚑ België</h2>
+        <div class="grid grid-3">
+          <div class="card stat"><div class="label">Carbu.com · 3640</div><div><span class="figure">1.689</span><span class="unit">€/L</span></div><div class="delta">Goedkoopste in postcode</div></div>
+          <div class="card stat"><div class="label">Binnen 5 km</div><div><span class="figure">1.679</span><span class="unit">€/L</span></div><div class="delta">Beste in 5 km radius</div></div>
+          <div class="card stat"><div class="label">Binnen 10 km</div><div><span class="figure">1.659</span><span class="unit">€/L</span></div><div class="delta">Beste in 10 km radius</div></div>
+        </div>
+
+        <div class="subsection-title">Op de kaart</div>
+        <div class="map-placeholder">
+          <div class="map-pin" style="top: 30%; left: 25%;"></div>
+          <div class="map-pin" style="top: 55%; left: 48%;"></div>
+          <div class="map-pin" style="top: 40%; left: 72%;"></div>
+          <div style="position: relative; z-index: 1; font-size: 13px;">Kaart-placeholder · in HA wordt hier de echte map getoond</div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    document.querySelectorAll('.nav button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById('view-' + btn.dataset.view).classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
