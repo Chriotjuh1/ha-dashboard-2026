@@ -38,15 +38,22 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-    html, body {
+    html {
+      /* iOS smooth scrolling in iframes */
+      -webkit-overflow-scrolling: touch;
+      height: 100%;
+    }
+    body {
       background: var(--claude-bg);
       color: var(--claude-cream);
       font-family: var(--sans);
       font-size: 14px;
       letter-spacing: -0.005em;
-      min-height: 100vh;
-      overscroll-behavior: none;
+      min-height: 100%;
+      /* Expliciet vertical scroll toestaan, alleen horizontal blokkeren */
       overflow-x: hidden;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     /* ── Login ───────────────────────────────────────────────── */
