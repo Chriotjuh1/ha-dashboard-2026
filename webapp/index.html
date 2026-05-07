@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#262624" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Claude" />
+  <link rel="manifest" href="manifest.json" />
+  <title>Claude</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..600&family=Inter:wght@300..600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --claude-bg: #262624;
+      --claude-bg-deep: #1F1E1C;
+      --claude-surface: #30302E;
+      --claude-surface-2: #3A3936;
+      --claude-surface-3: #46443F;
+      --claude-primary: #C96342;
+      --claude-primary-soft: #D97757;
+      --claude-primary-deep: #A84F32;
+      --claude-cream: #F0EEE6;
+      --claude-cream-dim: #D6D2C8;
+      --claude-muted: #A8A29E;
+      --claude-border: rgba(240, 238, 230, 0.07);
+      --claude-border-hover: rgba(240, 238, 230, 0.14);
+      --claude-success: #7FB069;
+      --claude-warning: #E8B86E;
+      --claude-danger: #D96D6D;
+      --claude-info: #7BA7C9;
+      --serif: 'Fraunces', Georgia, serif;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      background: var(--claude-bg);
+      color: var(--claude-cream);
+      font-family: var(--sans);
+      font-size: 14px;
+      letter-spacing: -0.005em;
+      min-height: 100vh;
+      overscroll-behavior: none;
+    }
+
+    /* ── Login ───────────────────────────────────────────────── */
+    .login {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    .login-box {
+      background: var(--claude-surface);
+      border: 1px solid var(--claude-border);
+      border-radius: 20px;
+      padding: 32px;
+      width: 100%;
+      max-width: 420px;
+    }
+    .login h1 {
+      font-family: var(--serif);
+      font-weight: 400;
+      font-size: 36px;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+    .login p {
+      color: var(--claude-muted);
+      margin-bottom: 24px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .login label {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--claude-muted);
+      margin: 16px 0 6px;
+    }
+    .login input {
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--claude-bg-deep);
+      border: 1px solid var(--claude-border-hover);
+      border-radius: 12px;
+      color: var(--claude-cream);
+      font-family: var(--sans);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 200ms;
+    }
+    .login input:focus { border-color: var(--claude-primary); }
+    .login button {
+      all: unset;
+      display: block;
+      width: 100%;
+      padding: 14px;
+      background: var(--claude-primary);
+      color: var(--claude-cream);
+      text-align: center;
+      border-radius: 12px;
+      font-family: var(--serif);
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 24px;
+      transition: background 200ms;
+    }
+    .login button:hover { background: var(--claude-primary-soft); }
+    .login .help {
+      font-size: 12px;
+      color: var(--claude-muted);
+      margin-top: 16px;
+      line-height: 1.5;
+    }
+    .login .help a { color: var(--claude-primary); text-decoration: none; }
+    .login .err {
+      color: var(--claude-danger);
+      font-size: 13px;
+      margin-top: 12px;
+    }
+
+    /* ── App layout ──────────────────────────────────────────── */
+    .app {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 16px 16px 100px;
+    }
+    @media (min-width: 871px) {
+      .app { padding: 32px 48px 32px; }
+    }
+
+    /* Top bar (mobile only) */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 4px 12px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--claude-bg);
+    }
+    .topbar .brand {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .topbar .brand-mark {
+      width: 28px; height: 28px;
+      background: var(--claude-primary);
+      border-radius: 8px;
+      display: grid; place-items: center;
+      font-family: var(--serif);
+      color: var(--claude-cream);
+      font-size: 16px;
+    }
+    .topbar .brand-name {
+      font-family: var(--serif);
+      font-size: 18px;
+    }
+    .topbar .actions { display: flex; gap: 4px; }
+    .topbar .actions button {
+      all: unset;
+      width: 36px; height: 36px;
+      border-radius: 12px;
+      display: grid; place-items: center;
+      cursor: pointer;
+      color: var(--claude-cream-dim);
+      font-size: 18px;
+    }
+    .topbar .actions button:hover { background: var(--claude-surface); }
+
+    /* ── Hero ────────────────────────────────────────────────── */
+    .hero { padding: 12px 4px 20px; }
+    .hero h1 {
+      font-family: var(--serif);
+      font-weight: 400;
+      font-size: clamp(34px, 7vw, 52px);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      color: var(--claude-cream);
+      margin: 0 0 10px 0;
+    }
+    .hero p {
+      color: var(--claude-muted);
+      font-size: 14px;
+      line-height: 1.5;
+      margin: 0;
+    }
+    .accent { color: var(--claude-primary); }
+
+    /* ── Section title ───────────────────────────────────────── */
+    .section-title {
+      font-family: var(--serif);
+      font-weight: 400;
+      font-size: 26px;
+      letter-spacing: -0.01em;
+      margin: 24px 4px 12px;
+    }
+    .subsection-title {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--claude-muted);
+      margin: 18px 4px 8px;
+    }
+
+    /* ── Card ────────────────────────────────────────────────── */
+    .card {
+      background: var(--claude-surface);
+      border: 1px solid var(--claude-border);
+      border-radius: 16px;
+      padding: 18px 18px 16px;
+      transition: border-color 200ms ease, background 200ms ease, transform 150ms ease;
+    }
+    .card:active { transform: scale(0.98); }
+    .card:hover { border-color: var(--claude-border-hover); }
+
+    /* ── Grid ────────────────────────────────────────────────── */
+    .grid { display: grid; gap: 10px; }
+    .grid-2 { grid-template-columns: 1fr 1fr; }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    @media (max-width: 1100px) {
+      .grid-3 { grid-template-columns: repeat(2, 1fr); }
+      .grid-4 { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 720px) {
+      .grid-3 { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* ── Stat ────────────────────────────────────────────────── */
+    .stat .label {
+      font-size: 11px; font-weight: 500;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--claude-muted);
+      margin-bottom: 10px;
+    }
+    .stat .figure {
+      font-family: var(--serif);
+      font-weight: 400;
+      font-size: 30px;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+    .stat .figure.small { font-size: 22px; }
+    .stat .unit {
+      font-size: 13px;
+      color: var(--claude-muted);
+      margin-left: 4px;
+    }
+    .stat .delta {
+      font-size: 12px;
+      color: var(--claude-primary);
+      margin-top: 6px;
+    }
+    .stat .delta.muted { color: var(--claude-muted); }
+    .stat .delta.cream { color: var(--claude-cream-dim); }
+
+    /* ── Person ──────────────────────────────────────────────── */
+    .person {
+      background: var(--claude-surface);
+      border: 1px solid var(--claude-border);
+      border-radius: 16px;
+      padding: 18px 12px;
+      text-align: center;
+      cursor: pointer;
+    }
+    .person .avatar {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      margin: 0 auto 10px;
+      display: grid; place-items: center;
+      font-family: var(--serif);
+      font-size: 22px;
+      color: var(--claude-cream);
+    }
+    .person .name { font-family: var(--serif); font-size: 16px; }
+    .person .state { font-size: 11px; color: var(--claude-muted); margin-top: 2px; }
+
+    /* ── Tile (lamp) ─────────────────────────────────────────── */
+    .tile {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px;
+      cursor: pointer;
+    }
+    .tile .icon-circle {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: var(--claude-surface-2);
+      display: grid; place-items: center;
+      font-size: 16px;
+      transition: background 200ms;
+    }
+    .tile.on .icon-circle {
+      background: rgba(201, 99, 66, 0.18);
+      color: var(--claude-primary);
+    }
+    .tile .info { flex: 1; min-width: 0; }
+    .tile .info .name { font-size: 14px; }
+    .tile .info .state { font-size: 11px; color: var(--claude-muted); }
+    .switch {
+      width: 32px; height: 18px;
+      background: var(--claude-surface-3);
+      border-radius: 999px;
+      position: relative;
+      flex-shrink: 0;
+      transition: background 200ms;
+    }
+    .switch::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 14px; height: 14px;
+      background: var(--claude-muted);
+      border-radius: 50%;
+      transition: all 200ms;
+    }
+    .tile.on .switch { background: var(--claude-primary-deep); }
+    .tile.on .switch::after { left: 16px; background: var(--claude-primary-soft); }
+
+    /* ── Pill button ─────────────────────────────────────────── */
+    .pills {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+    .pill {
+      padding: 18px 6px;
+      border-radius: 14px;
+      text-align: center;
+      cursor: pointer;
+      border: 1px solid;
+      transition: all 200ms ease;
+    }
+    .pill:active { transform: scale(0.97); }
+    .pill .pill-icon { font-size: 22px; display: block; margin-bottom: 4px; }
+    .pill .pill-label { font-family: var(--serif); font-size: 14px; }
+    .pill.primary {
+      background: var(--claude-primary);
+      border-color: var(--claude-primary);
+      color: var(--claude-cream);
+    }
+    .pill.primary:hover { background: var(--claude-primary-soft); }
+    .pill.secondary {
+      background: var(--claude-surface);
+      border-color: var(--claude-border-hover);
+    }
+    .pill.secondary .pill-icon { color: var(--claude-primary-soft); }
+    .pill.ghost {
+      background: transparent;
+      border-color: var(--claude-border-hover);
+    }
+    .pill.ghost .pill-icon { color: var(--claude-muted); }
+    .pill.ghost .pill-label { color: var(--claude-cream-dim); }
+
+    /* ── Alert ───────────────────────────────────────────────── */
+    .alert {
+      background: linear-gradient(135deg, rgba(201,99,66,0.18), rgba(201,99,66,0.04));
+      border: 1px solid var(--claude-primary);
+      border-radius: 16px;
+      padding: 14px 18px;
+      margin-bottom: 14px;
+    }
+    .alert h2 {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 400;
+      margin-bottom: 4px;
+    }
+    .alert p { color: var(--claude-cream-dim); font-size: 13px; }
+
+    /* ── Gauge ───────────────────────────────────────────────── */
+    .gauge { padding: 18px; text-align: center; }
+    .gauge svg { width: 100%; max-width: 200px; height: auto; }
+    .gauge .gauge-value { font-family: var(--serif); font-size: 28px; margin-top: 4px; }
+    .gauge .gauge-label { font-size: 11px; color: var(--claude-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
+
+    /* ── Time picker ─────────────────────────────────────────── */
+    .timer { padding: 4px 4px; }
+    .timer .row {
+      display: flex; align-items: center;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--claude-border);
+    }
+    .timer .row:last-child { border-bottom: none; }
+    .timer .row .name { flex: 1; font-size: 14px; }
+    .timer input[type="time"] {
+      background: var(--claude-bg-deep);
+      border: 1px solid var(--claude-border-hover);
+      border-radius: 8px;
+      padding: 6px 10px;
+      color: var(--claude-cream);
+      font-family: var(--sans);
+      font-size: 13px;
+    }
+
+    /* ── Bottom nav ──────────────────────────────────────────── */
+    .tabbar {
+      position: fixed;
+      bottom: 12px;
+      left: 12px;
+      right: 12px;
+      max-width: 600px;
+      margin: 0 auto;
+      background: rgba(31, 30, 28, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--claude-border);
+      border-radius: 22px;
+      padding: 4px;
+      display: flex;
+      justify-content: space-around;
+      z-index: 100;
+      padding-bottom: max(4px, env(safe-area-inset-bottom));
+    }
+    .tabbar button {
+      all: unset;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      padding: 8px 4px;
+      cursor: pointer;
+      color: var(--claude-muted);
+      transition: color 150ms;
+    }
+    .tabbar button:active { transform: scale(0.95); }
+    .tabbar button .tab-icon { font-size: 22px; }
+    .tabbar button .tab-label { font-size: 10px; font-weight: 500; }
+    .tabbar button.active { color: var(--claude-primary); }
+
+    /* ── Forecast strip ──────────────────────────────────────── */
+    .forecast {
+      display: flex; gap: 8px;
+      overflow-x: auto;
+      padding: 12px 4px;
+      scrollbar-width: none;
+    }
+    .forecast::-webkit-scrollbar { display: none; }
+    .forecast .day {
+      flex-shrink: 0;
+      min-width: 70px;
+      text-align: center;
+      padding: 8px 6px;
+    }
+    .forecast .day .dow { font-size: 10px; color: var(--claude-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .forecast .day .ico { font-size: 22px; margin: 6px 0; }
+    .forecast .day .hi { font-family: var(--serif); font-size: 14px; }
+    .forecast .day .lo { font-size: 11px; color: var(--claude-muted); }
+
+    /* ── Thermostat ──────────────────────────────────────────── */
+    .thermostat { padding: 22px; text-align: center; }
+    .thermostat .ring {
+      width: 150px; height: 150px;
+      border-radius: 50%;
+      margin: 0 auto 12px;
+      display: grid; place-items: center;
+      position: relative;
+    }
+    .thermostat .ring::before {
+      content: '';
+      position: absolute; inset: 12px;
+      background: var(--claude-surface);
+      border-radius: 50%;
+    }
+    .thermostat .temp {
+      position: relative;
+      font-family: var(--serif);
+      font-size: 32px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 16px;
+      color: var(--claude-muted);
+    }
+
+    .view { display: none; }
+    .view.active { display: block; }
+
+    .small { font-size: 11px; }
+  </style>
+</head>
+<body>
+
+<div id="root">
+  <!-- Login screen rendered here initially, then replaced by app -->
+</div>
+
+<script>
+'use strict';
+
+// ════════════════════════════════════════════════════════════════════════
+// HA WebSocket Client
+// ════════════════════════════════════════════════════════════════════════
+class HAClient {
+  constructor(url, token) {
+    this.url = url.replace(/\/$/, '');
+    this.token = token;
+    this.states = {};
+    this.id = 0;
+    this.pending = new Map();
+    this.listeners = new Set();
+    this.ready = false;
+  }
+
+  connect() {
+    return new Promise((resolve, reject) => {
+      const wsUrl = this.url.replace(/^http/, 'ws') + '/api/websocket';
+      this.ws = new WebSocket(wsUrl);
+      this._authResolve = resolve;
+      this._authReject = reject;
+      this.ws.onopen = () => {};
+      this.ws.onmessage = (e) => this._onMessage(JSON.parse(e.data));
+      this.ws.onclose = () => {
+        if (this.ready) {
+          // Try reconnect
+          setTimeout(() => this.connect().then(() => this.notify()).catch(()=>{}), 2000);
+        } else {
+          reject(new Error('Connection closed'));
+        }
+      };
+      this.ws.onerror = () => reject(new Error('Connection error'));
+    });
+  }
+
+  _onMessage(msg) {
+    if (msg.type === 'auth_required') {
+      this._send({ type: 'auth', access_token: this.token });
+    } else if (msg.type === 'auth_ok') {
+      this.ready = true;
+      this._send({ id: ++this.id, type: 'get_states' });
+      this._send({ id: ++this.id, type: 'subscribe_events', event_type: 'state_changed' });
+      this._authResolve();
+    } else if (msg.type === 'auth_invalid') {
+      this._authReject(new Error('Token ongeldig'));
+    } else if (msg.type === 'result') {
+      if (Array.isArray(msg.result) && msg.result.length && msg.result[0].entity_id) {
+        for (const s of msg.result) this.states[s.entity_id] = s;
+        this.notify();
+      }
+      const cb = this.pending.get(msg.id);
+      if (cb) { cb(msg); this.pending.delete(msg.id); }
+    } else if (msg.type === 'event' && msg.event && msg.event.event_type === 'state_changed') {
+      const ns = msg.event.data.new_state;
+      if (ns) {
+        this.states[ns.entity_id] = ns;
+        this.notify();
+      }
+    }
+  }
+
+  _send(msg) {
+    if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify(msg));
+  }
+
+  call(domain, service, data) {
+    this._send({ id: ++this.id, type: 'call_service', domain, service, service_data: data });
+  }
+
+  state(eid) { return this.states[eid] ? this.states[eid].state : ''; }
+  attr(eid, a) { return this.states[eid] && this.states[eid].attributes ? this.states[eid].attributes[a] : ''; }
+  isOn(eid) { return this.state(eid) === 'on'; }
+
+  on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
+  notify() { for (const fn of this.listeners) fn(); }
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// Helpers
+// ════════════════════════════════════════════════════════════════════════
+function el(html) {
+  const t = document.createElement('template');
+  t.innerHTML = html.trim();
+  return t.content.firstChild;
+}
+function getGreeting(name) {
+  const h = new Date().getHours();
+  const part = h < 6 ? 'Goedenacht' : h < 12 ? 'Goedemorgen' : h < 18 ? 'Goedemiddag' : 'Goedenavond';
+  return `${part}, ${name}.`;
+}
+function getDateLabel() {
+  return new Date().toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+function weatherIcon(cond) {
+  const map = {
+    'sunny': '☀', 'clear-night': '🌙', 'partlycloudy': '⛅', 'cloudy': '☁',
+    'rainy': '🌧', 'pouring': '⛈', 'snowy': '❄', 'fog': '🌫', 'windy': '💨',
+    'lightning': '⚡', 'lightning-rainy': '⛈',
+  };
+  return map[cond] || '◐';
+}
+function formatNumber(n, decimals = 0) {
+  if (n === '' || n === undefined || n === null) return '—';
+  const num = parseFloat(n);
+  if (isNaN(num)) return n;
+  return num.toLocaleString('nl-NL', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// App
+// ════════════════════════════════════════════════════════════════════════
+class App {
+  constructor() {
+    this.root = document.getElementById('root');
+    this.activeView = location.hash.replace('#', '') || 'start';
+    this.client = null;
+    window.addEventListener('hashchange', () => {
+      this.activeView = location.hash.replace('#', '') || 'start';
+      this.render();
+    });
+    this.init();
+  }
+
+  async init() {
+    const cfg = JSON.parse(localStorage.getItem('claude-dashboard-config') || 'null');
+    if (!cfg || !cfg.url || !cfg.token) {
+      this.renderLogin();
+      return;
+    }
+    try {
+      this.client = new HAClient(cfg.url, cfg.token);
+      await this.client.connect();
+      this.client.on(() => this.render());
+      this.render();
+    } catch (e) {
+      this.renderLogin(e.message);
+    }
+  }
+
+  renderLogin(error) {
+    this.root.innerHTML = `
+      <div class="login">
+        <div class="login-box">
+          <h1>Claude</h1>
+          <p>Verbind met je Home Assistant instance om je smart-home dashboard te tonen.</p>
+          <label for="url">Home Assistant URL</label>
+          <input id="url" type="text" placeholder="https://homeassistant.chrisjoosten.nl" />
+          <label for="token">Long-lived access token</label>
+          <input id="token" type="password" placeholder="eyJ0eXAi..." />
+          <p class="help">Maak een token aan in Home Assistant: profiel rechtsonder → tabblad <strong>Beveiliging</strong> → onderaan <strong>"Aanmaken token"</strong>.</p>
+          ${error ? `<p class="err">${error}</p>` : ''}
+          <button id="connect">Verbinden</button>
+        </div>
+      </div>
+    `;
+    const urlInput = this.root.querySelector('#url');
+    const tokenInput = this.root.querySelector('#token');
+    if (location.hostname && location.hostname !== 'localhost') {
+      urlInput.value = location.protocol + '//' + location.host;
+    }
+    this.root.querySelector('#connect').addEventListener('click', () => {
+      const url = urlInput.value.trim();
+      const token = tokenInput.value.trim();
+      if (!url || !token) return;
+      localStorage.setItem('claude-dashboard-config', JSON.stringify({ url, token }));
+      this.init();
+    });
+  }
+
+  logout() {
+    localStorage.removeItem('claude-dashboard-config');
+    location.reload();
+  }
+
+  navigate(view) {
+    this.activeView = view;
+    location.hash = view;
+    this.render();
+    window.scrollTo(0, 0);
+  }
+
+  callService(domain, service, data) {
+    if (this.client) this.client.call(domain, service, data);
+  }
+
+  render() {
+    if (!this.client || !this.client.ready) return;
+    const c = this.client;
+
+    const views = {
+      start: () => this.renderStart(c),
+      zon: () => this.renderZon(c),
+      lampen: () => this.renderLampen(c),
+      afval: () => this.renderAfval(c),
+      weer: () => this.renderWeer(c),
+      benzine: () => this.renderBenzine(c),
+    };
+
+    const titles = {
+      start: 'Claude', zon: 'Zonnepanelen', lampen: 'Lampen',
+      afval: 'Afval', weer: 'Weer', benzine: 'Benzine',
+    };
+
+    const viewHtml = (views[this.activeView] || views.start)();
+
+    this.root.innerHTML = `
+      <div class="app">
+        <div class="topbar">
+          <div class="brand">
+            <div class="brand-mark">✻</div>
+            <div class="brand-name">${titles[this.activeView] || 'Claude'}</div>
+          </div>
+          <div class="actions">
+            <button title="Uitloggen" onclick="app.logout()">⏻</button>
+          </div>
+        </div>
+        ${viewHtml}
+        <nav class="tabbar">
+          ${this.renderNav()}
+        </nav>
+      </div>
+    `;
+
+    this.attachInteractions();
+  }
+
+  renderNav() {
+    const items = [
+      { path: 'start', label: 'Start', icon: '⌂' },
+      { path: 'zon', label: 'Zon', icon: '☀' },
+      { path: 'lampen', label: 'Lampen', icon: '◐' },
+      { path: 'afval', label: 'Afval', icon: '♺' },
+      { path: 'weer', label: 'Weer', icon: '☁' },
+      { path: 'benzine', label: 'Benzine', icon: '⛽' },
+    ];
+    return items.map(it => `
+      <button class="${this.activeView === it.path ? 'active' : ''}" data-nav="${it.path}">
+        <span class="tab-icon">${it.icon}</span>
+        <span class="tab-label">${it.label}</span>
+      </button>
+    `).join('');
+  }
+
+  attachInteractions() {
+    this.root.querySelectorAll('[data-nav]').forEach(btn => {
+      btn.addEventListener('click', () => this.navigate(btn.dataset.nav));
+    });
+    this.root.querySelectorAll('[data-toggle]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const eid = btn.dataset.toggle;
+        const domain = eid.split('.')[0];
+        this.callService(domain, 'toggle', { entity_id: eid });
+      });
+    });
+    this.root.querySelectorAll('[data-script]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!confirm(btn.dataset.confirm || 'Uitvoeren?')) return;
+        this.callService('script', btn.dataset.script.replace(/^script\./, ''), {});
+      });
+    });
+    this.root.querySelectorAll('[data-time]').forEach(input => {
+      input.addEventListener('change', () => {
+        const eid = input.dataset.time;
+        this.callService('input_datetime', 'set_datetime', { entity_id: eid, time: input.value });
+      });
+    });
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // VIEW: Start
+  // ──────────────────────────────────────────────────────────────────
+  renderStart(c) {
+    const persons = [
+      { entity: 'person.chris_joosten', name: 'Chris', initials: 'CJ', g: ['#C96342', '#A84F32'] },
+      { entity: 'person.marion_joosten', name: 'Marion', initials: 'MJ', g: ['#7BA7C9', '#4A6E8A'] },
+      { entity: 'person.edwin_joosten', name: 'Edwin', initials: 'EJ', g: ['#7FB069', '#4A7B4A'] },
+    ];
+    const switches = ['switch.woonkamerlamp', 'switch.overkappinglamp', 'switch.opritlamp', 'switch.spotjes_overkapping'];
+    const lampOn = switches.filter(e => c.isOn(e)).length;
+
+    return `
+      <div class="view active">
+        <div class="hero">
+          <h1>${getGreeting('Chris')}</h1>
+          <p>${getDateLabel()} · <span class="accent">${c.state('weather.forecast_home') || 'helder'}</span> · ${c.attr('weather.forecast_home', 'temperature') || '—'}°C</p>
+        </div>
+
+        <div class="grid grid-3">
+          ${persons.map(p => `
+            <div class="card person">
+              <div class="avatar" style="background: linear-gradient(135deg, ${p.g[0]}, ${p.g[1]});">${p.initials}</div>
+              <div class="name">${p.name}</div>
+              <div class="state">${this._personStateLabel(c.state(p.entity))}</div>
+            </div>
+          `).join('')}
+        </div>
+
+        <h2 class="section-title">Vandaag</h2>
+        <div class="grid grid-4">
+          <div class="card stat">
+            <div class="label">Zon</div>
+            <div><span class="figure">${formatNumber(c.state('sensor.sma_dagopbrengst'), 0)}</span><span class="unit">kWh</span></div>
+            <div class="delta">${formatNumber(c.state('sensor.zonnepanelen_vermogen'), 0)} W nu</div>
+          </div>
+          <div class="card stat">
+            <div class="label">Buiten</div>
+            <div><span class="figure">${formatNumber(c.attr('weather.forecast_home', 'temperature'), 0)}</span><span class="unit">°C</span></div>
+            <div class="delta">${c.state('weather.forecast_home') || '—'}</div>
+          </div>
+          <div class="card stat">
+            <div class="label">Volgend afval</div>
+            <div><span class="figure small">PMD</span></div>
+            <div class="delta cream">${c.state('sensor.pmd') || '—'}</div>
+          </div>
+          <div class="card stat">
+            <div class="label">Lampen</div>
+            <div><span class="figure">${lampOn}</span><span class="unit">/${switches.length} aan</span></div>
+            <div class="delta muted">${switches.length} schakelaars</div>
+          </div>
+        </div>
+
+        <h2 class="section-title">Verlichting</h2>
+        <div class="grid grid-4">
+          ${switches.map(eid => this._lampTile(c, eid)).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  _personStateLabel(s) {
+    if (s === 'home') return 'Thuis';
+    if (s === 'not_home') return 'Onderweg';
+    return s || '—';
+  }
+
+  _lampTile(c, eid) {
+    const on = c.isOn(eid);
+    const name = c.attr(eid, 'friendly_name') || eid.split('.')[1];
+    return `
+      <div class="card tile ${on ? 'on' : ''}" data-toggle="${eid}">
+        <div class="icon-circle">${on ? '◐' : '○'}</div>
+        <div class="info">
+          <div class="name">${name}</div>
+          <div class="state">${on ? 'Aan' : 'Uit'}</div>
+        </div>
+        <div class="switch"></div>
+      </div>
+    `;
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // VIEW: Zonnepanelen
+  // ──────────────────────────────────────────────────────────────────
+  renderZon(c) {
+    const power = parseFloat(c.state('sensor.zonnepanelen_vermogen')) || 0;
+    const max = 6000;
+    const angle = Math.min(180, (power / max) * 180);
+    const rad = (angle - 180) * Math.PI / 180;
+    const x = 100 + 80 * Math.cos(rad);
+    const y = 110 + 80 * Math.sin(rad);
+
+    return `
+      <div class="view active">
+        <div class="hero">
+          <h1>Zonnepanelen</h1>
+          <p>Status <span class="accent">${c.state('sensor.zonnepanelen_status') || '—'}</span> · limiet <span class="accent">${c.state('sensor.zonnepanelen_limiet_percentage') || '—'}%</span></p>
+        </div>
+
+        <div class="grid grid-4">
+          <div class="card stat">
+            <div class="label">Nu</div>
+            <div><span class="figure">${formatNumber(power, 0)}</span><span class="unit">W</span></div>
+          </div>
+          <div class="card stat">
+            <div class="label">Vandaag</div>
+            <div><span class="figure">${formatNumber(c.state('sensor.sma_dagopbrengst'), 0)}</span><span class="unit">kWh</span></div>
+          </div>
+          <div class="card stat">
+            <div class="label">Totaal</div>
+            <div><span class="figure">${formatNumber(c.state('sensor.sma_totale_opbrengst'), 0)}</span><span class="unit">kWh</span></div>
+          </div>
+          <div class="card stat">
+            <div class="label">Limiet</div>
+            <div><span class="figure">${c.state('sensor.zonnepanelen_limiet_percentage') || '—'}</span><span class="unit">%</span></div>
+          </div>
+        </div>
+
+        <div class="subsection-title">Vermogen</div>
+        <div class="card gauge">
+          <svg viewBox="0 0 200 130">
+            <path d="M 20 110 A 80 80 0 0 1 180 110" stroke="#46443F" stroke-width="14" fill="none" stroke-linecap="round" />
+            <path d="M 20 110 A 80 80 0 0 1 ${20 + 160 * (angle / 180)} ${110 - Math.sin(angle * Math.PI / 180) * 80}" stroke="#C96342" stroke-width="14" fill="none" stroke-linecap="round" />
+            <line x1="100" y1="110" x2="${x}" y2="${y}" stroke="#F0EEE6" stroke-width="2" stroke-linecap="round" />
+            <circle cx="100" cy="110" r="5" fill="#F0EEE6" />
+          </svg>
+          <div class="gauge-value">${formatNumber(power, 0)} W</div>
+          <div class="gauge-label">van 6 000 W</div>
+        </div>
+
+        <h2 class="section-title">Limiet</h2>
+        <div class="pills">
+          <div class="pill primary" data-script="script.zonnepanelen_aanzetten" data-confirm="Op 100% zetten?">
+            <span class="pill-icon">☀</span><span class="pill-label">100%</span>
+          </div>
+          <div class="pill secondary" data-script="script.zonnepanelen_50_procent" data-confirm="Op 50% zetten?">
+            <span class="pill-icon">◐</span><span class="pill-label">50%</span>
+          </div>
+          <div class="pill ghost" data-script="script.zonnepanelen_uitschakelen" data-confirm="Volledig uit?">
+            <span class="pill-icon">⏻</span><span class="pill-label">Uit</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // VIEW: Lampen
+  // ──────────────────────────────────────────────────────────────────
+  renderLampen(c) {
+    const switches = ['switch.woonkamerlamp', 'switch.overkappinglamp', 'switch.opritlamp', 'switch.spotjes_overkapping'];
+    return `
+      <div class="view active">
+        <div class="hero">
+          <h1>Verlichting & schema's</h1>
+          <p>Schakel handmatig of laat ze op tijd draaien.</p>
+        </div>
+
+        <div class="subsection-title">Lampen</div>
+        <div class="grid">
+          ${switches.map(eid => this._lampTile(c, eid)).join('')}
+        </div>
+
+        <div class="subsection-title">Woonkamer schema</div>
+        <div class="card timer">
+          ${this._timerRow(c, 'input_datetime.woonkamerlamp_on_time', 'Aan om')}
+          ${this._timerRow(c, 'input_datetime.woonkamerlamp_off_time', 'Uit om')}
+        </div>
+
+        <div class="subsection-title">Buitenlampen schema</div>
+        <div class="card timer">
+          ${this._timerRow(c, 'input_datetime.buitenlampen_on_time', 'Aan om')}
+          ${this._timerRow(c, 'input_datetime.buitenlampen_off_time', 'Uit om')}
+        </div>
+      </div>
+    `;
+  }
+
+  _timerRow(c, eid, label) {
+    const t = c.state(eid) || '00:00:00';
+    const hhmm = t.substring(0, 5);
+    return `
+      <div class="row">
+        <span class="name">${label}</span>
+        <input type="time" value="${hhmm}" data-time="${eid}" />
+      </div>
+    `;
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // VIEW: Afval
+  // ──────────────────────────────────────────────────────────────────
+  renderAfval(c) {
+    const items = [
+      { eid: 'sensor.pmd', label: 'PMD', desc: 'Plastic, metaal & drinkpakken' },
+      { eid: 'sensor.restafval', label: 'Restafval', desc: 'Niet recyclebaar' },
+      { eid: 'sensor.papier', label: 'Papier', desc: 'Karton & papier' },
+    ];
+    const tomorrowItems = items.filter(i => c.state(i.eid) === 'Morgen');
+
+    return `
+      <div class="view active">
+        <div class="hero">
+          <h1>Afvalkalender</h1>
+          <p>Volgende ophaaldagen volgens de gemeentekalender.</p>
+        </div>
+
+        ${tomorrowItems.length ? `
+          <div class="alert">
+            <h2>✱ Morgen buitenzetten</h2>
+            <p>${tomorrowItems.map(i => i.label).join(' · ')}</p>
+          </div>
+        ` : ''}
+
+        <div class="grid grid-3">
+          ${items.map(i => `
+            <div class="card stat">
+              <div class="label">${i.label}</div>
+              <div><span class="figure small">${c.state(i.eid) || '—'}</span></div>
+              <div class="delta">${i.desc}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // VIEW: Weer
+  // ──────────────────────────────────────────────────────────────────
+  renderWeer(c) {
+    const forecast = c.attr('weather.forecast_home', 'forecast') || [];
+    const days = forecast.slice(0, 5).map(f => {
+      const d = new Date(f.datetime);
+      const dow = ['Zon','Maa','Din','Woe','Don','Vrij','Zat'][d.getDay()];
+      return `
+        <div class="day">
+          <div class="dow">${dow}</div>
+          <div class="ico">${weatherIcon(f.condition)}</div>
+          <div class="hi">${Math.round(f.temperature)}°</div>
+          <div class="lo">${Math.round(f.templow || f.temperature - 5)}°</div>
+        </div>
+      `;
+    }).join('');
+
+    const target = c.attr('climate.woonkamer', 'temperature') || 22;
+    const current = c.attr('climate.woonkamer', 'current_temperature') || 21;
+    const ratio = Math.min(1, Math.max(0, (current - 10) / 20));
+
+    return `
+      <div class="view active">
+        <div class="hero">
+          <h1>Weer & klimaat</h1>
+          <p>Het is nu <span class="accent">${c.attr('weather.forecast_home', 'temperature') || '—'}°C</span> · ${c.state('weather.forecast_home') || '—'}. Binnen op ${current}°C.</p>
+        </div>
+
+        <div class="subsection-title">Thermostaat</div>
+        <div class="card thermostat">
+          <div class="ring" style="background: conic-gradient(var(--claude-primary) 0% ${ratio * 100}%, var(--claude-surface-3) ${ratio * 100}% 100%);">
+            <div class="temp">${current}°</div>
+          </div>
+          <div style="font-family: var(--serif); font-size: 16px;">Woonkamer</div>
+          <div style="color: var(--claude-muted); font-size: 12px; margin-top: 4px;">Doel ${target}° · ${c.state('climate.woonkamer') || '—'}</div>
+        </div>
+
+        ${days ? `
+          <div class="subsection-title">5-daagse</div>
+          <div class="card">
+            <div class="forecast">${days}</div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // VIEW: Benzine
+  // ──────────────────────────────────────────────────────────────────
+  renderBenzine(c) {
+    return `
+      <div class="view active">
+        <div class="hero">
+          <h1>Brandstof</h1>
+          <p>Euro 95 (E10) bij <span class="accent">DE</span> en <span class="accent">BE</span> grenstankstations.</p>
+        </div>
+
+        <h2 class="section-title">⚐ Duitsland</h2>
+        <div class="grid grid-2">
+          <div class="card stat">
+            <div class="label">OIL · Steyler 157</div>
+            <div><span class="figure">${formatNumber(c.state('sensor.oil_steyler_strasse_157_euro_95_loodvrij_e10'), 3)}</span><span class="unit">€/L</span></div>
+            <div class="delta">Euro 95 · E10</div>
+          </div>
+          <div class="card stat">
+            <div class="label">Shell · Steyler 179</div>
+            <div><span class="figure">${formatNumber(c.state('sensor.shell_steyler_str_179_euro_95_loodvrij_e10'), 3)}</span><span class="unit">€/L</span></div>
+            <div class="delta">Euro 95 · E10</div>
+          </div>
+        </div>
+
+        <h2 class="section-title">⚑ België</h2>
+        <div class="grid grid-3">
+          <div class="card stat">
+            <div class="label">Postcode 3640</div>
+            <div><span class="figure">${formatNumber(c.state('sensor.carbu_com_super95_3640_price'), 3)}</span><span class="unit">€/L</span></div>
+            <div class="delta">Goedkoopste in postcode</div>
+          </div>
+          <div class="card stat">
+            <div class="label">5 km</div>
+            <div><span class="figure">${formatNumber(c.state('sensor.carbu_com_super95_3640_5km'), 3)}</span><span class="unit">€/L</span></div>
+            <div class="delta">Beste in 5 km</div>
+          </div>
+          <div class="card stat">
+            <div class="label">10 km</div>
+            <div><span class="figure">${formatNumber(c.state('sensor.carbu_com_super95_3640_10km'), 3)}</span><span class="unit">€/L</span></div>
+            <div class="delta">Beste in 10 km</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+const app = new App();
+window.app = app;
+</script>
+</body>
+</html>
