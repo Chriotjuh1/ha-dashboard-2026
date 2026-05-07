@@ -133,13 +133,12 @@ claude_dark:
   mush-control-border-radius: "12px"
   mush-control-height: "42px"
 
-  # ── Card-mod global injectie (Google Fonts + body styles) ────
-  # Vereist: card-mod (HACS). Zonder card-mod blijft het thema werken,
-  # alleen de fonts vallen terug op systeem-stack.
+  # ── Card-mod global injectie (Google Fonts + claude classes) ──
+  # Vereist card-mod (HACS). De .claude-* classes worden gebruikt
+  # in markdown-cards van het Claude dashboard.
   card-mod-theme: claude_dark
   card-mod-root-yaml: |
     ".": |
-      @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..600&family=Inter:wght@300..600&display=swap');
       html, body {
         font-family: var(--claude-font-sans);
         letter-spacing: -0.005em;
@@ -148,4 +147,134 @@ claude_dark:
     ".": |
       hui-view, hui-sections-view {
         padding-top: 8px !important;
+      }
+  card-mod-card-yaml: |
+    "ha-markdown $": |
+      /* ── Heroes ── */
+      .claude-hero-title {
+        font-family: 'Fraunces', Georgia, serif !important;
+        font-weight: 400 !important;
+        font-size: clamp(34px, 7vw, 52px) !important;
+        line-height: 1.05 !important;
+        letter-spacing: -0.02em !important;
+        color: var(--claude-cream) !important;
+        margin: 0 0 10px 0 !important;
+        display: block !important;
+      }
+      .claude-hero-sub {
+        font-family: 'Inter', sans-serif !important;
+        font-size: 14px !important;
+        color: var(--claude-muted) !important;
+        line-height: 1.5 !important;
+        display: block !important;
+        margin: 0 !important;
+      }
+      .claude-accent { color: var(--claude-primary) !important; }
+
+      /* ── Section titles ── */
+      .claude-section-title {
+        font-family: 'Fraunces', Georgia, serif !important;
+        font-weight: 400 !important;
+        font-size: 26px !important;
+        letter-spacing: -0.01em !important;
+        color: var(--claude-cream) !important;
+        margin: 16px 4px 8px !important;
+        display: block !important;
+      }
+
+      /* ── Stat cards ── */
+      .claude-label {
+        font-size: 11px !important;
+        font-weight: 500 !important;
+        letter-spacing: 0.08em !important;
+        text-transform: uppercase !important;
+        color: var(--claude-muted) !important;
+        margin: 0 0 10px 0 !important;
+        display: block !important;
+      }
+      .claude-figure {
+        font-family: 'Fraunces', Georgia, serif !important;
+        font-size: 32px !important;
+        font-weight: 400 !important;
+        line-height: 1 !important;
+        letter-spacing: -0.02em !important;
+        color: var(--claude-cream) !important;
+      }
+      .claude-figure-small {
+        font-family: 'Fraunces', Georgia, serif !important;
+        font-size: 22px !important;
+        font-weight: 400 !important;
+        line-height: 1 !important;
+        letter-spacing: -0.02em !important;
+        color: var(--claude-cream) !important;
+      }
+      .claude-unit {
+        font-size: 13px !important;
+        color: var(--claude-muted) !important;
+        margin-left: 4px !important;
+      }
+      .claude-delta {
+        font-size: 12px !important;
+        color: var(--claude-primary) !important;
+        margin-top: 6px !important;
+        display: block !important;
+      }
+      .claude-delta-muted { color: var(--claude-muted) !important; }
+      .claude-delta-cream { color: var(--claude-cream-dim) !important; }
+
+      /* ── Person row ── */
+      .claude-persons {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr 1fr !important;
+        gap: 10px !important;
+      }
+      .claude-person {
+        background: var(--claude-surface) !important;
+        border: 1px solid var(--claude-border) !important;
+        border-radius: 16px !important;
+        padding: 18px 12px !important;
+        text-align: center !important;
+      }
+      .claude-avatar {
+        width: 56px !important;
+        height: 56px !important;
+        border-radius: 50% !important;
+        margin: 0 auto 10px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-family: 'Fraunces', Georgia, serif !important;
+        font-size: 22px !important;
+        font-weight: 400 !important;
+        color: #F0EEE6 !important;
+      }
+      .claude-avatar-cj { background: linear-gradient(135deg, #C96342, #A84F32) !important; }
+      .claude-avatar-mj { background: linear-gradient(135deg, #7BA7C9, #4A6E8A) !important; }
+      .claude-avatar-ej { background: linear-gradient(135deg, #7FB069, #4A7B4A) !important; }
+      .claude-name {
+        font-family: 'Fraunces', Georgia, serif !important;
+        font-size: 16px !important;
+        color: var(--claude-cream) !important;
+        display: block !important;
+      }
+      .claude-state {
+        font-size: 11px !important;
+        color: var(--claude-muted) !important;
+        margin-top: 2px !important;
+        display: block !important;
+      }
+
+      /* ── Alert ── */
+      .claude-alert-title {
+        font-family: 'Fraunces', Georgia, serif !important;
+        font-size: 22px !important;
+        font-weight: 400 !important;
+        color: var(--claude-cream) !important;
+        display: block !important;
+        margin-bottom: 4px !important;
+      }
+      .claude-alert-body {
+        font-size: 13px !important;
+        color: var(--claude-cream-dim) !important;
+        display: block !important;
       }
