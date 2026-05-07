@@ -12,8 +12,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..600&family=Inter:wght@300..600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Leaflet 1.9.4 with SRI integrity hashes (supply-chain protection) -->
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin="anonymous" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+          crossorigin="anonymous"></script>
   <style>
     :root {
       --claude-bg: #262624;
@@ -759,10 +765,20 @@ function weatherIcon(cond) {
   };
   return map[cond] || '◐';
 }
+// HTML-escape voor veilige string-interpolatie in template literals.
+// Gebruik voor ELKE waarde die uit Home Assistant komt (state, attribuut)
+// en in een innerHTML/template terechtkomt. Voorkomt XSS via een gecompromitteerde
+// integratie die <script> in friendly_name / media_title zou injecteren.
+const _ESC_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, m => _ESC_MAP[m]);
+}
+
 function formatNumber(n, decimals = 0) {
   if (n === '' || n === undefined || n === null) return '—';
   const num = parseFloat(n);
-  if (isNaN(num)) return n;
+  if (isNaN(num)) return '—';   // never return raw HA string (XSS hardening)
   return num.toLocaleString('nl-NL', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
@@ -867,7 +883,7 @@ class App {
           <label for="token">Long-lived access token</label>
           <input id="token" type="password" placeholder="eyJ0eXAi..." />
           <p class="help">Maak een token aan in Home Assistant: profiel rechtsonder → tabblad <strong>Beveiliging</strong> → onderaan <strong>"Aanmaken token"</strong>.</p>
-          ${error ? `<p class="err">${error}</p>` : ''}
+          ${error ? `<p class="err">${esc(error)}</p>` : ''}
           <button id="connect">Verbinden</button>
         </div>
       </div>
@@ -916,6 +932,17 @@ class App {
       benzine: () => this.renderBenzine(c),
     };
 
+    // Stash de levende Leaflet-map-DOM voor de innerHTML-replace zodat we
+    // 'm na de render kunnen herplaatsen — voorkomt flikkering en
+    // onnodige Leaflet-herinitialisatie bij elke state-update.
+    let mapStash = null;
+    if (this._mapInstance) {
+      const live = this.root.querySelector('#claude-map');
+      if (live && this._mapInstance.getContainer && this._mapInstance.getContainer() === live) {
+        mapStash = live;
+      }
+    }
+
     const viewHtml = (views[this.activeView] || views.start)();
 
     this.root.innerHTML = `
@@ -926,6 +953,18 @@ class App {
         </nav>
       </div>
     `;
+
+    // Herplaats de gestashde map als we nog op start staan en er een placeholder is.
+    if (mapStash && this.activeView === 'start') {
+      const slot = this.root.querySelector('#claude-map');
+      if (slot) {
+        slot.replaceWith(mapStash);
+        // Geef Leaflet een tick om de container-grootte opnieuw te meten.
+        setTimeout(() => {
+          if (this._mapInstance) this._mapInstance.invalidateSize();
+        }, 0);
+      }
+    }
 
     this.attachInteractions();
   }
@@ -1013,6 +1052,20 @@ class App {
     const mapEl = this.root.querySelector('#claude-map');
     if (!mapEl || typeof L === 'undefined') return;
 
+    // Skip als we al een levende instance hebben op precies deze container.
+    // Render() herplaatst de gestashde map-DOM, dus dezelfde mapEl-referentie
+    // overleeft cross-render. Bij view-wissel/orphan: opruimen en re-init.
+    if (this._mapInstance && this._mapInstance.getContainer) {
+      const container = this._mapInstance.getContainer();
+      if (container === mapEl && container.isConnected) {
+        this._mapInstance.invalidateSize();
+        return;
+      }
+      // Orphaned instance: vrijgeven voor we een nieuwe maken.
+      try { this._mapInstance.remove(); } catch (_) {}
+      this._mapInstance = null;
+    }
+
     const persons = [
       { eid: 'person.chris_joosten', name: 'Chris', initials: 'CJ', color: '#C96342' },
       { eid: 'person.marion_joosten', name: 'Marion', initials: 'MJ', color: '#7BA7C9' },
@@ -1045,10 +1098,11 @@ class App {
     points.forEach(p => {
       const html = `<div style="width:34px; height:34px; border-radius:50%; background: linear-gradient(135deg, ${p.color}, rgba(0,0,0,0.4)); display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-size:14px; color:#F0EEE6; box-shadow:0 4px 12px rgba(0,0,0,0.4); border: 2px solid #262624;">${p.initials}</div>`;
       const icon = L.divIcon({ html, className: 'claude-map-pin', iconSize: [34, 34], iconAnchor: [17, 17] });
-      L.marker([p.lat, p.lon], { icon }).addTo(map).bindPopup(`<b>${p.name}</b>`);
+      L.marker([p.lat, p.lon], { icon }).addTo(map).bindPopup(`<b>${esc(p.name)}</b>`);
       bounds.push([p.lat, p.lon]);
     });
     if (bounds.length > 1) map.fitBounds(bounds, { padding: [40, 40] });
+    this._mapInstance = map;
   }
 
   // ──────────────────────────────────────────────────────────────────
@@ -1067,7 +1121,7 @@ class App {
       <div class="view active">
         <div class="hero">
           <h1>${getGreeting('Chris')}</h1>
-          <p>${getDateLabel()} · <span class="accent">${c.state('weather.forecast_home') || 'helder'}</span> · ${c.attr('weather.forecast_home', 'temperature') || '—'}°C</p>
+          <p>${getDateLabel()} · <span class="accent">${esc(c.state('weather.forecast_home')) || 'helder'}</span> · ${formatNumber(c.attr('weather.forecast_home', 'temperature'), 0)}°C</p>
         </div>
 
         <div class="grid grid-3">
@@ -1090,12 +1144,12 @@ class App {
           <div class="card stat">
             <div class="label">Buiten</div>
             <div><span class="figure">${formatNumber(c.attr('weather.forecast_home', 'temperature'), 0)}</span><span class="unit">°C</span></div>
-            <div class="delta">${c.state('weather.forecast_home') || '—'}</div>
+            <div class="delta">${esc(c.state('weather.forecast_home')) || '—'}</div>
           </div>
           <div class="card stat">
             <div class="label">Volgend afval</div>
             <div><span class="figure small">PMD</span></div>
-            <div class="delta cream">${c.state('sensor.pmd') || '—'}</div>
+            <div class="delta cream">${esc(c.state('sensor.pmd')) || '—'}</div>
           </div>
           <div class="card stat">
             <div class="label">Lampen</div>
@@ -1118,17 +1172,17 @@ class App {
   _personStateLabel(s) {
     if (s === 'home') return 'Thuis';
     if (s === 'not_home') return 'Onderweg';
-    return s || '—';
+    return esc(s) || '—';
   }
 
   _lampTile(c, eid) {
     const on = c.isOn(eid);
     const name = c.attr(eid, 'friendly_name') || eid.split('.')[1];
     return `
-      <div class="card tile ${on ? 'on' : ''}" data-toggle="${eid}">
+      <div class="card tile ${on ? 'on' : ''}" data-toggle="${esc(eid)}">
         <div class="icon-circle">${on ? '◐' : '○'}</div>
         <div class="info">
-          <div class="name">${name}</div>
+          <div class="name">${esc(name)}</div>
           <div class="state">${on ? 'Aan' : 'Uit'}</div>
         </div>
         <div class="switch"></div>
@@ -1156,7 +1210,7 @@ class App {
       <div class="view active">
         <div class="hero">
           <h1>Zonnepanelen</h1>
-          <p>Status <span class="accent">${c.state('sensor.zonnepanelen_status') || '—'}</span> · limiet <span class="accent">${c.state('sensor.zonnepanelen_limiet_percentage') || '—'}%</span></p>
+          <p>Status <span class="accent">${esc(c.state('sensor.zonnepanelen_status')) || '—'}</span> · limiet <span class="accent">${esc(c.state('sensor.zonnepanelen_limiet_percentage')) || '—'}%</span></p>
         </div>
 
         <div class="grid grid-4">
@@ -1174,7 +1228,7 @@ class App {
           </div>
           <div class="card stat">
             <div class="label">Limiet</div>
-            <div><span class="figure">${c.state('sensor.zonnepanelen_limiet_percentage') || '—'}</span><span class="unit">%</span></div>
+            <div><span class="figure">${esc(c.state('sensor.zonnepanelen_limiet_percentage')) || '—'}</span><span class="unit">%</span></div>
           </div>
         </div>
 
@@ -1237,7 +1291,13 @@ class App {
     const artist = c.attr(spotify, 'media_artist') || '';
     const album = c.attr(spotify, 'media_album_name') || '';
     const art = c.attr(spotify, 'entity_picture');
-    const artUrl = art ? (art.startsWith('http') ? art : this.client.url + art) : '';
+    // Veilige URL-validatie: alleen http(s)-prefix of relatief pad accepteren,
+    // anders kan een kwaadaardige integratie javascript:/data:-URLs injecteren.
+    let artUrl = '';
+    if (art) {
+      const candidate = art.startsWith('http') ? art : this.client.url + art;
+      if (/^https?:\/\//i.test(candidate)) artUrl = candidate;
+    }
     const position = parseFloat(c.attr(spotify, 'media_position')) || 0;
     const duration = parseFloat(c.attr(spotify, 'media_duration')) || 0;
     const progressPct = duration > 0 ? Math.min(100, (position / duration) * 100) : 0;
@@ -1264,18 +1324,18 @@ class App {
       <div class="view active">
         <div class="hero">
           <h1>Media</h1>
-          <p>${state === 'playing' ? 'Speelt nu' : state === 'paused' ? 'Gepauzeerd' : 'Inactief'} · ${spotify.replace('media_player.', '')}</p>
+          <p>${state === 'playing' ? 'Speelt nu' : state === 'paused' ? 'Gepauzeerd' : 'Inactief'} · ${esc(spotify.replace('media_player.', ''))}</p>
         </div>
 
         <div class="media-card">
           <div class="album-art">
-            ${artUrl ? `<img src="${artUrl}" alt="album art" />` : '<span class="empty-art">♫</span>'}
+            ${artUrl ? `<img src="${esc(artUrl)}" alt="album art" />` : '<span class="empty-art">♫</span>'}
           </div>
           <div class="media-info">
             <div class="now">${state === 'playing' ? 'Speelt nu' : state === 'paused' ? 'Gepauzeerd' : 'Inactief'}</div>
-            <div class="title">${title}</div>
-            ${artist ? `<div class="artist">${artist}</div>` : ''}
-            ${album ? `<div class="album">${album}</div>` : ''}
+            <div class="title">${esc(title)}</div>
+            ${artist ? `<div class="artist">${esc(artist)}</div>` : ''}
+            ${album ? `<div class="album">${esc(album)}</div>` : ''}
 
             ${duration > 0 ? `
               <div class="progress-bar"><div style="width: ${progressPct}%"></div></div>
@@ -1286,28 +1346,28 @@ class App {
             ` : '<div class="progress-bar"><div style="width:0%"></div></div>'}
 
             <div class="media-controls">
-              <button data-mp-shuffle="${spotify}" class="${shuffle ? '' : 'muted'}" title="Shuffle">
+              <button data-mp-shuffle="${esc(spotify)}" class="${shuffle ? '' : 'muted'}" title="Shuffle">
                 <svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
               </button>
-              <button data-mp-prev="${spotify}" title="Vorige">
+              <button data-mp-prev="${esc(spotify)}" title="Vorige">
                 <svg viewBox="0 0 24 24"><path d="M19 20L9 12l10-8v16zM5 19V5h2v14H5z"/></svg>
               </button>
-              <button class="play" data-mp-toggle="${spotify}" title="${playing ? 'Pauze' : 'Afspelen'}">
+              <button class="play" data-mp-toggle="${esc(spotify)}" title="${playing ? 'Pauze' : 'Afspelen'}">
                 ${playing
                   ? '<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>'
                   : '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'}
               </button>
-              <button data-mp-next="${spotify}" title="Volgende">
+              <button data-mp-next="${esc(spotify)}" title="Volgende">
                 <svg viewBox="0 0 24 24"><path d="M5 4l10 8-10 8V4zm12 1h2v14h-2z"/></svg>
               </button>
-              <button data-mp-mute="${spotify}" class="${muted ? '' : 'muted'}" title="Mute">
+              <button data-mp-mute="${esc(spotify)}" class="${muted ? '' : 'muted'}" title="Mute">
                 <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.06A4.5 4.5 0 0 0 16.5 12z"/></svg>
               </button>
             </div>
 
             <div class="volume">
               <span class="vol-label">Vol</span>
-              <input type="range" min="0" max="100" value="${volumePct}" data-mp-volume="${spotify}" />
+              <input type="range" min="0" max="100" value="${volumePct}" data-mp-volume="${esc(spotify)}" />
               <span class="vol-label">${volumePct}%</span>
             </div>
           </div>
@@ -1322,11 +1382,11 @@ class App {
               const name = c.attr(eid, 'friendly_name') || eid.replace('media_player.', '');
               const t = c.attr(eid, 'media_title');
               return `
-                <div class="card tile ${playing ? 'on' : ''}" data-mp-toggle="${eid}">
+                <div class="card tile ${playing ? 'on' : ''}" data-mp-toggle="${esc(eid)}">
                   <div class="icon-circle">♫</div>
                   <div class="info">
-                    <div class="name">${name}</div>
-                    <div class="state">${t || (s === 'off' ? 'Uit' : s === 'idle' ? 'Stand-by' : s)}</div>
+                    <div class="name">${esc(name)}</div>
+                    <div class="state">${esc(t || (s === 'off' ? 'Uit' : s === 'idle' ? 'Stand-by' : s))}</div>
                   </div>
                 </div>
               `;
@@ -1371,11 +1431,13 @@ class App {
 
   _timerRow(c, eid, label) {
     const t = c.state(eid) || '00:00:00';
-    const hhmm = t.substring(0, 5);
+    // Forceer HH:MM-shape; voorkom dat een gecompromitteerde input_datetime
+    // arbitraire content terugkrijgt naar HTML.
+    const safeHhmm = /^\d{2}:\d{2}/.test(t) ? t.substring(0, 5) : '00:00';
     return `
       <div class="row">
-        <span class="name">${label}</span>
-        <input type="time" value="${hhmm}" data-time="${eid}" />
+        <span class="name">${esc(label)}</span>
+        <input type="time" value="${safeHhmm}" data-time="${esc(eid)}" />
       </div>
     `;
   }
@@ -1409,7 +1471,7 @@ class App {
           ${items.map(i => `
             <div class="card stat">
               <div class="label">${i.label}</div>
-              <div><span class="figure small">${c.state(i.eid) || '—'}</span></div>
+              <div><span class="figure small">${esc(c.state(i.eid)) || '—'}</span></div>
               <div class="delta">${i.desc}</div>
             </div>
           `).join('')}
@@ -1444,16 +1506,16 @@ class App {
       <div class="view active">
         <div class="hero">
           <h1>Weer & klimaat</h1>
-          <p>Het is nu <span class="accent">${c.attr('weather.forecast_home', 'temperature') || '—'}°C</span> · ${c.state('weather.forecast_home') || '—'}. Binnen op ${current}°C.</p>
+          <p>Het is nu <span class="accent">${formatNumber(c.attr('weather.forecast_home', 'temperature'), 0)}°C</span> · ${esc(c.state('weather.forecast_home')) || '—'}. Binnen op ${formatNumber(current, 0)}°C.</p>
         </div>
 
         <div class="subsection-title">Thermostaat</div>
         <div class="card thermostat">
           <div class="ring" style="background: conic-gradient(var(--claude-primary) 0% ${ratio * 100}%, var(--claude-surface-3) ${ratio * 100}% 100%);">
-            <div class="temp">${current}°</div>
+            <div class="temp">${formatNumber(current, 0)}°</div>
           </div>
           <div style="font-family: var(--serif); font-size: 16px;">Woonkamer</div>
-          <div style="color: var(--claude-muted); font-size: 12px; margin-top: 4px;">Doel ${target}° · ${c.state('climate.woonkamer') || '—'}</div>
+          <div style="color: var(--claude-muted); font-size: 12px; margin-top: 4px;">Doel ${formatNumber(target, 0)}° · ${esc(c.state('climate.woonkamer')) || '—'}</div>
         </div>
 
         ${days ? `
