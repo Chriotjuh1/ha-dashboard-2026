@@ -46,6 +46,7 @@
       letter-spacing: -0.005em;
       min-height: 100vh;
       overscroll-behavior: none;
+      overflow-x: hidden;
     }
 
     /* ── Login ───────────────────────────────────────────────── */
@@ -196,8 +197,9 @@
       .grid-3 { grid-template-columns: repeat(2, 1fr); }
       .grid-4 { grid-template-columns: repeat(2, 1fr); }
     }
-    @media (max-width: 720px) {
-      .grid-3 { grid-template-columns: 1fr 1fr; }
+    @media (max-width: 480px) {
+      .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .grid-2 { grid-template-columns: 1fr; }
     }
 
     /* ── Stat ────────────────────────────────────────────────── */
@@ -267,8 +269,13 @@
       background: rgba(201, 99, 66, 0.18);
       color: var(--claude-primary);
     }
-    .tile .info { flex: 1; min-width: 0; }
-    .tile .info .name { font-size: 14px; }
+    .tile .info { flex: 1; min-width: 0; overflow: hidden; }
+    .tile .info .name {
+      font-size: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .tile .info .state { font-size: 11px; color: var(--claude-muted); }
     .switch {
       width: 32px; height: 18px;
