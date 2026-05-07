@@ -130,3 +130,42 @@ meer — alles werkt direct.
 | `claude-success` | `#7FB069` | Status OK |
 | `claude-warning` | `#E8B86E` | Waarschuwing |
 | `claude-danger` | `#D96D6D` | Alarm |
+
+## Standalone Webapp (panel_iframe)
+
+Naast het native Lovelace dashboard biedt dit project ook een **volledig zelfstandige
+webapp** — een single-page app gebouwd in vanilla JavaScript + WebSocket, geoptimaliseerd voor mobiel.
+
+### Installatie
+
+1. **Webapp installeren:**
+   - Kopieer de inhoud van `webapp/` (index.html, manifest.json, icon.svg) naar `<config>/www/dashboard/`
+   - Kopieer `www/claude-fonts.js` naar `<config>/www/claude-fonts.js`
+
+2. **panel_iframe in configuration.yaml toevoegen:**
+   
+   ```yaml
+   panel_iframe:
+     joosten:
+       title: Thuis
+       icon: mdi:hexagon-multiple
+       url: /local/dashboard/
+       require_admin: false
+
+   frontend:
+     themes: !include_dir_merge_named themes
+     extra_module_url:
+       - /local/claude-fonts.js
+   ```
+
+3. **Herstart Home Assistant**
+   - Settings → System → **Restart Home Assistant**
+   - "Thuis" verschijnt in de zijbalk als native panel (niet in Dashboards)
+
+### Voordelen webapp
+
+- **Sneller laden** — geen Lovelace overhead
+- **Volledig responsief** — geoptimaliseerd voor HA Companion app (portrait)
+- **Real-time updates** — WebSocket-verbinding (niet polling)
+- **PWA-capable** — installeerbaar op home screen
+- **Gestroomlijnde UI** — bottom-nav op mobiel, 7 views (Start, Zonne, Media, Lampen, Afval, Weer, Benzine)
