@@ -17,10 +17,9 @@ lovelace:
       icon: mdi:hexagon-multiple
       show_in_sidebar: true
       filename: dashboards/claude_dashboard.yaml
-
-panel_iframe:
-  joosten:
-    title: Thuis
-    icon: mdi:hexagon-multiple
-    url: /local/dashboard/
-    require_admin: false
+    joosten-app:
+      mode: yaml
+      title: Thuis
+      icon: mdi:hexagon-multiple
+      show_in_sidebar: true
+      filename: dashboards/joosten_app.yaml

@@ -131,10 +131,10 @@ meer — alles werkt direct.
 | `claude-warning` | `#E8B86E` | Waarschuwing |
 | `claude-danger` | `#D96D6D` | Alarm |
 
-## Standalone Webapp (panel_iframe)
+## Standalone Webapp (Thuis dashboard)
 
 Naast het native Lovelace dashboard biedt dit project ook een **volledig zelfstandige
-webapp** — een single-page app gebouwd in vanilla JavaScript + WebSocket, geoptimaliseerd voor mobiel.
+webapp** — een single-page app gebouwd in vanilla JavaScript + WebSocket, geoptimaliseerd voor mobiel. Wordt geladen als Lovelace dashboard via een iframe-card wrapper (`joosten_app.yaml`).
 
 ### Installatie
 
@@ -142,25 +142,26 @@ webapp** — een single-page app gebouwd in vanilla JavaScript + WebSocket, geop
    - Kopieer de inhoud van `webapp/` (index.html, manifest.json, icon.svg) naar `<config>/www/dashboard/`
    - Kopieer `www/claude-fonts.js` naar `<config>/www/claude-fonts.js`
 
-2. **panel_iframe in configuration.yaml toevoegen:**
+2. **Dashboard wrapper installeren:**
+   - Kopieer `dashboards/joosten_app.yaml` naar `<config>/dashboards/joosten_app.yaml`
+
+3. **In configuration.yaml toevoegen** (zie `configuration_snippet.yaml`):
    
    ```yaml
-   panel_iframe:
-     joosten:
-       title: Thuis
-       icon: mdi:hexagon-multiple
-       url: /local/dashboard/
-       require_admin: false
-
-   frontend:
-     themes: !include_dir_merge_named themes
-     extra_module_url:
-       - /local/claude-fonts.js
+   lovelace:
+     mode: storage
+     dashboards:
+       joosten-app:
+         mode: yaml
+         title: Thuis
+         icon: mdi:hexagon-multiple
+         show_in_sidebar: true
+         filename: dashboards/joosten_app.yaml
    ```
 
-3. **Herstart Home Assistant**
+4. **Herstart Home Assistant**
    - Settings → System → **Restart Home Assistant**
-   - "Thuis" verschijnt in de zijbalk als native panel (niet in Dashboards)
+   - "Thuis" verschijnt in de zijbalk als dashboard met de webapp full-screen
 
 ### Voordelen webapp
 
