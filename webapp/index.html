@@ -1228,8 +1228,19 @@ class App {
     const shuffle = c.attr(spotify, 'shuffle');
     const muted = c.attr(spotify, 'is_volume_muted');
 
-    // Other media players (speakers)
-    const others = allMedia.filter(eid => eid !== spotify);
+    // Other media players (speakers) — alleen deze 4 tonen, gededupliceerd op friendly_name
+    const allowedSpeakers = ['Logeerkamer', 'Boven', 'Keuken', 'Woonkamer-TV'];
+    const seen = new Set();
+    const others = allMedia
+      .filter(eid => eid !== spotify)
+      .filter(eid => c.state(eid) !== 'unavailable')
+      .filter(eid => {
+        const name = c.attr(eid, 'friendly_name') || '';
+        if (!allowedSpeakers.includes(name)) return false;
+        if (seen.has(name)) return false;
+        seen.add(name);
+        return true;
+      });
 
     return `
       <div class="view active">
