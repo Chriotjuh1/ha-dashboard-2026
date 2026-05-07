@@ -418,9 +418,16 @@
       padding: 4px;
       display: flex;
       justify-content: space-around;
-      z-index: 100;
+      z-index: 9999;
       padding-bottom: max(4px, env(safe-area-inset-bottom));
     }
+    /* Houd Leaflet onder de fixed nav (Leaflet tiles gebruiken z-index 200-700) */
+    .leaflet-container,
+    .leaflet-pane,
+    .leaflet-top,
+    .leaflet-bottom,
+    .leaflet-control { z-index: 1 !important; }
+    .leaflet-popup-pane { z-index: 50 !important; }
     .tabbar button {
       all: unset;
       flex: 1;
