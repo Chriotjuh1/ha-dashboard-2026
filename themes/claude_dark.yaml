@@ -123,10 +123,22 @@ claude_dark:
   mdc-dialog-heading-ink-color: "var(--claude-cream)"
   mdc-dialog-content-ink-color: "var(--claude-cream-dim)"
   mdc-theme-surface: "var(--claude-surface)"
+  mdc-theme-on-surface: "var(--claude-cream)"
+  mdc-theme-text-primary-on-background: "var(--claude-cream)"
+  mdc-theme-text-secondary-on-background: "var(--claude-muted)"
   mdc-menu-surface-fill-color: "var(--claude-surface-2)"
-  mdc-list-item__primary-text_-_color: "var(--claude-cream)"
-  mdc-list-item__secondary-text_-_color: "var(--claude-muted)"
+  mdc-list-item-text-color: "var(--claude-cream)"
+  mdc-list-item-graphic-color: "var(--claude-cream-dim)"
+  mdc-list-item-meta-color: "var(--claude-muted)"
   ha-dialog-border-radius: "20px"
+
+  # ── Snackbar / toast / "configuratie gewijzigd" banner ────────
+  mdc-snackbar-background-color: "var(--claude-surface)"
+  mdc-snackbar-color: "var(--claude-cream)"
+  mdc-snackbar-action-color: "var(--claude-primary)"
+
+  # ── Buttons (default text color) ──────────────────────────────
+  mdc-button-color: "var(--claude-cream)"
 
   # ── Card headers (titles van entities-card, history-graph, etc.) ─
   ha-card-header-color: "var(--claude-cream)"
