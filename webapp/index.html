@@ -396,7 +396,8 @@
       padding-bottom: max(8px, env(safe-area-inset-bottom));
       display: flex;
       justify-content: space-around;
-      z-index: 9999;
+      z-index: 2147483647;        /* int max — niet te overrulen */
+      isolation: isolate;          /* eigen stacking context, immuun voor parent transforms */
     }
     @media (min-width: 768px) {
       .tabbar {
@@ -410,13 +411,21 @@
         padding: 6px 4px;
       }
     }
-    /* Houd Leaflet onder de fixed nav (Leaflet tiles gebruiken z-index 200-700) */
+    /* Houd Leaflet onder de fixed nav. Defensieve override: ALLE leaflet
+       sub-panes naar z-index 0, anders glippen marker-icons / popups erdoor. */
     .leaflet-container,
     .leaflet-pane,
+    .leaflet-tile-pane,
+    .leaflet-overlay-pane,
+    .leaflet-shadow-pane,
+    .leaflet-marker-pane,
+    .leaflet-tooltip-pane,
+    .leaflet-popup-pane,
+    .leaflet-marker-icon,
+    .leaflet-control-container,
     .leaflet-top,
     .leaflet-bottom,
-    .leaflet-control { z-index: 1 !important; }
-    .leaflet-popup-pane { z-index: 50 !important; }
+    .leaflet-control { z-index: 0 !important; }
     .tabbar button {
       all: unset;
       flex: 1;
@@ -595,6 +604,10 @@
       border-radius: 16px;
       overflow: hidden;
       background: var(--claude-surface);
+      position: relative;
+      z-index: 0;
+      isolation: isolate;       /* Leaflet stacking blijft binnen deze container */
+      contain: layout paint;
     }
     .leaflet-container {
       background: var(--claude-bg-deep) !important;
