@@ -44,25 +44,36 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-    /* Geen height-constraints: laat het document natuurlijk groeien
-       en scrollen op de viewport. */
+    /* Flexbox layout: body neemt exact viewport-hoogte, .app scrollt intern,
+       .tabbar zit in de natuurlijke flow eronder en is altijd zichtbaar.
+       Reden: position:fixed binnen iOS-iframes plakt niet aan de viewport;
+       deze layout omzeilt dat probleem volledig. */
     html, body {
       background: var(--claude-bg);
       color: var(--claude-cream);
       font-family: var(--sans);
       font-size: 14px;
       letter-spacing: -0.005em;
-      overflow-x: hidden;
-      -webkit-overflow-scrolling: touch;
+      height: 100vh;          /* fallback voor iOS Safari < 15.4 */
+      height: 100dvh;
+      overflow: hidden;
     }
     body {
-      min-height: 100vh;
-      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+    #root {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;          /* nodig voor flex-children om te kunnen krimpen */
     }
 
     /* ── Login ───────────────────────────────────────────────── */
     .login {
-      min-height: 100vh;
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
       display: grid;
       place-items: center;
       padding: 24px;
@@ -140,16 +151,20 @@
     }
 
     /* ── App layout ──────────────────────────────────────────── */
-    /* padding-top houdt rekening met safe-area op iPhones met
-       notch; padding-bottom groter dan tabbar-hoogte (~70-90px)
-       plus home-indicator safe-area */
+    /* .app is de scroll-container (flex: 1). Tabbar zit eronder als sibling
+       en heeft eigen safe-area; padding-bottom hier is alleen ademruimte
+       boven de tabbar. */
     .app {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      width: 100%;
       max-width: 1400px;
       margin: 0 auto;
-      padding: max(16px, env(safe-area-inset-top)) 16px calc(110px + env(safe-area-inset-bottom));
+      padding: max(16px, env(safe-area-inset-top)) 16px 16px;
     }
     @media (min-width: 871px) {
-      .app { padding: 32px 48px calc(110px + env(safe-area-inset-bottom)); }
+      .app { padding: 32px 48px 16px; }
     }
 
     /* ── Hero ────────────────────────────────────────────────── */
@@ -385,15 +400,12 @@
     }
 
     /* ── Bottom nav ──────────────────────────────────────────── */
-    /* Op desktop: drijvend pill onderaan met margin */
-    /* Op mobiel: vol-breed gepind onderaan zodat hij altijd
-       binnen de viewport blijft (ook in iframe-wrappers) */
+    /* Tabbar zit in de natuurlijke flexbox-flow als sibling van .app.
+       Niet meer position:fixed (faalde in iOS-iframes) — flex-shrink: 0
+       garandeert dat 'ie altijd zichtbaar is onderaan, ongeacht scroll-staat
+       binnen .app. */
     .tabbar {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      margin: 0 auto;
+      flex-shrink: 0;
       background: rgba(31, 30, 28, 0.92);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
@@ -402,17 +414,13 @@
       padding-bottom: max(8px, env(safe-area-inset-bottom));
       display: flex;
       justify-content: space-around;
-      z-index: 2147483647;        /* int max — niet te overrulen */
-      isolation: isolate;          /* eigen stacking context, immuun voor parent transforms */
+      isolation: isolate;
     }
     @media (min-width: 768px) {
       .tabbar {
-        bottom: 16px;
-        left: 16px;
-        right: 16px;
         max-width: 600px;
+        margin: 0 auto 16px;
         border: 1px solid var(--claude-border);
-        border-top: 1px solid var(--claude-border);
         border-radius: 22px;
         padding: 6px 4px;
       }
@@ -948,10 +956,10 @@ class App {
     this.root.innerHTML = `
       <div class="app">
         ${viewHtml}
-        <nav class="tabbar">
-          ${this.renderNav()}
-        </nav>
       </div>
+      <nav class="tabbar">
+        ${this.renderNav()}
+      </nav>
     `;
 
     // Herplaats de gestashde map als we nog op start staan en er een placeholder is.
