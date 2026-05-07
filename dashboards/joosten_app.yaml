@@ -14,19 +14,36 @@ views:
     cards:
       - type: iframe
         url: /local/dashboard/index.html
-        aspect_ratio: 100%
+        # aspect_ratio = 0 + card-mod override stopt HA's
+        # padding-bottom wrapper, anders blijft de iframe een
+        # vierkant (400px op mobiel = navbar onder beeld)
+        aspect_ratio: '0'
         card_mod:
           style: |
             ha-card {
-              background: transparent !important;
+              background: var(--claude-bg) !important;
               border: none !important;
               box-shadow: none !important;
               padding: 0 !important;
               margin: 0 !important;
+              border-radius: 0 !important;
               height: 100vh !important;
+              max-height: 100vh !important;
+              overflow: hidden !important;
+            }
+            ha-card > * {
+              padding-bottom: 0 !important;
+              height: 100vh !important;
+              max-height: 100vh !important;
+              position: relative !important;
+              overflow: hidden !important;
             }
             iframe {
+              position: absolute !important;
+              top: 0 !important;
+              left: 0 !important;
+              width: 100% !important;
+              height: 100% !important;
               border: none !important;
-              height: 100vh !important;
-              min-height: 100vh !important;
+              background: var(--claude-bg) !important;
             }

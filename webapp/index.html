@@ -128,13 +128,15 @@
     }
 
     /* ── App layout ──────────────────────────────────────────── */
+    /* padding-bottom moet groter zijn dan tabbar-hoogte (~70-90px)
+       plus safe-area op iPhones met home-indicator */
     .app {
       max-width: 1400px;
       margin: 0 auto;
-      padding: 16px 16px 100px;
+      padding: 16px 16px calc(110px + env(safe-area-inset-bottom));
     }
     @media (min-width: 871px) {
-      .app { padding: 32px 48px 32px; }
+      .app { padding: 32px 48px calc(110px + env(safe-area-inset-bottom)); }
     }
 
     /* Top bar (mobile only) */
@@ -403,23 +405,36 @@
     }
 
     /* ── Bottom nav ──────────────────────────────────────────── */
+    /* Op desktop: drijvend pill onderaan met margin */
+    /* Op mobiel: vol-breed gepind onderaan zodat hij altijd
+       binnen de viewport blijft (ook in iframe-wrappers) */
     .tabbar {
       position: fixed;
-      bottom: 12px;
-      left: 12px;
-      right: 12px;
-      max-width: 600px;
+      left: 0;
+      right: 0;
+      bottom: 0;
       margin: 0 auto;
-      background: rgba(31, 30, 28, 0.85);
+      background: rgba(31, 30, 28, 0.92);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      border: 1px solid var(--claude-border);
-      border-radius: 22px;
-      padding: 4px;
+      border-top: 1px solid var(--claude-border);
+      padding: 6px 4px;
+      padding-bottom: max(8px, env(safe-area-inset-bottom));
       display: flex;
       justify-content: space-around;
       z-index: 9999;
-      padding-bottom: max(4px, env(safe-area-inset-bottom));
+    }
+    @media (min-width: 768px) {
+      .tabbar {
+        bottom: 16px;
+        left: 16px;
+        right: 16px;
+        max-width: 600px;
+        border: 1px solid var(--claude-border);
+        border-top: 1px solid var(--claude-border);
+        border-radius: 22px;
+        padding: 6px 4px;
+      }
     }
     /* Houd Leaflet onder de fixed nav (Leaflet tiles gebruiken z-index 200-700) */
     .leaflet-container,
