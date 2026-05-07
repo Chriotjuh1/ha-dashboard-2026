@@ -1,7 +1,7 @@
 {
-  "name": "Claude Dashboard",
-  "short_name": "Claude",
-  "description": "Modern Home Assistant dashboard in Claude design",
+  "name": "Joosten Dashboard",
+  "short_name": "Joosten",
+  "description": "Smart home dashboard voor Familie Joosten",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",

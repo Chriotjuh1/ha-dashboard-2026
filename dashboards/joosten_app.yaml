@@ -1,0 +1,32 @@
+################################################################################
+# Joosten App — full-screen wrapper voor de standalone webapp
+# Eén panel-view met een iframe naar /local/dashboard/
+# Wanneer je de HA Companion app op je telefoon opent en dit dashboard als
+# standaard hebt ingesteld, krijg je de webapp full-screen te zien.
+################################################################################
+
+title: Joosten
+views:
+  - title: Joosten
+    path: app
+    icon: mdi:hexagon-multiple
+    panel: true
+    cards:
+      - type: iframe
+        url: /local/dashboard/index.html
+        aspect_ratio: 100%
+        card_mod:
+          style: |
+            ha-card {
+              background: transparent !important;
+              border: none !important;
+              box-shadow: none !important;
+              padding: 0 !important;
+              margin: 0 !important;
+              height: 100vh !important;
+            }
+            iframe {
+              border: none !important;
+              height: 100vh !important;
+              min-height: 100vh !important;
+            }

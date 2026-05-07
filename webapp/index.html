@@ -6,12 +6,14 @@
   <meta name="theme-color" content="#262624" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Claude" />
+  <meta name="apple-mobile-web-app-title" content="Joosten" />
   <link rel="manifest" href="manifest.json" />
-  <title>Claude</title>
+  <title>Joosten</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..600&family=Inter:wght@300..600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     :root {
       --claude-bg: #262624;
@@ -482,6 +484,146 @@
       color: var(--claude-muted);
     }
 
+    /* ── Media player ────────────────────────────────────────── */
+    .media-card {
+      background: var(--claude-surface);
+      border: 1px solid var(--claude-border);
+      border-radius: 20px;
+      padding: 24px;
+      display: grid;
+      gap: 20px;
+    }
+    @media (min-width: 720px) {
+      .media-card { grid-template-columns: 280px 1fr; align-items: center; }
+    }
+    .album-art {
+      width: 100%;
+      aspect-ratio: 1;
+      max-width: 280px;
+      margin: 0 auto;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--claude-surface-2), var(--claude-surface-3));
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.3);
+    }
+    .album-art img { width: 100%; height: 100%; object-fit: cover; }
+    .album-art .empty-art { font-size: 48px; color: var(--claude-muted-2, #6B6661); }
+    .media-info .now { font-size: 11px; color: var(--claude-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .media-info .title { font-family: var(--serif); font-size: 28px; font-weight: 400; line-height: 1.2; margin: 4px 0 6px; letter-spacing: -0.01em; }
+    .media-info .artist { font-size: 14px; color: var(--claude-cream-dim); }
+    .media-info .album { font-size: 12px; color: var(--claude-muted); margin-top: 2px; }
+
+    .progress-bar {
+      margin: 16px 0 8px;
+      height: 4px;
+      background: var(--claude-surface-3);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-bar > div {
+      height: 100%;
+      background: var(--claude-primary);
+      transition: width 1s linear;
+    }
+    .progress-times {
+      display: flex; justify-content: space-between;
+      font-size: 11px; color: var(--claude-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .media-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 12px;
+    }
+    .media-controls button {
+      all: unset;
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      display: grid; place-items: center;
+      cursor: pointer;
+      color: var(--claude-cream);
+      transition: background 200ms, transform 150ms;
+    }
+    .media-controls button:hover { background: var(--claude-surface-2); }
+    .media-controls button:active { transform: scale(0.92); }
+    .media-controls button.play {
+      width: 56px; height: 56px;
+      background: var(--claude-primary);
+      color: var(--claude-cream);
+    }
+    .media-controls button.play:hover { background: var(--claude-primary-soft); }
+    .media-controls button.muted { color: var(--claude-muted); }
+    .media-controls svg { width: 22px; height: 22px; fill: currentColor; }
+    .media-controls button.play svg { width: 26px; height: 26px; }
+
+    .volume {
+      margin-top: 16px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .volume input[type="range"] {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 4px;
+      background: var(--claude-surface-3);
+      border-radius: 2px;
+      outline: none;
+    }
+    .volume input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--claude-primary);
+      cursor: pointer;
+    }
+    .volume input[type="range"]::-moz-range-thumb {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--claude-primary);
+      cursor: pointer;
+      border: none;
+    }
+    .volume .vol-label { font-size: 11px; color: var(--claude-muted); min-width: 32px; text-align: right; font-variant-numeric: tabular-nums; }
+    .speaker-list { display: grid; gap: 10px; margin-top: 8px; }
+
+    /* ── Family map ──────────────────────────────────────────── */
+    #claude-map {
+      height: 320px;
+      width: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      background: var(--claude-surface);
+    }
+    .leaflet-container {
+      background: var(--claude-bg-deep) !important;
+      font-family: var(--sans);
+    }
+    .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+      background: var(--claude-surface) !important;
+      color: var(--claude-cream) !important;
+      border: 1px solid var(--claude-border);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .leaflet-popup-content { font-family: var(--sans); font-size: 13px; margin: 10px 14px; }
+    .leaflet-control-zoom a {
+      background: var(--claude-surface) !important;
+      color: var(--claude-cream) !important;
+      border: 1px solid var(--claude-border) !important;
+    }
+    .leaflet-control-zoom a:hover { background: var(--claude-surface-2) !important; }
+    .leaflet-control-attribution {
+      background: rgba(31,30,28,0.7) !important;
+      color: var(--claude-muted) !important;
+      font-size: 10px;
+    }
+    .claude-map-pin { background: transparent !important; border: none !important; }
+
     .view { display: none; }
     .view.active { display: block; }
 
@@ -565,6 +707,17 @@ class HAClient {
     this._send({ id: ++this.id, type: 'call_service', domain, service, service_data: data });
   }
 
+  async fetchHistory(entityId, hours = 24) {
+    const since = new Date(Date.now() - hours * 3600 * 1000).toISOString();
+    const url = `${this.url}/api/history/period/${since}?filter_entity_id=${entityId}&minimal_response&no_attributes`;
+    try {
+      const res = await fetch(url, { headers: { 'Authorization': `Bearer ${this.token}` } });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return (data && data[0]) ? data[0] : [];
+    } catch (e) { return []; }
+  }
+
   state(eid) { return this.states[eid] ? this.states[eid].state : ''; }
   attr(eid, a) { return this.states[eid] && this.states[eid].attributes ? this.states[eid].attributes[a] : ''; }
   isOn(eid) { return this.state(eid) === 'on'; }
@@ -604,6 +757,51 @@ function formatNumber(n, decimals = 0) {
   return num.toLocaleString('nl-NL', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
+function formatTime(seconds) {
+  const s = Math.max(0, Math.floor(seconds || 0));
+  const m = Math.floor(s / 60);
+  const ss = s % 60;
+  return `${m}:${ss.toString().padStart(2, '0')}`;
+}
+
+// SVG line chart — points are {t: Date, v: number}
+function lineChart(points, width = 600, height = 140, color = '#C96342') {
+  if (!points || points.length < 2) {
+    return `<div style="height:${height}px; display:grid; place-items:center; color:var(--claude-muted); font-size:12px;">Geen historische data</div>`;
+  }
+  const minT = points[0].t.getTime();
+  const maxT = points[points.length - 1].t.getTime();
+  const tRange = Math.max(1, maxT - minT);
+  const values = points.map(p => p.v);
+  const minV = Math.min(...values, 0);
+  const maxV = Math.max(...values);
+  const vRange = Math.max(1, maxV - minV);
+  const padTop = 12, padBottom = 12;
+  const innerH = height - padTop - padBottom;
+  const xy = points.map(p => {
+    const x = ((p.t.getTime() - minT) / tRange) * width;
+    const y = padTop + innerH - ((p.v - minV) / vRange) * innerH;
+    return [x, y];
+  });
+  const linePath = xy.map(([x, y], i) => `${i ? 'L' : 'M'} ${x.toFixed(1)} ${y.toFixed(1)}`).join(' ');
+  const fillPath = linePath + ` L ${width} ${height - padBottom} L 0 ${height - padBottom} Z`;
+  const id = 'g' + Math.random().toString(36).slice(2, 8);
+  return `
+    <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" style="width:100%; height:${height}px;">
+      <defs>
+        <linearGradient id="${id}" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="${color}" stop-opacity="0.4"/>
+          <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d="${fillPath}" fill="url(#${id})" />
+      <path d="${linePath}" stroke="${color}" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+      <text x="6" y="14" font-size="10" fill="var(--claude-muted)" font-family="Inter,sans-serif">${formatNumber(maxV, 0)}</text>
+      <text x="6" y="${height - 4}" font-size="10" fill="var(--claude-muted)" font-family="Inter,sans-serif">${formatNumber(minV, 0)}</text>
+    </svg>
+  `;
+}
+
 // ════════════════════════════════════════════════════════════════════════
 // App
 // ════════════════════════════════════════════════════════════════════════
@@ -612,11 +810,25 @@ class App {
     this.root = document.getElementById('root');
     this.activeView = location.hash.replace('#', '') || 'start';
     this.client = null;
+    this._history = {};      // cached history per entity
+    this._historyFetching = new Set();
     window.addEventListener('hashchange', () => {
       this.activeView = location.hash.replace('#', '') || 'start';
       this.render();
     });
     this.init();
+  }
+
+  async _ensureHistory(entityId, hours = 24) {
+    const key = `${entityId}|${hours}`;
+    if (this._history[key] || this._historyFetching.has(key)) return;
+    this._historyFetching.add(key);
+    const raw = await this.client.fetchHistory(entityId, hours);
+    const points = raw.map(s => ({ t: new Date(s.last_changed || s.last_updated), v: parseFloat(s.state) }))
+                       .filter(p => !isNaN(p.v) && !isNaN(p.t.getTime()));
+    this._history[key] = points;
+    this._historyFetching.delete(key);
+    if (this.activeView === 'zon') this.render();
   }
 
   async init() {
@@ -639,8 +851,8 @@ class App {
     this.root.innerHTML = `
       <div class="login">
         <div class="login-box">
-          <h1>Claude</h1>
-          <p>Verbind met je Home Assistant instance om je smart-home dashboard te tonen.</p>
+          <h1>Joosten</h1>
+          <p>Verbind met je Home Assistant instance om het smart-home dashboard te tonen.</p>
           <label for="url">Home Assistant URL</label>
           <input id="url" type="text" placeholder="https://homeassistant.chrisjoosten.nl" />
           <label for="token">Long-lived access token</label>
@@ -688,6 +900,7 @@ class App {
     const views = {
       start: () => this.renderStart(c),
       zon: () => this.renderZon(c),
+      media: () => this.renderMedia(c),
       lampen: () => this.renderLampen(c),
       afval: () => this.renderAfval(c),
       weer: () => this.renderWeer(c),
@@ -695,7 +908,7 @@ class App {
     };
 
     const titles = {
-      start: 'Claude', zon: 'Zonnepanelen', lampen: 'Lampen',
+      start: 'Joosten', zon: 'Zonnepanelen', media: 'Media', lampen: 'Lampen',
       afval: 'Afval', weer: 'Weer', benzine: 'Benzine',
     };
 
@@ -728,6 +941,7 @@ class App {
     const items = [
       { path: 'start', label: 'Start', icon: '⌂' },
       { path: 'zon', label: 'Zon', icon: '☀' },
+      { path: 'media', label: 'Media', icon: '♫' },
       { path: 'lampen', label: 'Lampen', icon: '◐' },
       { path: 'afval', label: 'Afval', icon: '♺' },
       { path: 'weer', label: 'Weer', icon: '☁' },
@@ -764,6 +978,84 @@ class App {
         this.callService('input_datetime', 'set_datetime', { entity_id: eid, time: input.value });
       });
     });
+
+    // Media player controls
+    this.root.querySelectorAll('[data-mp-toggle]').forEach(btn => {
+      btn.addEventListener('click', () => this.callService('media_player', 'media_play_pause', { entity_id: btn.dataset.mpToggle }));
+    });
+    this.root.querySelectorAll('[data-mp-next]').forEach(btn => {
+      btn.addEventListener('click', () => this.callService('media_player', 'media_next_track', { entity_id: btn.dataset.mpNext }));
+    });
+    this.root.querySelectorAll('[data-mp-prev]').forEach(btn => {
+      btn.addEventListener('click', () => this.callService('media_player', 'media_previous_track', { entity_id: btn.dataset.mpPrev }));
+    });
+    this.root.querySelectorAll('[data-mp-shuffle]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const eid = btn.dataset.mpShuffle;
+        const cur = this.client.attr(eid, 'shuffle');
+        this.callService('media_player', 'shuffle_set', { entity_id: eid, shuffle: !cur });
+      });
+    });
+    this.root.querySelectorAll('[data-mp-mute]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const eid = btn.dataset.mpMute;
+        const cur = this.client.attr(eid, 'is_volume_muted');
+        this.callService('media_player', 'volume_mute', { entity_id: eid, is_volume_muted: !cur });
+      });
+    });
+    this.root.querySelectorAll('[data-mp-volume]').forEach(input => {
+      input.addEventListener('change', () => {
+        const eid = input.dataset.mpVolume;
+        this.callService('media_player', 'volume_set', { entity_id: eid, volume_level: parseFloat(input.value) / 100 });
+      });
+    });
+
+    // Map (Leaflet) — init only when on start view
+    if (this.activeView === 'start') {
+      this._initMap();
+    }
+  }
+
+  _initMap() {
+    const mapEl = this.root.querySelector('#claude-map');
+    if (!mapEl || typeof L === 'undefined') return;
+
+    const persons = [
+      { eid: 'person.chris_joosten', name: 'Chris', initials: 'CJ', color: '#C96342' },
+      { eid: 'person.marion_joosten', name: 'Marion', initials: 'MJ', color: '#7BA7C9' },
+      { eid: 'person.edwin_joosten', name: 'Edwin', initials: 'EJ', color: '#7FB069' },
+    ];
+
+    const points = persons.map(p => {
+      const lat = parseFloat(this.client.attr(p.eid, 'latitude'));
+      const lon = parseFloat(this.client.attr(p.eid, 'longitude'));
+      if (isNaN(lat) || isNaN(lon)) return null;
+      return { ...p, lat, lon };
+    }).filter(Boolean);
+
+    if (!points.length) {
+      mapEl.innerHTML = '<div style="height:100%; display:grid; place-items:center; color:var(--claude-muted); font-size:13px;">Geen GPS-locaties beschikbaar voor de personen.<br><span style="font-size:11px;">Check de HA Companion app op hun telefoons.</span></div>';
+      return;
+    }
+
+    const map = L.map(mapEl, { zoomControl: false, attributionControl: false }).setView(
+      [points[0].lat, points[0].lon], 11
+    );
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19, subdomains: 'abcd',
+    }).addTo(map);
+    L.control.attribution({ position: 'bottomright', prefix: false })
+      .addAttribution('© OSM, © CARTO').addTo(map);
+    L.control.zoom({ position: 'topright' }).addTo(map);
+
+    const bounds = [];
+    points.forEach(p => {
+      const html = `<div style="width:34px; height:34px; border-radius:50%; background: linear-gradient(135deg, ${p.color}, rgba(0,0,0,0.4)); display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-size:14px; color:#F0EEE6; box-shadow:0 4px 12px rgba(0,0,0,0.4); border: 2px solid #262624;">${p.initials}</div>`;
+      const icon = L.divIcon({ html, className: 'claude-map-pin', iconSize: [34, 34], iconAnchor: [17, 17] });
+      L.marker([p.lat, p.lon], { icon }).addTo(map).bindPopup(`<b>${p.name}</b>`);
+      bounds.push([p.lat, p.lon]);
+    });
+    if (bounds.length > 1) map.fitBounds(bounds, { padding: [40, 40] });
   }
 
   // ──────────────────────────────────────────────────────────────────
@@ -823,6 +1115,9 @@ class App {
         <div class="grid grid-4">
           ${switches.map(eid => this._lampTile(c, eid)).join('')}
         </div>
+
+        <h2 class="section-title">Familie</h2>
+        <div id="claude-map"></div>
       </div>
     `;
   }
@@ -902,6 +1197,15 @@ class App {
           <div class="gauge-label">van 6 000 W</div>
         </div>
 
+        <div class="subsection-title">Verloop laatste 24 uur</div>
+        <div class="card" style="padding: 12px;">
+          ${(() => {
+            this._ensureHistory('sensor.zonnepanelen_vermogen', 24);
+            const points = this._history['sensor.zonnepanelen_vermogen|24'];
+            return points ? lineChart(points, 600, 160, '#C96342') : '<div style="height:160px; display:grid; place-items:center; color:var(--claude-muted); font-size:12px;">Laden…</div>';
+          })()}
+        </div>
+
         <h2 class="section-title">Limiet</h2>
         <div class="pills">
           <div class="pill primary" data-script="script.zonnepanelen_aanzetten" data-confirm="Op 100% zetten?">
@@ -914,6 +1218,117 @@ class App {
             <span class="pill-icon">⏻</span><span class="pill-label">Uit</span>
           </div>
         </div>
+      </div>
+    `;
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // VIEW: Media (Spotify + speakers)
+  // ──────────────────────────────────────────────────────────────────
+  renderMedia(c) {
+    // Find first available media_player entity, prefer Spotify
+    const allMedia = Object.keys(c.states).filter(eid => eid.startsWith('media_player.'));
+    const spotify = allMedia.find(eid => eid.includes('spotify')) || allMedia.find(eid => c.attr(eid, 'app_name') === 'Spotify') || allMedia[0];
+
+    if (!spotify) {
+      return `
+        <div class="view active">
+          <div class="hero"><h1>Media</h1><p>Geen media-player gevonden in Home Assistant.</p></div>
+        </div>
+      `;
+    }
+
+    const state = c.state(spotify);
+    const playing = state === 'playing';
+    const title = c.attr(spotify, 'media_title') || '—';
+    const artist = c.attr(spotify, 'media_artist') || '';
+    const album = c.attr(spotify, 'media_album_name') || '';
+    const art = c.attr(spotify, 'entity_picture');
+    const artUrl = art ? (art.startsWith('http') ? art : this.client.url + art) : '';
+    const position = parseFloat(c.attr(spotify, 'media_position')) || 0;
+    const duration = parseFloat(c.attr(spotify, 'media_duration')) || 0;
+    const progressPct = duration > 0 ? Math.min(100, (position / duration) * 100) : 0;
+    const volume = c.attr(spotify, 'volume_level');
+    const volumePct = volume !== undefined && volume !== '' ? Math.round(volume * 100) : 50;
+    const shuffle = c.attr(spotify, 'shuffle');
+    const muted = c.attr(spotify, 'is_volume_muted');
+
+    // Other media players (speakers)
+    const others = allMedia.filter(eid => eid !== spotify);
+
+    return `
+      <div class="view active">
+        <div class="hero">
+          <h1>Media</h1>
+          <p>${state === 'playing' ? 'Speelt nu' : state === 'paused' ? 'Gepauzeerd' : 'Inactief'} · ${spotify.replace('media_player.', '')}</p>
+        </div>
+
+        <div class="media-card">
+          <div class="album-art">
+            ${artUrl ? `<img src="${artUrl}" alt="album art" />` : '<span class="empty-art">♫</span>'}
+          </div>
+          <div class="media-info">
+            <div class="now">${state === 'playing' ? 'Speelt nu' : state === 'paused' ? 'Gepauzeerd' : 'Inactief'}</div>
+            <div class="title">${title}</div>
+            ${artist ? `<div class="artist">${artist}</div>` : ''}
+            ${album ? `<div class="album">${album}</div>` : ''}
+
+            ${duration > 0 ? `
+              <div class="progress-bar"><div style="width: ${progressPct}%"></div></div>
+              <div class="progress-times">
+                <span>${formatTime(position)}</span>
+                <span>${formatTime(duration)}</span>
+              </div>
+            ` : '<div class="progress-bar"><div style="width:0%"></div></div>'}
+
+            <div class="media-controls">
+              <button data-mp-shuffle="${spotify}" class="${shuffle ? '' : 'muted'}" title="Shuffle">
+                <svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+              </button>
+              <button data-mp-prev="${spotify}" title="Vorige">
+                <svg viewBox="0 0 24 24"><path d="M19 20L9 12l10-8v16zM5 19V5h2v14H5z"/></svg>
+              </button>
+              <button class="play" data-mp-toggle="${spotify}" title="${playing ? 'Pauze' : 'Afspelen'}">
+                ${playing
+                  ? '<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>'
+                  : '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'}
+              </button>
+              <button data-mp-next="${spotify}" title="Volgende">
+                <svg viewBox="0 0 24 24"><path d="M5 4l10 8-10 8V4zm12 1h2v14h-2z"/></svg>
+              </button>
+              <button data-mp-mute="${spotify}" class="${muted ? '' : 'muted'}" title="Mute">
+                <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.06A4.5 4.5 0 0 0 16.5 12z"/></svg>
+              </button>
+            </div>
+
+            <div class="volume">
+              <span class="vol-label">Vol</span>
+              <input type="range" min="0" max="100" value="${volumePct}" data-mp-volume="${spotify}" />
+              <span class="vol-label">${volumePct}%</span>
+            </div>
+          </div>
+        </div>
+
+        ${others.length ? `
+          <div class="subsection-title">Andere speakers</div>
+          <div class="speaker-list">
+            ${others.map(eid => {
+              const s = c.state(eid);
+              const playing = s === 'playing';
+              const name = c.attr(eid, 'friendly_name') || eid.replace('media_player.', '');
+              const t = c.attr(eid, 'media_title');
+              return `
+                <div class="card tile ${playing ? 'on' : ''}" data-mp-toggle="${eid}">
+                  <div class="icon-circle">♫</div>
+                  <div class="info">
+                    <div class="name">${name}</div>
+                    <div class="state">${t || (s === 'off' ? 'Uit' : s === 'idle' ? 'Stand-by' : s)}</div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        ` : ''}
       </div>
     `;
   }
