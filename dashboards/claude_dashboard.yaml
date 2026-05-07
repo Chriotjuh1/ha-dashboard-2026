@@ -1,594 +1,866 @@
 ################################################################################
-# Claude Dashboard — Home Assistant 2026
-# Modern sections-view dashboard, dark Claude-themed
+# Claude Dashboard — Home Assistant
+# Design taal: claude.ai (warm dark, koraal, Fraunces serif + Inter sans)
 #
-# Dependencies (HACS → Frontend):
+# HACS-deps (Frontend):
 #   - mushroom
 #   - mini-graph-card
-#   - bubble-card
-#   - button-card
+#   - card-mod          ← essentieel voor de Claude-website look
+#   - neerslag-card     ← reeds in gebruik
 #
-# Replace every "# CHANGEME:" entity with your own.
+# Tip: zoek op "FRAUNCES" / "INTER" om typografie globaal aan te passen.
 ################################################################################
 
 title: Claude
+
+# Herbruikbare style-snippets (YAML anchors)
+hero_style: &hero_style
+  card_mod:
+    style: |
+      ha-card {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 32px 4px 4px 4px;
+      }
+      ha-markdown {
+        padding: 0 !important;
+      }
+      ha-markdown h1 {
+        font-family: 'Fraunces', Georgia, serif;
+        font-weight: 400;
+        font-size: clamp(34px, 5vw, 52px);
+        line-height: 1.05;
+        letter-spacing: -0.02em;
+        color: var(--claude-cream);
+        margin: 0 0 12px 0;
+      }
+      ha-markdown h2 {
+        font-family: 'Fraunces', Georgia, serif;
+        font-weight: 400;
+        font-size: clamp(22px, 2.5vw, 28px);
+        line-height: 1.2;
+        letter-spacing: -0.01em;
+        color: var(--claude-cream);
+        margin: 0 0 6px 0;
+      }
+      ha-markdown p {
+        font-family: 'Inter', system-ui, sans-serif;
+        color: var(--claude-muted);
+        font-size: 16px;
+        line-height: 1.5;
+        margin: 0;
+        max-width: 680px;
+      }
+      ha-markdown .accent {
+        color: var(--claude-primary);
+      }
+
+stat_style: &stat_style
+  card_mod:
+    style: |
+      ha-card {
+        background: var(--claude-surface);
+        border: 1px solid var(--claude-border);
+        border-radius: 16px;
+        padding: 20px 22px;
+        transition: border-color 200ms ease, background 200ms ease;
+      }
+      ha-card:hover {
+        border-color: var(--claude-border-hover);
+        background: var(--claude-surface-2);
+      }
+      ha-markdown {
+        padding: 0 !important;
+      }
+      ha-markdown h3 {
+        font-family: 'Inter', system-ui, sans-serif;
+        font-size: 12px;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--claude-muted);
+        margin: 0 0 12px 0;
+      }
+      ha-markdown .figure {
+        font-family: 'Fraunces', Georgia, serif;
+        font-size: 40px;
+        font-weight: 400;
+        line-height: 1;
+        color: var(--claude-cream);
+        letter-spacing: -0.02em;
+      }
+      ha-markdown .unit {
+        font-family: 'Inter', system-ui, sans-serif;
+        font-size: 14px;
+        color: var(--claude-muted);
+        margin-left: 4px;
+      }
+      ha-markdown .delta {
+        font-family: 'Inter', system-ui, sans-serif;
+        font-size: 13px;
+        color: var(--claude-primary);
+        margin-top: 6px;
+      }
+
 views:
   # ════════════════════════════════════════════════════════════════════════════
-  # 1. HOME — overzicht
+  # 1. START
   # ════════════════════════════════════════════════════════════════════════════
-  - title: Home
+  - title: Start
     path: home
-    icon: mdi:home-variant
+    icon: mdi:home
     type: sections
     max_columns: 4
     sections:
-      # ── Welkomstrij ────────────────────────────────────────────────────────
+      # Hero — serif begroeting
       - type: grid
         column_span: 4
         cards:
-          - type: markdown
-            content: >
-              ## {% set h = now().hour %}{% if h < 6 %}Goedenacht{% elif h < 12
-              %}Goedemorgen{% elif h < 18 %}Goedemiddag{% else %}Goedenavond{%
-              endif %}, {{ user }}
+          - <<: *hero_style
+            type: markdown
+            content: |
+              # {% set h = now().hour %}{% if h < 6 %}Goedenacht{% elif h < 12 %}Goedemorgen{% elif h < 18 %}Goedemiddag{% else %}Goedenavond{% endif %}, Chris.
+              <p>{{ now().strftime('%A %-d %B') }} · <span class="accent">{{ states('weather.forecast_home') }}</span> · {{ state_attr('weather.forecast_home','temperature') }}°C buiten</p>
 
-              <span style="color: var(--claude-muted); font-size: 0.95em;">
-              {{ now().strftime('%A %d %B') }} · {{
-              states('sensor.weer_temperatuur') | default('—', true) }}°C ·
-              {{ states('weather.thuis') | default('helder', true) }}
-              </span>
+      # Personen — strakke avatar-rij
+      - type: grid
+        column_span: 4
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-person-card
+                entity: person.chris_joosten
+                layout: vertical
+                primary_info: name
+                secondary_info: state
+                icon_type: entity-picture
+                fill_container: true
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: var(--claude-surface);
+                      border: 1px solid var(--claude-border);
+                      border-radius: 16px;
+                      padding: 20px 16px;
+                    }
+                    ha-card:hover { border-color: var(--claude-border-hover); }
+                    .info .primary { font-family: 'Fraunces', Georgia, serif !important; font-weight: 400; font-size: 18px !important; }
+              - type: custom:mushroom-person-card
+                entity: person.marion_joosten
+                layout: vertical
+                primary_info: name
+                secondary_info: state
+                icon_type: entity-picture
+                fill_container: true
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: var(--claude-surface);
+                      border: 1px solid var(--claude-border);
+                      border-radius: 16px;
+                      padding: 20px 16px;
+                    }
+                    ha-card:hover { border-color: var(--claude-border-hover); }
+                    .info .primary { font-family: 'Fraunces', Georgia, serif !important; font-weight: 400; font-size: 18px !important; }
+              - type: custom:mushroom-person-card
+                entity: person.edwin_joosten
+                layout: vertical
+                primary_info: name
+                secondary_info: state
+                icon_type: entity-picture
+                fill_container: true
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: var(--claude-surface);
+                      border: 1px solid var(--claude-border);
+                      border-radius: 16px;
+                      padding: 20px 16px;
+                    }
+                    ha-card:hover { border-color: var(--claude-border-hover); }
+                    .info .primary { font-family: 'Fraunces', Georgia, serif !important; font-weight: 400; font-size: 18px !important; }
+
+      # Vandaag in cijfers — 4 stat-cards
+      - type: grid
+        column_span: 4
+        cards:
+          - type: heading
+            heading: Vandaag
+            heading_style: title
+            icon: mdi:weather-sunset
+            card_mod:
+              style: |
+                .container .title {
+                  font-family: 'Fraunces', Georgia, serif !important;
+                  font-weight: 400 !important;
+                  font-size: 28px !important;
+                  letter-spacing: -0.01em;
+                }
+          - <<: *stat_style
+            type: markdown
+            content: |
+              ### Zonneproductie
+              <span class="figure">{{ states('sensor.sma_dagopbrengst') }}</span><span class="unit">kWh</span>
+              <div class="delta">Nu {{ states('sensor.zonnepanelen_vermogen') }} W</div>
+          - <<: *stat_style
+            type: markdown
+            content: |
+              ### Buitentemperatuur
+              <span class="figure">{{ state_attr('weather.forecast_home','temperature') }}</span><span class="unit">°C</span>
+              <div class="delta">{{ states('weather.forecast_home') }}</div>
+          - <<: *stat_style
+            type: markdown
+            content: |
+              ### Volgende afval
+              {% set bins = [
+                ('PMD', states('sensor.pmd')),
+                ('Restafval', states('sensor.restafval')),
+                ('Papier', states('sensor.papier'))
+              ] %}
+              {% set next = bins | sort(attribute=1) | first %}
+              <span class="figure" style="font-size:28px;">{{ next[0] }}</span>
+              <div class="delta" style="color: var(--claude-cream-dim);">{{ next[1] }}</div>
+          - <<: *stat_style
+            type: markdown
+            content: |
+              ### Lampen aan
+              <span class="figure">{{ states.switch | selectattr('state','eq','on') | list | count }}</span>
+              <div class="delta" style="color: var(--claude-muted);">van {{ states.switch | list | count }} schakelaars</div>
+
+      # Snelle lamp-controles
+      - type: grid
+        column_span: 4
+        cards:
+          - type: heading
+            heading: Verlichting
+            heading_style: title
+            icon: mdi:lightbulb-outline
+            card_mod:
+              style: |
+                .container .title {
+                  font-family: 'Fraunces', Georgia, serif !important;
+                  font-weight: 400 !important;
+                  font-size: 28px !important;
+                  letter-spacing: -0.01em;
+                }
+          - type: tile
+            entity: switch.woonkamerlamp
+            name: Woonkamer
+            icon: mdi:sofa-outline
+          - type: tile
+            entity: switch.overkappinglamp
+            name: Overkapping
+            icon: mdi:lamps-outline
+          - type: tile
+            entity: switch.opritlamp
+            name: Oprit
+            icon: mdi:car-outline
+          - type: tile
+            entity: switch.spotjes_overkapping
+            name: Spotjes
+            icon: mdi:track-light
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # 2. ZONNEPANELEN
+  # ════════════════════════════════════════════════════════════════════════════
+  - title: Zonnepanelen
+    path: zonnepanelen
+    icon: mdi:solar-power
+    type: sections
+    max_columns: 4
+    sections:
+      - type: grid
+        column_span: 4
+        cards:
+          - <<: *hero_style
+            type: markdown
+            content: |
+              # Zonnepanelen
+              <p>Live opbrengst, opbrengstgeschiedenis en handmatige limietsturing voor de SMA-omvormer. Status nu: <span class="accent">{{ states('sensor.zonnepanelen_status') }}</span>, limiet <span class="accent">{{ states('sensor.zonnepanelen_limiet_percentage') }}%</span>.</p>
+
+      # Live cijfers
+      - type: grid
+        column_span: 4
+        cards:
+          - <<: *stat_style
+            type: markdown
+            content: |
+              ### Vermogen nu
+              <span class="figure">{{ states('sensor.zonnepanelen_vermogen') }}</span><span class="unit">W</span>
+          - <<: *stat_style
+            type: markdown
+            content: |
+              ### Vandaag
+              <span class="figure">{{ states('sensor.sma_dagopbrengst') }}</span><span class="unit">kWh</span>
+          - <<: *stat_style
+            type: markdown
+            content: |
+              ### Totaal
+              <span class="figure">{{ states('sensor.sma_totale_opbrengst') }}</span><span class="unit">kWh</span>
+          - <<: *stat_style
+            type: markdown
+            content: |
+              ### Limiet
+              <span class="figure">{{ states('sensor.zonnepanelen_limiet_percentage') }}</span><span class="unit">%</span>
+              <div class="delta">{{ states('sensor.zonnepanelen_status') }}</div>
+
+      # Gauge + grafiek
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Huidig vermogen
+            heading_style: subtitle
+            card_mod:
+              style: |
+                .container .title {
+                  font-family: 'Inter', sans-serif !important;
+                  font-size: 12px !important;
+                  letter-spacing: 0.08em;
+                  text-transform: uppercase;
+                  color: var(--claude-muted) !important;
+                }
+          - type: gauge
+            entity: sensor.zonnepanelen_vermogen
+            name: ' '
+            min: 0
+            max: 6000
+            needle: true
+            severity:
+              red: 0
+              yellow: 100
+              green: 1000
             card_mod:
               style: |
                 ha-card {
-                  background: linear-gradient(135deg,
-                    var(--claude-surface) 0%,
-                    var(--claude-surface-2) 100%);
-                  border: 1px solid rgba(217, 119, 87, 0.12);
-                  padding: 8px 12px;
+                  background: var(--claude-surface);
+                  border: 1px solid var(--claude-border);
+                  border-radius: 16px;
+                  padding: 16px;
                 }
-                ha-card h2 { margin: 0 0 4px 0; font-weight: 500; }
 
-      # ── Snelle scènes ─────────────────────────────────────────────────────
       - type: grid
         column_span: 2
         cards:
           - type: heading
-            heading: Scènes
+            heading: Verloop vandaag
             heading_style: subtitle
-            icon: mdi:palette
-          - type: horizontal-stack
-            cards:
-              - type: custom:mushroom-template-card
-                primary: Ochtend
-                secondary: 07:00
-                icon: mdi:weather-sunset-up
-                icon_color: amber
-                tap_action:
-                  action: call-service
-                  service: scene.turn_on
-                  target:
-                    entity_id: scene.ochtend  # CHANGEME: scene
-              - type: custom:mushroom-template-card
-                primary: Avond
-                secondary: warm
-                icon: mdi:weather-sunset
-                icon_color: deep-orange
-                tap_action:
-                  action: call-service
-                  service: scene.turn_on
-                  target:
-                    entity_id: scene.avond  # CHANGEME: scene
-              - type: custom:mushroom-template-card
-                primary: Film
-                secondary: dim
-                icon: mdi:movie-open
-                icon_color: red
-                tap_action:
-                  action: call-service
-                  service: scene.turn_on
-                  target:
-                    entity_id: scene.film  # CHANGEME: scene
-              - type: custom:mushroom-template-card
-                primary: Nacht
-                secondary: alles uit
-                icon: mdi:weather-night
-                icon_color: indigo
-                tap_action:
-                  action: call-service
-                  service: scene.turn_on
-                  target:
-                    entity_id: scene.nacht  # CHANGEME: scene
+            card_mod:
+              style: |
+                .container .title {
+                  font-family: 'Inter', sans-serif !important;
+                  font-size: 12px !important;
+                  letter-spacing: 0.08em;
+                  text-transform: uppercase;
+                  color: var(--claude-muted) !important;
+                }
+          - type: custom:mini-graph-card
+            entity: sensor.zonnepanelen_vermogen
+            name: ' '
+            hours_to_show: 24
+            points_per_hour: 6
+            line_width: 2
+            line_color: "#C96342"
+            smoothing: true
+            show:
+              fill: fade
+              extrema: true
+              labels: true
+              name: false
+            card_mod:
+              style: |
+                ha-card {
+                  background: var(--claude-surface);
+                  border: 1px solid var(--claude-border);
+                  border-radius: 16px;
+                  padding: 12px;
+                }
 
-      # ── Status chips ──────────────────────────────────────────────────────
-      - type: grid
-        column_span: 2
-        cards:
-          - type: heading
-            heading: Status
-            heading_style: subtitle
-            icon: mdi:information-outline
-          - type: custom:mushroom-chips-card
-            alignment: start
-            chips:
-              - type: template
-                icon: mdi:lightbulb-group
-                icon_color: amber
-                content: >
-                  {{ states.light | selectattr('state', 'eq', 'on') | list | count }}
-                  aan
-              - type: template
-                icon: mdi:thermometer
-                icon_color: deep-orange
-                content: "{{ states('sensor.huiskamer_temperatuur') }}°C"  # CHANGEME: sensor
-              - type: template
-                icon: mdi:water-percent
-                icon_color: blue
-                content: "{{ states('sensor.huiskamer_vochtigheid') }}%"  # CHANGEME: sensor
-              - type: template
-                icon: mdi:shield-check
-                icon_color: green
-                content: "Veilig"
-                tap_action:
-                  action: navigate
-                  navigation_path: /claude-dashboard/security
-              - type: template
-                icon: mdi:solar-power
-                icon_color: yellow
-                content: "{{ states('sensor.zonnepanelen_vermogen') }} W"  # CHANGEME: sensor
-
-      # ── Favoriete kamers ──────────────────────────────────────────────────
+      # Limietsturing — Claude pill-buttons
       - type: grid
         column_span: 4
         cards:
           - type: heading
-            heading: Kamers
+            heading: Limiet instellen
             heading_style: title
-            icon: mdi:floor-plan
-          - type: tile
-            entity: light.woonkamer  # CHANGEME: light group
-            name: Woonkamer
-            icon: mdi:sofa
-            features_position: bottom
-            vertical: false
-            features:
-              - type: light-brightness
-          - type: tile
-            entity: light.keuken  # CHANGEME: light group
-            name: Keuken
-            icon: mdi:silverware-fork-knife
-            features:
-              - type: light-brightness
-          - type: tile
-            entity: light.slaapkamer  # CHANGEME: light group
-            name: Slaapkamer
-            icon: mdi:bed
-            features:
-              - type: light-brightness
-          - type: tile
-            entity: light.badkamer  # CHANGEME: light group
-            name: Badkamer
-            icon: mdi:shower
-            features:
-              - type: light-brightness
+            icon: mdi:tune-vertical
+            card_mod:
+              style: |
+                .container .title {
+                  font-family: 'Fraunces', Georgia, serif !important;
+                  font-weight: 400 !important;
+                  font-size: 28px !important;
+                  letter-spacing: -0.01em;
+                }
+          - type: button
+            name: Volledig
+            icon: mdi:solar-power-variant
+            icon_height: 32px
+            tap_action:
+              action: call-service
+              service: script.zonnepanelen_aanzetten
+              confirmation:
+                text: Zonnepanelen op 100% zetten?
+            card_mod:
+              style: |
+                ha-card {
+                  background: var(--claude-primary);
+                  border: 1px solid var(--claude-primary);
+                  border-radius: 16px;
+                  padding: 24px 12px;
+                  color: var(--claude-cream) !important;
+                  transition: background 200ms ease;
+                }
+                ha-card:hover { background: var(--claude-primary-soft); }
+                ha-card .name { font-family: 'Fraunces', Georgia, serif !important; font-size: 18px !important; color: var(--claude-cream) !important; }
+                ha-card ha-icon { color: var(--claude-cream) !important; }
+          - type: button
+            name: Halve kracht
+            icon: mdi:solar-power
+            icon_height: 32px
+            tap_action:
+              action: call-service
+              service: script.zonnepanelen_50_procent
+              confirmation:
+                text: Zonnepanelen op 50% zetten?
+            card_mod:
+              style: |
+                ha-card {
+                  background: var(--claude-surface);
+                  border: 1px solid var(--claude-border-hover);
+                  border-radius: 16px;
+                  padding: 24px 12px;
+                  transition: background 200ms ease;
+                }
+                ha-card:hover { background: var(--claude-surface-2); }
+                ha-card .name { font-family: 'Fraunces', Georgia, serif !important; font-size: 18px !important; color: var(--claude-cream) !important; }
+                ha-card ha-icon { color: var(--claude-primary-soft) !important; }
+          - type: button
+            name: Uit
+            icon: mdi:power
+            icon_height: 32px
+            tap_action:
+              action: call-service
+              service: script.zonnepanelen_uitschakelen
+              confirmation:
+                text: Zonnepanelen volledig uitschakelen?
+            card_mod:
+              style: |
+                ha-card {
+                  background: transparent;
+                  border: 1px solid var(--claude-border-hover);
+                  border-radius: 16px;
+                  padding: 24px 12px;
+                  transition: border-color 200ms ease;
+                }
+                ha-card:hover { border-color: var(--claude-danger); }
+                ha-card .name { font-family: 'Fraunces', Georgia, serif !important; font-size: 18px !important; color: var(--claude-cream-dim) !important; }
+                ha-card ha-icon { color: var(--claude-muted) !important; }
+
+      # Details
+      - type: grid
+        column_span: 4
+        cards:
+          - type: heading
+            heading: Details
+            heading_style: subtitle
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: sensor.zonnepanelen_status
+                name: Status
+              - entity: sensor.zonnepanelen_limiet_percentage
+                name: Vermogenslimiet
+              - entity: sensor.sma_dc_vermogen_string_a
+                name: DC string A
+              - type: divider
+              - entity: sensor.sma_ac_vermogen
+                name: Raw AC vermogen
+              - entity: sensor.sma_limiet_percentage_raw
+                name: Raw limiet
+            card_mod:
+              style: |
+                ha-card {
+                  background: var(--claude-surface);
+                  border: 1px solid var(--claude-border);
+                  border-radius: 16px;
+                  padding: 8px 4px;
+                }
+                .card-header { font-family: 'Fraunces', Georgia, serif !important; font-weight: 400; }
 
   # ════════════════════════════════════════════════════════════════════════════
-  # 2. VERLICHTING
+  # 3. TV & KLIMAAT (lampen + schema's)
   # ════════════════════════════════════════════════════════════════════════════
-  - title: Verlichting
-    path: lights
-    icon: mdi:lightbulb-group
+  - title: TV & Klimaat
+    path: tv-klimaat
+    icon: mdi:coach-lamp
     type: sections
     max_columns: 3
     sections:
       - type: grid
+        column_span: 3
+        cards:
+          - <<: *hero_style
+            type: markdown
+            content: |
+              # Verlichting & schema's
+              <p>Schakel lampen handmatig of laat ze op de ingestelde tijden draaien.</p>
+
+      # Lampen — links
+      - type: grid
+        column_span: 1
         cards:
           - type: heading
-            heading: Beneden
-            icon: mdi:home-floor-1
-          - type: custom:mushroom-light-card
-            entity: light.woonkamer  # CHANGEME
+            heading: Lampen
+            heading_style: subtitle
+            icon: mdi:lightbulb-multiple
+          - type: tile
+            entity: switch.woonkamerlamp
             name: Woonkamer
-            show_brightness_control: true
-            show_color_control: true
-            show_color_temp_control: true
-            collapsible_controls: true
-          - type: custom:mushroom-light-card
-            entity: light.keuken  # CHANGEME
-            name: Keuken
-            show_brightness_control: true
-            collapsible_controls: true
-          - type: custom:mushroom-light-card
-            entity: light.eettafel  # CHANGEME
-            name: Eettafel
-            show_brightness_control: true
-            show_color_control: true
-            collapsible_controls: true
-          - type: custom:mushroom-light-card
-            entity: light.gang  # CHANGEME
-            name: Gang
-            show_brightness_control: true
-            collapsible_controls: true
+            icon: mdi:sofa-outline
+          - type: tile
+            entity: switch.overkappinglamp
+            name: Overkapping
+            icon: mdi:lamps-outline
+          - type: tile
+            entity: switch.opritlamp
+            name: Oprit
+            icon: mdi:car-outline
+          - type: tile
+            entity: switch.spotjes_overkapping
+            name: Spotjes overkapping
+            icon: mdi:track-light
 
+      # Schema woonkamer
       - type: grid
+        column_span: 1
         cards:
           - type: heading
-            heading: Boven
-            icon: mdi:home-floor-2
-          - type: custom:mushroom-light-card
-            entity: light.slaapkamer  # CHANGEME
-            name: Slaapkamer
-            show_brightness_control: true
-            show_color_temp_control: true
-            collapsible_controls: true
-          - type: custom:mushroom-light-card
-            entity: light.badkamer  # CHANGEME
-            name: Badkamer
-            show_brightness_control: true
-            collapsible_controls: true
-          - type: custom:mushroom-light-card
-            entity: light.werkkamer  # CHANGEME
-            name: Werkkamer
-            show_brightness_control: true
-            show_color_temp_control: true
-            collapsible_controls: true
+            heading: Woonkamer schema
+            heading_style: subtitle
+            icon: mdi:clock-outline
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: input_datetime.woonkamerlamp_on_time
+                name: Aan om
+              - entity: input_datetime.woonkamerlamp_off_time
+                name: Uit om
+            card_mod:
+              style: |
+                ha-card {
+                  background: var(--claude-surface);
+                  border: 1px solid var(--claude-border);
+                  border-radius: 16px;
+                  padding: 8px 4px;
+                }
 
+      # Schema buitenlampen
       - type: grid
+        column_span: 1
         cards:
           - type: heading
-            heading: Buiten
-            icon: mdi:tree
-          - type: custom:mushroom-light-card
-            entity: light.tuin  # CHANGEME
-            name: Tuin
-            show_brightness_control: true
-            collapsible_controls: true
-          - type: custom:mushroom-light-card
-            entity: light.terras  # CHANGEME
-            name: Terras
-            show_brightness_control: true
-            show_color_control: true
-            collapsible_controls: true
-          - type: custom:mushroom-light-card
-            entity: light.voordeur  # CHANGEME
-            name: Voordeur
-            show_brightness_control: true
-            collapsible_controls: true
+            heading: Buitenlampen schema
+            heading_style: subtitle
+            icon: mdi:weather-sunset
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: input_datetime.buitenlampen_on_time
+                name: Aan om
+              - entity: input_datetime.buitenlampen_off_time
+                name: Uit om
+            card_mod:
+              style: |
+                ha-card {
+                  background: var(--claude-surface);
+                  border: 1px solid var(--claude-border);
+                  border-radius: 16px;
+                  padding: 8px 4px;
+                }
 
   # ════════════════════════════════════════════════════════════════════════════
-  # 3. KLIMAAT
+  # 4. AFVAL
   # ════════════════════════════════════════════════════════════════════════════
-  - title: Klimaat
-    path: climate
-    icon: mdi:thermometer
+  - title: Afval
+    path: afval
+    icon: mdi:trash-can-outline
     type: sections
     max_columns: 3
     sections:
       - type: grid
-        column_span: 2
+        column_span: 3
+        cards:
+          - <<: *hero_style
+            type: markdown
+            content: |
+              # Afvalkalender
+              <p>De volgende ophaaldagen volgens de gemeentekalender.</p>
+
+      # Conditioneel: morgen buitenzetten
+      - type: grid
+        column_span: 3
+        cards:
+          - type: conditional
+            conditions:
+              - condition: or
+                conditions:
+                  - condition: state
+                    entity: sensor.pmd
+                    state: Morgen
+                  - condition: state
+                    entity: sensor.restafval
+                    state: Morgen
+                  - condition: state
+                    entity: sensor.papier
+                    state: Morgen
+            card:
+              type: markdown
+              content: |
+                ## ✱ Morgen buitenzetten
+                <p>{% if is_state('sensor.pmd','Morgen') %}PMD · {% endif %}{% if is_state('sensor.restafval','Morgen') %}Restafval · {% endif %}{% if is_state('sensor.papier','Morgen') %}Papier{% endif %}</p>
+              card_mod:
+                style: |
+                  ha-card {
+                    background: linear-gradient(135deg, rgba(201, 99, 66, 0.18) 0%, rgba(201, 99, 66, 0.04) 100%);
+                    border: 1px solid var(--claude-primary);
+                    border-radius: 16px;
+                    padding: 18px 22px;
+                  }
+                  ha-markdown { padding: 0 !important; }
+                  ha-markdown h2 {
+                    font-family: 'Fraunces', Georgia, serif !important;
+                    font-weight: 400;
+                    font-size: 24px;
+                    color: var(--claude-cream) !important;
+                    margin: 0 0 6px 0;
+                  }
+                  ha-markdown p {
+                    font-family: 'Inter', sans-serif !important;
+                    color: var(--claude-cream-dim) !important;
+                    margin: 0;
+                  }
+
+      # Drie afval-cards met serif typografie
+      - type: grid
+        column_span: 3
+        cards:
+          - <<: *stat_style
+            type: markdown
+            content: |
+              ### PMD
+              <span class="figure" style="font-size:32px;">{{ states('sensor.pmd') }}</span>
+              <div class="delta">Plastic, metaal & drinkpakken</div>
+            tap_action:
+              action: more-info
+              entity: sensor.pmd
+          - <<: *stat_style
+            type: markdown
+            content: |
+              ### Restafval
+              <span class="figure" style="font-size:32px;">{{ states('sensor.restafval') }}</span>
+              <div class="delta">Niet recyclebaar</div>
+            tap_action:
+              action: more-info
+              entity: sensor.restafval
+          - <<: *stat_style
+            type: markdown
+            content: |
+              ### Papier
+              <span class="figure" style="font-size:32px;">{{ states('sensor.papier') }}</span>
+              <div class="delta">Karton & papier</div>
+            tap_action:
+              action: more-info
+              entity: sensor.papier
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # 5. WEER
+  # ════════════════════════════════════════════════════════════════════════════
+  - title: Weer
+    path: weer
+    icon: mdi:weather-partly-cloudy
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        column_span: 3
+        cards:
+          - <<: *hero_style
+            type: markdown
+            content: |
+              # Weer & klimaat
+              <p>Het is nu <span class="accent">{{ state_attr('weather.forecast_home','temperature') }}°C</span> · {{ states('weather.forecast_home') }}. Binnen op {{ state_attr('climate.woonkamer','current_temperature') }}°C.</p>
+
+      # Thermostaat
+      - type: grid
+        column_span: 1
         cards:
           - type: heading
             heading: Thermostaat
-            icon: mdi:thermostat
-          - type: thermostat
-            entity: climate.thuis  # CHANGEME: climate
-            features:
-              - type: climate-hvac-modes
-                hvac_modes:
-                  - heat
-                  - cool
-                  - auto
-                  - 'off'
-              - type: climate-preset-modes
-                style: dropdown
-                preset_modes:
-                  - home
-                  - away
-                  - sleep
-                  - eco
+            heading_style: subtitle
+          - type: custom:mushroom-climate-card
+            entity: climate.woonkamer
+            name: Woonkamer
+            show_temperature_control: true
+            hvac_modes:
+              - 'off'
+              - cool
+              - heat
+              - fan_only
+            fill_container: true
+            card_mod:
+              style: |
+                ha-card {
+                  background: var(--claude-surface);
+                  border: 1px solid var(--claude-border);
+                  border-radius: 16px;
+                  padding: 18px;
+                }
+                .info .primary {
+                  font-family: 'Fraunces', Georgia, serif !important;
+                  font-weight: 400 !important;
+                  font-size: 18px !important;
+                }
 
+      # Forecast
       - type: grid
+        column_span: 2
         cards:
           - type: heading
-            heading: Sensoren
-            icon: mdi:radar
-          - type: custom:mushroom-template-card
-            primary: Woonkamer
-            secondary: "{{ states('sensor.woonkamer_temperatuur') }}° · {{ states('sensor.woonkamer_vochtigheid') }}%"  # CHANGEME
-            icon: mdi:sofa
-            icon_color: deep-orange
-          - type: custom:mushroom-template-card
-            primary: Slaapkamer
-            secondary: "{{ states('sensor.slaapkamer_temperatuur') }}° · {{ states('sensor.slaapkamer_vochtigheid') }}%"  # CHANGEME
-            icon: mdi:bed
-            icon_color: indigo
-          - type: custom:mushroom-template-card
-            primary: Badkamer
-            secondary: "{{ states('sensor.badkamer_temperatuur') }}° · {{ states('sensor.badkamer_vochtigheid') }}%"  # CHANGEME
-            icon: mdi:shower
-            icon_color: blue
-          - type: custom:mushroom-template-card
-            primary: Buiten
-            secondary: "{{ states('sensor.buiten_temperatuur') }}° · {{ states('sensor.weer_conditie') }}"  # CHANGEME
-            icon: mdi:weather-partly-cloudy
-            icon_color: amber
+            heading: 5-daagse voorspelling
+            heading_style: subtitle
+          - type: weather-forecast
+            entity: weather.forecast_home
+            forecast_type: daily
+            show_current: false
+            card_mod:
+              style: |
+                ha-card {
+                  background: var(--claude-surface);
+                  border: 1px solid var(--claude-border);
+                  border-radius: 16px;
+                  padding: 12px;
+                }
 
+      # Neerslag
       - type: grid
         column_span: 3
         cards:
           - type: heading
-            heading: Verloop laatste 24 uur
-            icon: mdi:chart-line
-          - type: custom:mini-graph-card
-            name: Temperatuur per kamer
-            hours_to_show: 24
-            points_per_hour: 2
-            line_width: 2
-            smoothing: true
-            entities:
-              - entity: sensor.woonkamer_temperatuur  # CHANGEME
-                name: Woonkamer
-                color: "#D97757"
-              - entity: sensor.slaapkamer_temperatuur  # CHANGEME
-                name: Slaapkamer
-                color: "#7BA7C9"
-              - entity: sensor.buiten_temperatuur  # CHANGEME
-                name: Buiten
-                color: "#7FB069"
-            show:
-              labels: true
-              labels_secondary: false
-              extrema: true
-              fill: fade
+            heading: Neerslag radar
+            heading_style: subtitle
+          - type: custom:neerslag-card
+            entity: sensor.neerslag_buienalarm_regen_data
+            title: ' '
+            card_mod:
+              style: |
+                ha-card {
+                  background: var(--claude-surface);
+                  border: 1px solid var(--claude-border);
+                  border-radius: 16px;
+                  padding: 12px;
+                }
 
   # ════════════════════════════════════════════════════════════════════════════
-  # 4. MEDIA
+  # 6. BENZINE
   # ════════════════════════════════════════════════════════════════════════════
-  - title: Media
-    path: media
-    icon: mdi:music
+  - title: Benzine
+    path: benzine
+    icon: mdi:gas-station
     type: sections
     max_columns: 3
     sections:
       - type: grid
-        column_span: 2
+        column_span: 3
         cards:
-          - type: heading
-            heading: Speelt nu
-            icon: mdi:play-circle
-          - type: custom:mushroom-media-player-card
-            entity: media_player.spotify  # CHANGEME
-            use_media_info: true
-            use_media_artwork: true
-            show_volume_level: true
-            volume_controls:
-              - volume_mute
-              - volume_set
-              - volume_buttons
-            media_controls:
-              - on_off
-              - shuffle
-              - previous
-              - play_pause_stop
-              - next
-              - repeat
-            fill_container: true
+          - <<: *hero_style
+            type: markdown
+            content: |
+              # Brandstofprijzen
+              <p>Live prijzen van Euro 95 (E10) bij grenstankstations in <span class="accent">Duitsland</span> en <span class="accent">België</span>.</p>
 
+      # Duitsland
       - type: grid
+        column_span: 3
         cards:
           - type: heading
-            heading: Speakers
-            icon: mdi:speaker
-          - type: custom:mushroom-media-player-card
-            entity: media_player.woonkamer_speaker  # CHANGEME
-            name: Woonkamer
-            icon: mdi:speaker
-            use_media_info: true
-            volume_controls:
-              - volume_set
-            media_controls:
-              - play_pause_stop
-              - previous
-              - next
-            collapsible_controls: true
-          - type: custom:mushroom-media-player-card
-            entity: media_player.keuken_speaker  # CHANGEME
-            name: Keuken
-            icon: mdi:speaker
-            use_media_info: true
-            volume_controls:
-              - volume_set
-            media_controls:
-              - play_pause_stop
-            collapsible_controls: true
-          - type: custom:mushroom-media-player-card
-            entity: media_player.slaapkamer_speaker  # CHANGEME
-            name: Slaapkamer
-            icon: mdi:speaker
-            use_media_info: true
-            volume_controls:
-              - volume_set
-            media_controls:
-              - play_pause_stop
-            collapsible_controls: true
+            heading: Duitsland
+            heading_style: title
+            icon: mdi:flag
+            card_mod:
+              style: |
+                .container .title {
+                  font-family: 'Fraunces', Georgia, serif !important;
+                  font-weight: 400 !important;
+                  font-size: 26px !important;
+                }
+          - <<: *stat_style
+            type: markdown
+            content: |
+              ### OIL · Steyler Strasse 157
+              <span class="figure">{{ states('sensor.oil_steyler_strasse_157_euro_95_loodvrij_e10') }}</span><span class="unit">€/L</span>
+              <div class="delta">Euro 95 · E10</div>
+          - <<: *stat_style
+            type: markdown
+            content: |
+              ### Shell · Steyler Str 179
+              <span class="figure">{{ states('sensor.shell_steyler_str_179_euro_95_loodvrij_e10') }}</span><span class="unit">€/L</span>
+              <div class="delta">Euro 95 · E10</div>
+
+      # België
+      - type: grid
+        column_span: 3
+        cards:
+          - type: heading
+            heading: België
+            heading_style: title
+            icon: mdi:flag-outline
+            card_mod:
+              style: |
+                .container .title {
+                  font-family: 'Fraunces', Georgia, serif !important;
+                  font-weight: 400 !important;
+                  font-size: 26px !important;
+                }
+          - <<: *stat_style
+            type: markdown
+            content: |
+              ### Carbu.com · 3640
+              <span class="figure">{{ states('sensor.carbu_com_super95_3640_price') }}</span><span class="unit">€/L</span>
+              <div class="delta">Goedkoopste in postcode 3640</div>
+          - <<: *stat_style
+            type: markdown
+            content: |
+              ### Binnen 5 km
+              <span class="figure">{{ states('sensor.carbu_com_super95_3640_5km') }}</span><span class="unit">€/L</span>
+              <div class="delta">Beste prijs in 5 km radius</div>
+          - <<: *stat_style
+            type: markdown
+            content: |
+              ### Binnen 10 km
+              <span class="figure">{{ states('sensor.carbu_com_super95_3640_10km') }}</span><span class="unit">€/L</span>
+              <div class="delta">Beste prijs in 10 km radius</div>
 
       - type: grid
         column_span: 3
         cards:
           - type: heading
-            heading: TV & sources
-            icon: mdi:television
-          - type: tile
-            entity: media_player.tv  # CHANGEME
-            name: Woonkamer TV
-            icon: mdi:television-classic
-            features:
-              - type: media-player-volume-slider
-              - type: media-player-playback
-          - type: custom:mushroom-template-card
-            primary: Netflix
-            icon: mdi:netflix
-            icon_color: red
-            tap_action:
-              action: call-service
-              service: media_player.select_source
-              target:
-                entity_id: media_player.tv  # CHANGEME
-              data:
-                source: Netflix
-          - type: custom:mushroom-template-card
-            primary: YouTube
-            icon: mdi:youtube
-            icon_color: red
-            tap_action:
-              action: call-service
-              service: media_player.select_source
-              target:
-                entity_id: media_player.tv  # CHANGEME
-              data:
-                source: YouTube
-          - type: custom:mushroom-template-card
-            primary: Spotify
-            icon: mdi:spotify
-            icon_color: green
-            tap_action:
-              action: call-service
-              service: media_player.select_source
-              target:
-                entity_id: media_player.tv  # CHANGEME
-              data:
-                source: Spotify
-
-  # ════════════════════════════════════════════════════════════════════════════
-  # 5. ENERGIE & BEVEILIGING
-  # ════════════════════════════════════════════════════════════════════════════
-  - title: Energie & Beveiliging
-    path: security
-    icon: mdi:shield-home
-    type: sections
-    max_columns: 4
-    sections:
-      # ── Live energie ──────────────────────────────────────────────────────
-      - type: grid
-        column_span: 2
-        cards:
-          - type: heading
-            heading: Live energie
-            icon: mdi:flash
-          - type: horizontal-stack
-            cards:
-              - type: custom:mushroom-template-card
-                primary: Verbruik
-                secondary: "{{ states('sensor.huidig_verbruik') }} W"  # CHANGEME
-                icon: mdi:transmission-tower
-                icon_color: |
-                  {% set v = states('sensor.huidig_verbruik') | float(0) %}
-                  {% if v > 3000 %}red{% elif v > 1500 %}orange{% else %}green{% endif %}
-                fill_container: true
-              - type: custom:mushroom-template-card
-                primary: Zon
-                secondary: "{{ states('sensor.zonnepanelen_vermogen') }} W"  # CHANGEME
-                icon: mdi:solar-power-variant
-                icon_color: amber
-                fill_container: true
-              - type: custom:mushroom-template-card
-                primary: Accu
-                secondary: "{{ states('sensor.accu_niveau') }}%"  # CHANGEME
-                icon: mdi:battery-charging
-                icon_color: deep-orange
-                fill_container: true
-          - type: custom:mini-graph-card
-            name: Energie vandaag
-            hours_to_show: 24
-            points_per_hour: 4
-            line_width: 2
-            aggregate_func: avg
+            heading: Op de kaart
+            heading_style: subtitle
+          - type: map
             entities:
-              - entity: sensor.huidig_verbruik  # CHANGEME
-                name: Verbruik
-                color: "#7BA7C9"
-              - entity: sensor.zonnepanelen_vermogen  # CHANGEME
-                name: Productie
-                color: "#E8B86E"
-            show:
-              fill: fade
-              extrema: true
-              labels: true
-
-      # ── Alarm + deuren ────────────────────────────────────────────────────
-      - type: grid
-        column_span: 2
-        cards:
-          - type: heading
-            heading: Beveiliging
-            icon: mdi:shield-home-outline
-          - type: tile
-            entity: alarm_control_panel.huis  # CHANGEME
-            name: Alarm
-            icon: mdi:shield-lock
-            features:
-              - type: alarm-modes
-                modes:
-                  - armed_home
-                  - armed_away
-                  - armed_night
-                  - disarmed
-          - type: custom:mushroom-entity-card
-            entity: lock.voordeur  # CHANGEME
-            name: Voordeur
-            icon: mdi:door
-            icon_color: |
-              {{ 'green' if is_state('lock.voordeur', 'locked') else 'red' }}
-          - type: custom:mushroom-entity-card
-            entity: binary_sensor.achterdeur  # CHANGEME
-            name: Achterdeur
-            icon: mdi:door-closed
-            icon_color: |
-              {{ 'red' if is_state('binary_sensor.achterdeur', 'on') else 'green' }}
-          - type: custom:mushroom-entity-card
-            entity: binary_sensor.garage  # CHANGEME
-            name: Garage
-            icon: mdi:garage
-            icon_color: |
-              {{ 'red' if is_state('binary_sensor.garage', 'on') else 'green' }}
-
-      # ── Camera's ─────────────────────────────────────────────────────────
-      - type: grid
-        column_span: 4
-        cards:
-          - type: heading
-            heading: Camera's
-            icon: mdi:cctv
-          - type: picture-entity
-            entity: camera.voordeur  # CHANGEME
-            name: Voordeur
-            show_state: false
-            show_name: true
-            camera_view: live
-          - type: picture-entity
-            entity: camera.achtertuin  # CHANGEME
-            name: Achtertuin
-            show_state: false
-            show_name: true
-            camera_view: live
-          - type: picture-entity
-            entity: camera.oprit  # CHANGEME
-            name: Oprit
-            show_state: false
-            show_name: true
-            camera_view: live
-          - type: picture-entity
-            entity: camera.garage  # CHANGEME
-            name: Garage
-            show_state: false
-            show_name: true
-            camera_view: live
-
-      # ── Zonnepanelen detail ──────────────────────────────────────────────
-      - type: grid
-        column_span: 4
-        cards:
-          - type: heading
-            heading: Zonnepanelen vandaag
-            icon: mdi:solar-power
-          - type: energy-distribution
-            link_dashboard: true
+              - entity: sensor.carbu_com_super95_3640_price
+              - entity: sensor.carbu_com_super95_3640_5km
+              - entity: sensor.carbu_com_super95_3640_10km
+            default_zoom: 12
+            hours_to_show: 24
+            theme_mode: dark
+            card_mod:
+              style: |
+                ha-card {
+                  background: var(--claude-surface);
+                  border: 1px solid var(--claude-border);
+                  border-radius: 16px;
+                  overflow: hidden;
+                }

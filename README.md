@@ -1,9 +1,12 @@
 # Claude Dark — Home Assistant Dashboard 2026
 
-Een modern Lovelace dashboard voor Home Assistant in de huiskleuren van Claude:
-warm dark, koraaloranje accenten, crème typografie. Gebouwd met de **sections
-view** (grid-gebaseerd, native in HA ≥ 2024.3) plus enkele populaire HACS-kaarten
-voor extra finesse.
+Een Lovelace dashboard dat de **claude.ai design taal** naar Home Assistant
+brengt: warm dark (`#262624`), koraaloranje accent (`#C96342`), crème
+typografie, **Fraunces** serif voor headings + **Inter** voor body, generous
+whitespace en bijna onzichtbare borders i.p.v. drop shadows.
+
+Gebouwd met de native **sections view** (HA ≥ 2024.3) en zwaar gebruik van
+**card-mod** om elke card de claude.ai-look te geven.
 
 ## Inhoud
 
@@ -59,38 +62,43 @@ Het dashboard gebruikt deze custom cards (allen via HACS → Frontend):
 
 | Card | Gebruik |
 | --- | --- |
-| `mushroom` | Compacte tegels voor licht, klimaat, media |
-| `mini-graph-card` | Inline grafieken voor energie en sensoren |
-| `bubble-card` | Mooie pop-up controls voor lampen |
-| `button-card` | Custom scènetegels |
+| `card-mod` | **Vereist** — geeft elke card de claude.ai look (fonts, borders, hover) |
+| `mushroom` | Compacte tegels voor personen, klimaat |
+| `mini-graph-card` | Inline grafiek voor zonneproductie |
+| `neerslag-card` | Buienalarm radar (al in gebruik) |
 
-Zonder HACS werkt 90% nog steeds — vervang in dat geval de mushroom-tegels door
-ingebouwde `tile`-cards (zelfde entity_id, andere `type:`).
+Zonder card-mod blijft het thema werken, maar valt de typografie terug op de
+systeem-font-stack en zijn hover/border-effecten basaal. **Sterk aangeraden om
+card-mod te installeren.**
 
-### 4. Entities aanpassen
+### 3b. Google Fonts
 
-Het dashboard bevat **placeholder entity_ids** zoals `light.woonkamer`,
-`sensor.zonnepanelen_vermogen`, etc. Zoek-en-vervang deze met je eigen
-entities. Alle placeholders staan tussen `# CHANGEME:` comments voor snel
-terugvinden.
+Het thema laadt automatisch **Fraunces** (serif) en **Inter** (sans) van Google
+Fonts via `card-mod-root-yaml`. Dit gebeurt via een `@import` in de root
+shadow-DOM — geen extra resource nodig. Heb je Local Network only restrictions,
+zelfhost de fonts en pas het pad in `themes/claude_dark.yaml` aan.
 
-## Schermafbeelding (referentie)
+### 4. Entities
 
-```
-┌──────────────────────────────────────────────────────────┐
-│  Goedemorgen, Chris                          21°C  ☀️    │
-├──────────────────────────────────────────────────────────┤
-│  [Verlichting]   [Klimaat]   [Media]    [Beveiliging]   │
-│                                                          │
-│  ╭──────────╮   ╭──────────╮   ╭───────────────────╮    │
-│  │ 💡 Woonk │   │ 🌡 21.4° │   │ 🎵 Now Playing    │    │
-│  │  3 aan   │   │  vochtig │   │   Bonobo - Linked │    │
-│  ╰──────────╯   ╰──────────╯   ╰───────────────────╯    │
-│                                                          │
-│  Energie vandaag           ⚡ 2.4 kW   ☀ 1.8 kW         │
-│  ▁▂▃▅▇▆▄▃▂▁▁▂▄▆▇▆▅▃▂▁                                  │
-└──────────────────────────────────────────────────────────┘
-```
+Dit dashboard is afgestemd op de entities van Chris' HA-instance:
+`sensor.zonnepanelen_*`, `sensor.sma_*`, `switch.woonkamerlamp`,
+`person.chris_joosten`, `weather.forecast_home`, `sensor.pmd|restafval|papier`,
+`climate.woonkamer`, `sensor.carbu_com_super95_3640_*`, etc. Geen placeholders
+meer — alles werkt direct.
+
+## Design taal
+
+| Element | Detail |
+| --- | --- |
+| Achtergrond | `#262624` (warm dark) |
+| Cards | `#30302E` met `1px` border `rgba(240,238,230,0.07)`, **geen schaduw** |
+| Hover | border klimt naar `rgba(240,238,230,0.14)` + iets lichtere bg |
+| Headings | Fraunces, `400 weight`, letter-spacing `-0.02em` |
+| Body | Inter, `400 weight` |
+| Cijfers | Fraunces, 32–40px voor stats |
+| Primary CTA | Vol koraal `#C96342`, hover `#D97757` |
+| Secondary CTA | Transparant met dunne border |
+| Border-radius | `16px` (cards), `12px` (inputs) |
 
 ## Kleuren-palet
 

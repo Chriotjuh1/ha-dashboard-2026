@@ -1,20 +1,32 @@
 claude_dark:
-  # ── Brand palette ─────────────────────────────────────────────
-  claude-bg: "#1F1E1B"
-  claude-surface: "#2C2A26"
-  claude-surface-2: "#36332E"
-  claude-surface-3: "#403C36"
-  claude-primary: "#D97757"
-  claude-primary-soft: "#E89B7E"
-  claude-primary-deep: "#B85F3F"
-  claude-cream: "#F4F1EA"
+  # ── Brand palette (matched aan claude.ai) ─────────────────────
+  claude-bg: "#262624"
+  claude-bg-deep: "#1F1E1C"
+  claude-surface: "#30302E"
+  claude-surface-2: "#3A3936"
+  claude-surface-3: "#46443F"
+  claude-primary: "#C96342"          # Claude signature coral
+  claude-primary-soft: "#D97757"
+  claude-primary-deep: "#A84F32"
+  claude-cream: "#F0EEE6"
   claude-cream-dim: "#D6D2C8"
-  claude-muted: "#8A8580"
-  claude-muted-2: "#6B6661"
+  claude-muted: "#A8A29E"
+  claude-muted-2: "#7A7570"
+  claude-border: "rgba(240, 238, 230, 0.07)"
+  claude-border-hover: "rgba(240, 238, 230, 0.14)"
   claude-success: "#7FB069"
   claude-warning: "#E8B86E"
   claude-danger: "#D96D6D"
   claude-info: "#7BA7C9"
+
+  # ── Typography ────────────────────────────────────────────────
+  claude-font-serif: "'Fraunces', 'Tiempos Headline', Georgia, serif"
+  claude-font-sans: "'Inter', 'Styrene', -apple-system, BlinkMacSystemFont, system-ui, sans-serif"
+  paper-font-common-base_-_font-family: "var(--claude-font-sans)"
+  paper-font-body1_-_font-family: "var(--claude-font-sans)"
+  paper-font-subhead_-_font-family: "var(--claude-font-sans)"
+  paper-font-headline_-_font-family: "var(--claude-font-serif)"
+  paper-font-title_-_font-family: "var(--claude-font-serif)"
 
   # ── Core HA tokens ────────────────────────────────────────────
   primary-color: "var(--claude-primary)"
@@ -24,33 +36,33 @@ claude_dark:
 
   primary-background-color: "var(--claude-bg)"
   secondary-background-color: "var(--claude-surface)"
-  divider-color: "rgba(244, 241, 234, 0.06)"
+  divider-color: "var(--claude-border)"
   scrollbar-thumb-color: "var(--claude-surface-3)"
 
-  # Text
   primary-text-color: "var(--claude-cream)"
   secondary-text-color: "var(--claude-muted)"
   disabled-text-color: "var(--claude-muted-2)"
   text-primary-color: "var(--claude-cream)"
   text-light-primary-color: "var(--claude-bg)"
 
-  # App / sidebar
+  # App / sidebar — flat, geen schaduwen
   app-header-background-color: "var(--claude-bg)"
   app-header-text-color: "var(--claude-cream)"
   app-header-edit-background-color: "var(--claude-surface)"
-  sidebar-background-color: "var(--claude-bg)"
+  sidebar-background-color: "var(--claude-bg-deep)"
   sidebar-text-color: "var(--claude-cream-dim)"
   sidebar-icon-color: "var(--claude-muted)"
   sidebar-selected-background-color: "var(--claude-surface)"
   sidebar-selected-text-color: "var(--claude-primary)"
   sidebar-selected-icon-color: "var(--claude-primary)"
 
-  # Cards
+  # Cards — heel subtiel, claude.ai-style
   card-background-color: "var(--claude-surface)"
   ha-card-background: "var(--claude-surface)"
-  ha-card-border-radius: "18px"
-  ha-card-border-width: "0"
-  ha-card-box-shadow: "0 1px 0 rgba(244, 241, 234, 0.04) inset, 0 8px 24px rgba(0, 0, 0, 0.35)"
+  ha-card-border-radius: "16px"
+  ha-card-border-width: "1px"
+  ha-card-border-color: "var(--claude-border)"
+  ha-card-box-shadow: "none"
 
   # State icons
   state-icon-color: "var(--claude-cream-dim)"
@@ -59,7 +71,6 @@ claude_dark:
   paper-item-icon-color: "var(--claude-cream-dim)"
   paper-item-icon-active-color: "var(--claude-primary)"
 
-  # Domain accents
   state-light-active-color: "var(--claude-primary-soft)"
   state-switch-active-color: "var(--claude-primary)"
   state-fan-active-color: "var(--claude-info)"
@@ -69,14 +80,12 @@ claude_dark:
   state-binary_sensor-active-color: "var(--claude-warning)"
   state-binary_sensor-alerting-color: "var(--claude-danger)"
 
-  # Sliders
+  # Sliders / switches
   paper-slider-active-color: "var(--claude-primary)"
   paper-slider-knob-color: "var(--claude-primary-soft)"
   paper-slider-knob-start-color: "var(--claude-primary)"
   paper-slider-pin-color: "var(--claude-primary)"
   paper-slider-secondary-color: "var(--claude-primary-deep)"
-
-  # Buttons / toggles
   switch-checked-color: "var(--claude-primary)"
   switch-checked-button-color: "var(--claude-primary-soft)"
   switch-checked-track-color: "var(--claude-primary-deep)"
@@ -85,10 +94,9 @@ claude_dark:
 
   mdc-theme-primary: "var(--claude-primary)"
   mdc-theme-secondary: "var(--claude-primary-soft)"
-  mdc-theme-on-primary: "var(--claude-bg)"
-  mdc-button-outline-color: "var(--claude-surface-3)"
+  mdc-theme-on-primary: "var(--claude-cream)"
+  mdc-button-outline-color: "var(--claude-border-hover)"
 
-  # Labels & badges
   label-badge-background-color: "var(--claude-surface-2)"
   label-badge-text-color: "var(--claude-cream)"
   label-badge-red: "var(--claude-danger)"
@@ -96,17 +104,15 @@ claude_dark:
   label-badge-blue: "var(--claude-info)"
   label-badge-yellow: "var(--claude-warning)"
 
-  # Status / errors
   error-color: "var(--claude-danger)"
   warning-color: "var(--claude-warning)"
   success-color: "var(--claude-success)"
   info-color: "var(--claude-info)"
 
-  # Code / editor surfaces
   code-editor-background-color: "var(--claude-surface)"
   markdown-code-background-color: "var(--claude-surface-2)"
 
-  # Energy graph palette (used by built-in energy cards)
+  # Energy graph palette
   energy-grid-consumption-color: "var(--claude-info)"
   energy-grid-return-color: "var(--claude-success)"
   energy-solar-color: "var(--claude-warning)"
@@ -115,14 +121,31 @@ claude_dark:
   energy-non-fossil-color: "var(--claude-success)"
 
   # Mushroom token overrides
-  mush-rgb-primary: "217, 119, 87"
-  mush-rgb-accent: "232, 155, 126"
+  mush-rgb-primary: "201, 99, 66"
+  mush-rgb-accent: "217, 119, 87"
   mush-rgb-info: "123, 167, 201"
   mush-rgb-success: "127, 176, 105"
   mush-rgb-warning: "232, 184, 110"
   mush-rgb-danger: "217, 109, 109"
-  mush-rgb-disabled: "138, 133, 128"
+  mush-rgb-disabled: "168, 162, 158"
   mush-card-primary-font-size: "15px"
   mush-card-secondary-font-size: "13px"
-  mush-control-border-radius: "14px"
-  mush-control-height: "44px"
+  mush-control-border-radius: "12px"
+  mush-control-height: "42px"
+
+  # ── Card-mod global injectie (Google Fonts + body styles) ────
+  # Vereist: card-mod (HACS). Zonder card-mod blijft het thema werken,
+  # alleen de fonts vallen terug op systeem-stack.
+  card-mod-theme: claude_dark
+  card-mod-root-yaml: |
+    ".": |
+      @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..600&family=Inter:wght@300..600&display=swap');
+      html, body {
+        font-family: var(--claude-font-sans);
+        letter-spacing: -0.005em;
+      }
+  card-mod-view-yaml: |
+    ".": |
+      hui-view, hui-sections-view {
+        padding-top: 8px !important;
+      }
