@@ -1,0 +1,17 @@
+# ─────────────────────────────────────────────────────────────────
+# Add the blocks below to your Home Assistant configuration.yaml
+# (or merge with existing keys). After saving, restart HA.
+# ─────────────────────────────────────────────────────────────────
+
+frontend:
+  themes: !include_dir_merge_named themes
+
+lovelace:
+  mode: storage
+  dashboards:
+    claude-dashboard:
+      mode: yaml
+      title: Claude
+      icon: mdi:hexagon-multiple
+      show_in_sidebar: true
+      filename: dashboards/claude_dashboard.yaml
