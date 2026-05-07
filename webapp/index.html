@@ -128,55 +128,17 @@
     }
 
     /* ── App layout ──────────────────────────────────────────── */
-    /* padding-bottom moet groter zijn dan tabbar-hoogte (~70-90px)
-       plus safe-area op iPhones met home-indicator */
+    /* padding-top houdt rekening met safe-area op iPhones met
+       notch; padding-bottom groter dan tabbar-hoogte (~70-90px)
+       plus home-indicator safe-area */
     .app {
       max-width: 1400px;
       margin: 0 auto;
-      padding: 16px 16px calc(110px + env(safe-area-inset-bottom));
+      padding: max(16px, env(safe-area-inset-top)) 16px calc(110px + env(safe-area-inset-bottom));
     }
     @media (min-width: 871px) {
       .app { padding: 32px 48px calc(110px + env(safe-area-inset-bottom)); }
     }
-
-    /* Top bar (mobile only) */
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 4px 12px;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background: var(--claude-bg);
-    }
-    .topbar .brand {
-      display: flex; align-items: center; gap: 10px;
-    }
-    .topbar .brand-mark {
-      width: 28px; height: 28px;
-      background: var(--claude-primary);
-      border-radius: 8px;
-      display: grid; place-items: center;
-      font-family: var(--serif);
-      color: var(--claude-cream);
-      font-size: 16px;
-    }
-    .topbar .brand-name {
-      font-family: var(--serif);
-      font-size: 18px;
-    }
-    .topbar .actions { display: flex; gap: 4px; }
-    .topbar .actions button {
-      all: unset;
-      width: 36px; height: 36px;
-      border-radius: 12px;
-      display: grid; place-items: center;
-      cursor: pointer;
-      color: var(--claude-cream-dim);
-      font-size: 18px;
-    }
-    .topbar .actions button:hover { background: var(--claude-surface); }
 
     /* ── Hero ────────────────────────────────────────────────── */
     .hero { padding: 12px 4px 20px; }
@@ -929,26 +891,10 @@ class App {
       benzine: () => this.renderBenzine(c),
     };
 
-    const titles = {
-      start: 'Thuis', zon: 'Zonnepanelen', media: 'Media', lampen: 'Lampen',
-      afval: 'Afval', weer: 'Weer', benzine: 'Benzine',
-    };
-
     const viewHtml = (views[this.activeView] || views.start)();
 
     this.root.innerHTML = `
       <div class="app">
-        <div class="topbar">
-          <div class="brand">
-            <div class="brand-mark">✻</div>
-            <div class="brand-name">${titles[this.activeView] || 'Claude'}</div>
-          </div>
-          <div class="actions">
-            <button title="Uitloggen" onclick="app.logout()" aria-label="Uitloggen">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77.04"/></svg>
-            </button>
-          </div>
-        </div>
         ${viewHtml}
         <nav class="tabbar">
           ${this.renderNav()}
