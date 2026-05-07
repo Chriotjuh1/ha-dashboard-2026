@@ -1,8 +1,13 @@
 ################################################################################
 # Thuis App — full-screen wrapper voor de standalone webapp
 # Eén panel-view met een iframe naar /local/dashboard/
-# Wanneer je de HA Companion app op je telefoon opent en dit dashboard als
-# standaard hebt ingesteld, krijg je de webapp full-screen te zien.
+#
+# Scroll-fix recept:
+#   1. 100dvh (dynamic viewport) i.p.v. 100vh — handelt iOS adresbalk-collapse
+#   2. -webkit-overflow-scrolling: touch op iframe PARENT (ha-card > div),
+#      niet op iframe zelf — iOS Safari quirk
+#   3. Geen position: absolute / overflow: hidden op de wrapper, anders
+#      blokkeert iOS Safari de iframe-content scroll
 ################################################################################
 
 title: Thuis
@@ -17,26 +22,29 @@ views:
         aspect_ratio: '0'
         card_mod:
           style: |
-            /* Geen overflow:hidden, geen absolute positioning -
-               iOS Safari blokkeert iframe scroll dan. */
             ha-card {
-              background: var(--claude-bg) !important;
+              background: var(--claude-bg, #262624) !important;
               border: none !important;
               box-shadow: none !important;
               padding: 0 !important;
               margin: 0 !important;
               border-radius: 0 !important;
-              height: 100vh !important;
+              height: 100dvh !important;
+              overflow: hidden !important;
             }
+            /* Iframe parent: krijgt -webkit-overflow-scrolling om iOS
+               iframe-content-scroll bug te omzeilen */
             ha-card > div {
               padding: 0 !important;
-              height: 100vh !important;
+              margin: 0 !important;
+              height: 100dvh !important;
+              overflow: auto !important;
+              -webkit-overflow-scrolling: touch !important;
             }
             iframe {
               display: block !important;
               width: 100% !important;
-              height: 100vh !important;
+              height: 100dvh !important;
               border: none !important;
-              background: var(--claude-bg) !important;
-              -webkit-overflow-scrolling: touch !important;
+              background: var(--claude-bg, #262624) !important;
             }
