@@ -17,15 +17,23 @@ Gebouwd met de native **sections view** (HA ≥ 2024.3) en zwaar gebruik van
 ├── dashboards/
 │   └── claude_dashboard.yaml     # Lovelace dashboard (storage-vrij, YAML-mode)
 ├── preview/
-│   └── index.html                # Statische browser-preview (geen HA nodig)
+│   ├── index.html                # Desktop preview
+│   └── mobile.html               # Mobile-first preview (HA Companion stijl)
 └── configuration_snippet.yaml    # Toe te voegen aan configuration.yaml
 ```
 
 ## Preview
 
-Open `preview/index.html` in een browser voor een statische voorvertoning met
-mock-data — exact dezelfde fonts, kleuren, cards en layout als in HA. Klik door
-de zes views in de zijbalk om alles te bekijken vóór je installeert.
+Twee statische HTML-mockups om de look in je browser te bekijken zonder HA:
+
+- `preview/index.html` — **desktop** layout met zijbalk, 4-koloms grids
+- `preview/mobile.html` — **mobile-first** layout in een phone-frame met
+  bottom-tabs, single/2-koloms grids, en `:active` tap-feedback (zoals de
+  HA Companion app)
+
+Beide gebruiken exact dezelfde Fraunces+Inter fonts, Claude-kleuren, borders en
+hover-states als de echte Lovelace dashboard. Geen server nodig, gewoon
+dubbelklikken.
 
 ## Installatie
 
