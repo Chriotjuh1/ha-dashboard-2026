@@ -1,25 +1,67 @@
 ################################################################################
-# Claude Dashboard — class-based styling via theme card-mod-card-yaml
-# Inline styles worden door HA's markdown sanitizer gestript, maar
-# class-namen blijven behouden. De .claude-* classes zijn gedefinieerd
-# in themes/claude_dark.yaml en worden via shadow-piercing toegepast.
+# Claude Dashboard — mushroom-only approach
+# Geen markdown-cards meer voor styled text (HA strijpt te veel weg).
+# Alles via mushroom-title-card en mushroom-template-card waar card-mod
+# rechtstreeks de .title/.subtitle/.primary/.secondary kan stylen.
 ################################################################################
 
 title: Claude
 
-# Reusable anchors
-ghost_card: &ghost_card
+# ════════════════════════════════════════════════════════════════════════════
+# Reusable card_mod blokken
+# ════════════════════════════════════════════════════════════════════════════
+
+# Hero (mushroom-title-card)
+hero_mod: &hero_mod
   card_mod:
     style: |
       ha-card {
         background: transparent !important;
         border: none !important;
         box-shadow: none !important;
-        padding: 0 !important;
+        padding: 16px 4px 12px !important;
       }
-      ha-markdown { padding: 0 !important; }
+      .header { padding: 0 !important; gap: 4px !important; }
+      .title {
+        font-family: 'Fraunces', Georgia, serif !important;
+        font-weight: 400 !important;
+        font-size: clamp(34px, 6vw, 52px) !important;
+        line-height: 1.05 !important;
+        letter-spacing: -0.02em !important;
+        color: var(--claude-cream) !important;
+        margin: 0 !important;
+      }
+      .subtitle {
+        font-family: 'Inter', sans-serif !important;
+        font-size: 14px !important;
+        font-weight: 400 !important;
+        color: var(--claude-muted) !important;
+        line-height: 1.5 !important;
+        margin: 0 !important;
+      }
 
-surface_card: &surface_card
+# Section title (kleinere mushroom-title-card)
+section_mod: &section_mod
+  card_mod:
+    style: |
+      ha-card {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 12px 4px 4px !important;
+      }
+      .header { padding: 0 !important; }
+      .title {
+        font-family: 'Fraunces', Georgia, serif !important;
+        font-weight: 400 !important;
+        font-size: 26px !important;
+        letter-spacing: -0.01em !important;
+        color: var(--claude-cream) !important;
+        margin: 0 !important;
+      }
+
+# Stat card (label boven, big figure onder, via flex column-reverse)
+stat_mod: &stat_mod
   card_mod:
     style: |
       ha-card {
@@ -27,31 +69,162 @@ surface_card: &surface_card
         border: 1px solid var(--claude-border) !important;
         border-radius: 16px !important;
         box-shadow: none !important;
-        padding: 16px !important;
+        padding: 18px 18px 16px !important;
         transition: border-color 200ms ease;
       }
       ha-card:hover { border-color: var(--claude-border-hover) !important; }
-      ha-markdown { padding: 0 !important; }
-
-alert_card: &alert_card
-  card_mod:
-    style: |
-      ha-card {
-        background: linear-gradient(135deg, rgba(201,99,66,0.18), rgba(201,99,66,0.04)) !important;
-        border: 1px solid var(--claude-primary) !important;
-        border-radius: 16px !important;
-        box-shadow: none !important;
-        padding: 16px 18px !important;
+      mushroom-shape-icon { display: none !important; }
+      mushroom-state-info { padding-left: 0 !important; width: 100% !important; }
+      mushroom-state-info > div {
+        display: flex !important;
+        flex-direction: column-reverse !important;
+        gap: 8px !important;
       }
-      ha-markdown { padding: 0 !important; }
+      .container .primary {
+        font-family: 'Fraunces', Georgia, serif !important;
+        font-size: 30px !important;
+        font-weight: 400 !important;
+        line-height: 1 !important;
+        letter-spacing: -0.02em !important;
+        color: var(--claude-cream) !important;
+        white-space: normal !important;
+      }
+      .container .secondary {
+        font-size: 11px !important;
+        font-weight: 500 !important;
+        letter-spacing: 0.08em !important;
+        text-transform: uppercase !important;
+        color: var(--claude-muted) !important;
+        white-space: normal !important;
+      }
 
-# Bottom nav button styles
+# Person card variants (different gradient per person)
+person_cj: &person_cj
+  card_mod:
+    style:
+      .: |
+        ha-card {
+          background: var(--claude-surface) !important;
+          border: 1px solid var(--claude-border) !important;
+          border-radius: 16px !important;
+          box-shadow: none !important;
+          padding: 18px 12px !important;
+        }
+        mushroom-state-info { text-align: center !important; }
+        .container .primary {
+          font-family: 'Fraunces', Georgia, serif !important;
+          font-weight: 400 !important;
+          font-size: 16px !important;
+          color: var(--claude-cream) !important;
+        }
+        .container .secondary {
+          font-size: 11px !important;
+          color: var(--claude-muted) !important;
+        }
+      mushroom-shape-icon$: |
+        .shape {
+          background: linear-gradient(135deg, #C96342, #A84F32) !important;
+          position: relative !important;
+        }
+        .shape::after {
+          content: 'CJ';
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: 'Fraunces', Georgia, serif;
+          font-size: 22px;
+          color: #F0EEE6;
+        }
+        ha-state-icon, ha-icon { opacity: 0 !important; }
+
+person_mj: &person_mj
+  card_mod:
+    style:
+      .: |
+        ha-card {
+          background: var(--claude-surface) !important;
+          border: 1px solid var(--claude-border) !important;
+          border-radius: 16px !important;
+          box-shadow: none !important;
+          padding: 18px 12px !important;
+        }
+        mushroom-state-info { text-align: center !important; }
+        .container .primary {
+          font-family: 'Fraunces', Georgia, serif !important;
+          font-weight: 400 !important;
+          font-size: 16px !important;
+          color: var(--claude-cream) !important;
+        }
+        .container .secondary {
+          font-size: 11px !important;
+          color: var(--claude-muted) !important;
+        }
+      mushroom-shape-icon$: |
+        .shape {
+          background: linear-gradient(135deg, #7BA7C9, #4A6E8A) !important;
+          position: relative !important;
+        }
+        .shape::after {
+          content: 'MJ';
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: 'Fraunces', Georgia, serif;
+          font-size: 22px;
+          color: #F0EEE6;
+        }
+        ha-state-icon, ha-icon { opacity: 0 !important; }
+
+person_ej: &person_ej
+  card_mod:
+    style:
+      .: |
+        ha-card {
+          background: var(--claude-surface) !important;
+          border: 1px solid var(--claude-border) !important;
+          border-radius: 16px !important;
+          box-shadow: none !important;
+          padding: 18px 12px !important;
+        }
+        mushroom-state-info { text-align: center !important; }
+        .container .primary {
+          font-family: 'Fraunces', Georgia, serif !important;
+          font-weight: 400 !important;
+          font-size: 16px !important;
+          color: var(--claude-cream) !important;
+        }
+        .container .secondary {
+          font-size: 11px !important;
+          color: var(--claude-muted) !important;
+        }
+      mushroom-shape-icon$: |
+        .shape {
+          background: linear-gradient(135deg, #7FB069, #4A7B4A) !important;
+          position: relative !important;
+        }
+        .shape::after {
+          content: 'EJ';
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: 'Fraunces', Georgia, serif;
+          font-size: 22px;
+          color: #F0EEE6;
+        }
+        ha-state-icon, ha-icon { opacity: 0 !important; }
+
+# Bottom nav buttons
 nav_active: &nav_active
   card_mod:
     style: |
       ha-card { background: transparent !important; border: none !important; box-shadow: none !important; padding: 6px 4px !important; }
       mushroom-shape-icon { --shape-color: transparent !important; --icon-color: var(--claude-primary) !important; --icon-size: 26px !important; }
-      .container { padding: 0 !important; }
       mushroom-state-info { text-align: center !important; }
       .container .primary { color: var(--claude-primary) !important; font-size: 10px !important; font-weight: 500 !important; line-height: 1.2 !important; }
 
@@ -60,7 +233,6 @@ nav_inactive: &nav_inactive
     style: |
       ha-card { background: transparent !important; border: none !important; box-shadow: none !important; padding: 6px 4px !important; }
       mushroom-shape-icon { --shape-color: transparent !important; --icon-color: var(--claude-muted) !important; --icon-size: 26px !important; }
-      .container { padding: 0 !important; }
       mushroom-state-info { text-align: center !important; }
       .container .primary { color: var(--claude-muted) !important; font-size: 10px !important; font-weight: 500 !important; line-height: 1.2 !important; }
 
@@ -103,80 +275,84 @@ views:
       - type: grid
         column_span: 4
         cards:
-          - <<: *ghost_card
-            type: markdown
-            content: |
-              <span class="claude-hero-title">{% set h = now().hour %}{% if h < 6 %}Goedenacht{% elif h < 12 %}Goedemorgen{% elif h < 18 %}Goedemiddag{% else %}Goedenavond{% endif %}, Chris.</span>
-              <span class="claude-hero-sub">{{ now().strftime('%A %-d %B') }} · <span class="claude-accent">{{ states('weather.forecast_home') }}</span> · {{ state_attr('weather.forecast_home','temperature') }}°C</span>
+          - <<: *hero_mod
+            type: custom:mushroom-title-card
+            title: |
+              {% set h = now().hour %}{% if h < 6 %}Goedenacht{% elif h < 12 %}Goedemorgen{% elif h < 18 %}Goedemiddag{% else %}Goedenavond{% endif %}, Chris.
+            subtitle: >
+              {{ now().strftime('%A %-d %B') }} · {{ states('weather.forecast_home') }} · {{ state_attr('weather.forecast_home','temperature') }}°C
 
-      # Persons (initiaal-cirkels via classes)
+      # Persons
       - type: grid
         column_span: 4
         cards:
-          - <<: *ghost_card
-            type: markdown
-            content: |
-              <div class="claude-persons">
-                <div class="claude-person">
-                  <div class="claude-avatar claude-avatar-cj">CJ</div>
-                  <span class="claude-name">Chris</span>
-                  <span class="claude-state">{% if is_state('person.chris_joosten','home') %}Thuis{% elif is_state('person.chris_joosten','not_home') %}Onderweg{% else %}{{ states('person.chris_joosten') }}{% endif %}</span>
-                </div>
-                <div class="claude-person">
-                  <div class="claude-avatar claude-avatar-mj">MJ</div>
-                  <span class="claude-name">Marion</span>
-                  <span class="claude-state">{% if is_state('person.marion_joosten','home') %}Thuis{% elif is_state('person.marion_joosten','not_home') %}Onderweg{% else %}{{ states('person.marion_joosten') }}{% endif %}</span>
-                </div>
-                <div class="claude-person">
-                  <div class="claude-avatar claude-avatar-ej">EJ</div>
-                  <span class="claude-name">Edwin</span>
-                  <span class="claude-state">{% if is_state('person.edwin_joosten','home') %}Thuis{% elif is_state('person.edwin_joosten','not_home') %}Onderweg{% else %}{{ states('person.edwin_joosten') }}{% endif %}</span>
-                </div>
-              </div>
+          - type: horizontal-stack
+            cards:
+              - <<: *person_cj
+                type: custom:mushroom-template-card
+                primary: Chris
+                secondary: |
+                  {% if is_state('person.chris_joosten','home') %}Thuis{% elif is_state('person.chris_joosten','not_home') %}Onderweg{% else %}{{ states('person.chris_joosten') }}{% endif %}
+                icon: mdi:account
+                layout: vertical
+                fill_container: true
+                tap_action: { action: more-info, entity: person.chris_joosten }
+              - <<: *person_mj
+                type: custom:mushroom-template-card
+                primary: Marion
+                secondary: |
+                  {% if is_state('person.marion_joosten','home') %}Thuis{% elif is_state('person.marion_joosten','not_home') %}Onderweg{% else %}{{ states('person.marion_joosten') }}{% endif %}
+                icon: mdi:account
+                layout: vertical
+                fill_container: true
+                tap_action: { action: more-info, entity: person.marion_joosten }
+              - <<: *person_ej
+                type: custom:mushroom-template-card
+                primary: Edwin
+                secondary: |
+                  {% if is_state('person.edwin_joosten','home') %}Thuis{% elif is_state('person.edwin_joosten','not_home') %}Onderweg{% else %}{{ states('person.edwin_joosten') }}{% endif %}
+                icon: mdi:account
+                layout: vertical
+                fill_container: true
+                tap_action: { action: more-info, entity: person.edwin_joosten }
 
       - type: grid
         column_span: 4
         cards:
-          - <<: *ghost_card
-            type: markdown
-            content: '<span class="claude-section-title">Vandaag</span>'
+          - <<: *section_mod
+            type: custom:mushroom-title-card
+            title: Vandaag
 
-      # 4 stat cards
       - type: grid
         column_span: 4
         cards:
-          - <<: *surface_card
-            type: markdown
-            content: |
-              <span class="claude-label">Zon</span>
-              <span class="claude-figure">{{ states('sensor.sma_dagopbrengst') }}</span><span class="claude-unit">kWh</span>
-              <span class="claude-delta">{{ states('sensor.zonnepanelen_vermogen') }} W nu</span>
-          - <<: *surface_card
-            type: markdown
-            content: |
-              <span class="claude-label">Buiten</span>
-              <span class="claude-figure">{{ state_attr('weather.forecast_home','temperature') }}</span><span class="claude-unit">°C</span>
-              <span class="claude-delta">{{ states('weather.forecast_home') }}</span>
-          - <<: *surface_card
-            type: markdown
-            content: |
-              <span class="claude-label">Volgend afval</span>
-              <span class="claude-figure-small">PMD</span>
-              <span class="claude-delta claude-delta-cream">{{ states('sensor.pmd') }}</span>
-          - <<: *surface_card
-            type: markdown
-            content: |
-              <span class="claude-label">Lampen</span>
-              <span class="claude-figure">{{ expand('switch.woonkamerlamp','switch.overkappinglamp','switch.opritlamp','switch.spotjes_overkapping') | selectattr('state','eq','on') | list | count }}</span><span class="claude-unit">/4 aan</span>
-              <span class="claude-delta claude-delta-muted">4 schakelaars</span>
+          - <<: *stat_mod
+            type: custom:mushroom-template-card
+            primary: "{{ states('sensor.sma_dagopbrengst') }} kWh"
+            secondary: Zon
+            icon: ''
+          - <<: *stat_mod
+            type: custom:mushroom-template-card
+            primary: "{{ state_attr('weather.forecast_home','temperature') }}°C"
+            secondary: Buiten
+            icon: ''
+          - <<: *stat_mod
+            type: custom:mushroom-template-card
+            primary: "{{ states('sensor.pmd') }}"
+            secondary: Volgend afval (PMD)
+            icon: ''
+          - <<: *stat_mod
+            type: custom:mushroom-template-card
+            primary: "{{ expand('switch.woonkamerlamp','switch.overkappinglamp','switch.opritlamp','switch.spotjes_overkapping') | selectattr('state','eq','on') | list | count }}/4 aan"
+            secondary: Lampen
+            icon: ''
 
-      # Verlichting
       - type: grid
         column_span: 4
         cards:
-          - <<: *ghost_card
-            type: markdown
-            content: '<span class="claude-section-title">Verlichting</span>'
+          - <<: *section_mod
+            type: custom:mushroom-title-card
+            title: Verlichting
           - type: tile
             entity: switch.woonkamerlamp
             name: Woonkamer
@@ -194,7 +370,7 @@ views:
             name: Spotjes
             icon: mdi:track-light
 
-      # Bottom nav (Start active)
+      # Bottom nav
       - type: grid
         column_span: 4
         cards:
@@ -250,42 +426,42 @@ views:
       - type: grid
         column_span: 4
         cards:
-          - <<: *ghost_card
-            type: markdown
-            content: |
-              <span class="claude-hero-title">Zonnepanelen</span>
-              <span class="claude-hero-sub">Status <span class="claude-accent">{{ states('sensor.zonnepanelen_status') }}</span> · limiet <span class="claude-accent">{{ states('sensor.zonnepanelen_limiet_percentage') }}%</span></span>
+          - <<: *hero_mod
+            type: custom:mushroom-title-card
+            title: Zonnepanelen
+            subtitle: >
+              Status {{ states('sensor.zonnepanelen_status') }} · limiet {{ states('sensor.zonnepanelen_limiet_percentage') }}%
 
       - type: grid
         column_span: 4
         cards:
-          - <<: *surface_card
-            type: markdown
-            content: |
-              <span class="claude-label">Nu</span>
-              <span class="claude-figure">{{ states('sensor.zonnepanelen_vermogen') }}</span><span class="claude-unit">W</span>
-          - <<: *surface_card
-            type: markdown
-            content: |
-              <span class="claude-label">Vandaag</span>
-              <span class="claude-figure">{{ states('sensor.sma_dagopbrengst') }}</span><span class="claude-unit">kWh</span>
-          - <<: *surface_card
-            type: markdown
-            content: |
-              <span class="claude-label">Totaal</span>
-              <span class="claude-figure">{{ states('sensor.sma_totale_opbrengst') }}</span><span class="claude-unit">kWh</span>
-          - <<: *surface_card
-            type: markdown
-            content: |
-              <span class="claude-label">Limiet</span>
-              <span class="claude-figure">{{ states('sensor.zonnepanelen_limiet_percentage') }}</span><span class="claude-unit">%</span>
+          - <<: *stat_mod
+            type: custom:mushroom-template-card
+            primary: "{{ states('sensor.zonnepanelen_vermogen') }} W"
+            secondary: Nu
+            icon: ''
+          - <<: *stat_mod
+            type: custom:mushroom-template-card
+            primary: "{{ states('sensor.sma_dagopbrengst') }} kWh"
+            secondary: Vandaag
+            icon: ''
+          - <<: *stat_mod
+            type: custom:mushroom-template-card
+            primary: "{{ states('sensor.sma_totale_opbrengst') }} kWh"
+            secondary: Totaal
+            icon: ''
+          - <<: *stat_mod
+            type: custom:mushroom-template-card
+            primary: "{{ states('sensor.zonnepanelen_limiet_percentage') }} %"
+            secondary: Limiet
+            icon: ''
 
       - type: grid
         column_span: 2
         cards:
-          - <<: *ghost_card
-            type: markdown
-            content: '<span class="claude-label">Vermogen</span>'
+          - <<: *section_mod
+            type: custom:mushroom-title-card
+            title: Vermogen
           - type: gauge
             entity: sensor.zonnepanelen_vermogen
             name: ' '
@@ -300,9 +476,9 @@ views:
       - type: grid
         column_span: 2
         cards:
-          - <<: *ghost_card
-            type: markdown
-            content: '<span class="claude-label">Verloop vandaag</span>'
+          - <<: *section_mod
+            type: custom:mushroom-title-card
+            title: Verloop vandaag
           - type: custom:mini-graph-card
             entity: sensor.zonnepanelen_vermogen
             name: ' '
@@ -319,9 +495,9 @@ views:
       - type: grid
         column_span: 4
         cards:
-          - <<: *ghost_card
-            type: markdown
-            content: '<span class="claude-section-title">Limiet</span>'
+          - <<: *section_mod
+            type: custom:mushroom-title-card
+            title: Limiet
           - type: button
             name: 100%
             icon: mdi:weather-sunny
@@ -397,7 +573,7 @@ views:
                 tap_action: { action: navigate, navigation_path: /claude-dashboard/benzine }
 
   # ───────────────────────────────────────────────────────────────────────
-  # 3. TV & KLIMAAT (lampen)
+  # 3. TV & KLIMAAT
   # ───────────────────────────────────────────────────────────────────────
   - title: TV & Klimaat
     path: tv-klimaat
@@ -408,17 +584,16 @@ views:
       - type: grid
         column_span: 3
         cards:
-          - <<: *ghost_card
-            type: markdown
-            content: |
-              <span class="claude-hero-title">Verlichting & schema's</span>
-              <span class="claude-hero-sub">Schakel handmatig of laat ze op tijd draaien.</span>
+          - <<: *hero_mod
+            type: custom:mushroom-title-card
+            title: Verlichting & schema's
+            subtitle: Schakel handmatig of laat ze op tijd draaien.
 
       - type: grid
         cards:
-          - <<: *ghost_card
-            type: markdown
-            content: '<span class="claude-label">Lampen</span>'
+          - <<: *section_mod
+            type: custom:mushroom-title-card
+            title: Lampen
           - type: tile
             entity: switch.woonkamerlamp
             name: Woonkamer
@@ -438,9 +613,9 @@ views:
 
       - type: grid
         cards:
-          - <<: *ghost_card
-            type: markdown
-            content: '<span class="claude-label">Woonkamer schema</span>'
+          - <<: *section_mod
+            type: custom:mushroom-title-card
+            title: Woonkamer schema
           - type: entities
             show_header_toggle: false
             entities:
@@ -454,9 +629,9 @@ views:
 
       - type: grid
         cards:
-          - <<: *ghost_card
-            type: markdown
-            content: '<span class="claude-label">Buitenlampen schema</span>'
+          - <<: *section_mod
+            type: custom:mushroom-title-card
+            title: Buitenlampen schema
           - type: entities
             show_header_toggle: false
             entities:
@@ -523,11 +698,10 @@ views:
       - type: grid
         column_span: 3
         cards:
-          - <<: *ghost_card
-            type: markdown
-            content: |
-              <span class="claude-hero-title">Afvalkalender</span>
-              <span class="claude-hero-sub">Volgende ophaaldagen volgens de gemeentekalender.</span>
+          - <<: *hero_mod
+            type: custom:mushroom-title-card
+            title: Afvalkalender
+            subtitle: Volgende ophaaldagen volgens de gemeentekalender.
 
       - type: grid
         column_span: 3
@@ -540,33 +714,50 @@ views:
                   - { condition: state, entity: sensor.restafval, state: Morgen }
                   - { condition: state, entity: sensor.papier, state: Morgen }
             card:
-              <<: *alert_card
-              type: markdown
-              content: |
-                <span class="claude-alert-title">✱ Morgen buitenzetten</span>
-                <span class="claude-alert-body">{% if is_state('sensor.pmd','Morgen') %}PMD{% endif %}{% if is_state('sensor.restafval','Morgen') %}{% if is_state('sensor.pmd','Morgen') %} · {% endif %}Restafval{% endif %}{% if is_state('sensor.papier','Morgen') %}{% if is_state('sensor.pmd','Morgen') or is_state('sensor.restafval','Morgen') %} · {% endif %}Papier{% endif %}</span>
+              type: custom:mushroom-template-card
+              primary: ✱ Morgen buitenzetten
+              secondary: |
+                {% if is_state('sensor.pmd','Morgen') %}PMD{% endif %}{% if is_state('sensor.restafval','Morgen') %}{% if is_state('sensor.pmd','Morgen') %} · {% endif %}Restafval{% endif %}{% if is_state('sensor.papier','Morgen') %}{% if is_state('sensor.pmd','Morgen') or is_state('sensor.restafval','Morgen') %} · {% endif %}Papier{% endif %}
+              icon: mdi:bell-ring-outline
+              icon_color: deep-orange
+              card_mod:
+                style: |
+                  ha-card {
+                    background: linear-gradient(135deg, rgba(201,99,66,0.18), rgba(201,99,66,0.04)) !important;
+                    border: 1px solid var(--claude-primary) !important;
+                    border-radius: 16px !important;
+                    padding: 14px 18px !important;
+                    box-shadow: none !important;
+                  }
+                  .container .primary {
+                    font-family: 'Fraunces', Georgia, serif !important;
+                    font-weight: 400 !important;
+                    font-size: 22px !important;
+                    color: var(--claude-cream) !important;
+                  }
+                  .container .secondary {
+                    font-size: 13px !important;
+                    color: var(--claude-cream-dim) !important;
+                  }
 
       - type: grid
         column_span: 3
         cards:
-          - <<: *surface_card
-            type: markdown
-            content: |
-              <span class="claude-label">PMD</span>
-              <span class="claude-figure-small">{{ states('sensor.pmd') }}</span>
-              <span class="claude-delta">Plastic, metaal &amp; drinkpakken</span>
-          - <<: *surface_card
-            type: markdown
-            content: |
-              <span class="claude-label">Restafval</span>
-              <span class="claude-figure-small">{{ states('sensor.restafval') }}</span>
-              <span class="claude-delta">Niet recyclebaar</span>
-          - <<: *surface_card
-            type: markdown
-            content: |
-              <span class="claude-label">Papier</span>
-              <span class="claude-figure-small">{{ states('sensor.papier') }}</span>
-              <span class="claude-delta">Karton &amp; papier</span>
+          - <<: *stat_mod
+            type: custom:mushroom-template-card
+            primary: "{{ states('sensor.pmd') }}"
+            secondary: PMD · Plastic, metaal & drinkpakken
+            icon: ''
+          - <<: *stat_mod
+            type: custom:mushroom-template-card
+            primary: "{{ states('sensor.restafval') }}"
+            secondary: Restafval · Niet recyclebaar
+            icon: ''
+          - <<: *stat_mod
+            type: custom:mushroom-template-card
+            primary: "{{ states('sensor.papier') }}"
+            secondary: Papier · Karton & papier
+            icon: ''
 
       - type: grid
         column_span: 3
@@ -623,17 +814,17 @@ views:
       - type: grid
         column_span: 3
         cards:
-          - <<: *ghost_card
-            type: markdown
-            content: |
-              <span class="claude-hero-title">Weer & klimaat</span>
-              <span class="claude-hero-sub">Het is nu <span class="claude-accent">{{ state_attr('weather.forecast_home','temperature') }}°C</span> · {{ states('weather.forecast_home') }}. Binnen op {{ state_attr('climate.woonkamer','current_temperature') }}°C.</span>
+          - <<: *hero_mod
+            type: custom:mushroom-title-card
+            title: Weer & klimaat
+            subtitle: >
+              Het is nu {{ state_attr('weather.forecast_home','temperature') }}°C · {{ states('weather.forecast_home') }}. Binnen op {{ state_attr('climate.woonkamer','current_temperature') }}°C.
 
       - type: grid
         cards:
-          - <<: *ghost_card
-            type: markdown
-            content: '<span class="claude-label">Thermostaat</span>'
+          - <<: *section_mod
+            type: custom:mushroom-title-card
+            title: Thermostaat
           - type: custom:mushroom-climate-card
             entity: climate.woonkamer
             name: Woonkamer
@@ -648,9 +839,9 @@ views:
       - type: grid
         column_span: 2
         cards:
-          - <<: *ghost_card
-            type: markdown
-            content: '<span class="claude-label">5-daagse</span>'
+          - <<: *section_mod
+            type: custom:mushroom-title-card
+            title: 5-daagse
           - type: weather-forecast
             entity: weather.forecast_home
             forecast_type: daily
@@ -662,9 +853,9 @@ views:
       - type: grid
         column_span: 3
         cards:
-          - <<: *ghost_card
-            type: markdown
-            content: '<span class="claude-label">Neerslag radar</span>'
+          - <<: *section_mod
+            type: custom:mushroom-title-card
+            title: Neerslag radar
           - type: custom:neerslag-card
             entity: sensor.neerslag_buienalarm_regen_data
             title: ' '
@@ -727,60 +918,56 @@ views:
       - type: grid
         column_span: 3
         cards:
-          - <<: *ghost_card
-            type: markdown
-            content: |
-              <span class="claude-hero-title">Brandstof</span>
-              <span class="claude-hero-sub">Euro 95 (E10) bij <span class="claude-accent">DE</span> en <span class="claude-accent">BE</span> grenstankstations.</span>
+          - <<: *hero_mod
+            type: custom:mushroom-title-card
+            title: Brandstof
+            subtitle: Euro 95 (E10) bij DE en BE grenstankstations.
 
       - type: grid
         column_span: 3
         cards:
-          - <<: *ghost_card
-            type: markdown
-            content: '<span class="claude-section-title">⚐ Duitsland</span>'
-          - <<: *surface_card
-            type: markdown
-            content: |
-              <span class="claude-label">OIL · Steyler 157</span>
-              <span class="claude-figure">{{ states('sensor.oil_steyler_strasse_157_euro_95_loodvrij_e10') }}</span><span class="claude-unit">€/L</span>
-              <span class="claude-delta">Euro 95 · E10</span>
-          - <<: *surface_card
-            type: markdown
-            content: |
-              <span class="claude-label">Shell · Steyler 179</span>
-              <span class="claude-figure">{{ states('sensor.shell_steyler_str_179_euro_95_loodvrij_e10') }}</span><span class="claude-unit">€/L</span>
-              <span class="claude-delta">Euro 95 · E10</span>
+          - <<: *section_mod
+            type: custom:mushroom-title-card
+            title: ⚐ Duitsland
+          - <<: *stat_mod
+            type: custom:mushroom-template-card
+            primary: "{{ states('sensor.oil_steyler_strasse_157_euro_95_loodvrij_e10') }} €/L"
+            secondary: OIL · Steyler 157
+            icon: ''
+          - <<: *stat_mod
+            type: custom:mushroom-template-card
+            primary: "{{ states('sensor.shell_steyler_str_179_euro_95_loodvrij_e10') }} €/L"
+            secondary: Shell · Steyler 179
+            icon: ''
 
       - type: grid
         column_span: 3
         cards:
-          - <<: *ghost_card
-            type: markdown
-            content: '<span class="claude-section-title">⚑ België</span>'
-          - <<: *surface_card
-            type: markdown
-            content: |
-              <span class="claude-label">Postcode 3640</span>
-              <span class="claude-figure">{{ states('sensor.carbu_com_super95_3640_price') }}</span><span class="claude-unit">€/L</span>
-          - <<: *surface_card
-            type: markdown
-            content: |
-              <span class="claude-label">5 km</span>
-              <span class="claude-figure">{{ states('sensor.carbu_com_super95_3640_5km') }}</span><span class="claude-unit">€/L</span>
-          - <<: *surface_card
-            type: markdown
-            content: |
-              <span class="claude-label">10 km</span>
-              <span class="claude-figure">{{ states('sensor.carbu_com_super95_3640_10km') }}</span><span class="claude-unit">€/L</span>
-              <span class="claude-delta">Beste prijs</span>
+          - <<: *section_mod
+            type: custom:mushroom-title-card
+            title: ⚑ België
+          - <<: *stat_mod
+            type: custom:mushroom-template-card
+            primary: "{{ states('sensor.carbu_com_super95_3640_price') }} €/L"
+            secondary: Postcode 3640
+            icon: ''
+          - <<: *stat_mod
+            type: custom:mushroom-template-card
+            primary: "{{ states('sensor.carbu_com_super95_3640_5km') }} €/L"
+            secondary: Binnen 5 km
+            icon: ''
+          - <<: *stat_mod
+            type: custom:mushroom-template-card
+            primary: "{{ states('sensor.carbu_com_super95_3640_10km') }} €/L"
+            secondary: Binnen 10 km
+            icon: ''
 
       - type: grid
         column_span: 3
         cards:
-          - <<: *ghost_card
-            type: markdown
-            content: '<span class="claude-label">Op de kaart</span>'
+          - <<: *section_mod
+            type: custom:mushroom-title-card
+            title: Op de kaart
           - type: map
             entities:
               - entity: sensor.carbu_com_super95_3640_price
