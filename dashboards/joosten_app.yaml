@@ -17,6 +17,8 @@ views:
         aspect_ratio: '0'
         card_mod:
           style: |
+            /* Geen overflow:hidden, geen absolute positioning -
+               iOS Safari blokkeert iframe scroll dan. */
             ha-card {
               background: var(--claude-bg) !important;
               border: none !important;
@@ -26,19 +28,14 @@ views:
               border-radius: 0 !important;
               height: 100vh !important;
             }
-            /* Niet 'overflow: hidden' — dat blokkeert iframe scroll
-               op iOS. Wel positie resetten om HA's padding-bottom
-               wrapper te ontkrachten. */
-            ha-card > * {
-              padding-bottom: 0 !important;
+            ha-card > div {
+              padding: 0 !important;
               height: 100vh !important;
-              position: relative !important;
             }
             iframe {
-              position: absolute !important;
-              inset: 0 !important;
+              display: block !important;
               width: 100% !important;
-              height: 100% !important;
+              height: 100vh !important;
               border: none !important;
               background: var(--claude-bg) !important;
               -webkit-overflow-scrolling: touch !important;
