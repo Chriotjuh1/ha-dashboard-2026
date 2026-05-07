@@ -44,66 +44,38 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-    /* MOBIEL — flexbox layout: body vult de iframe (height 100%), .app scrollt
-       intern, .tabbar zit eronder als sibling. Omzeilt de iOS-bug waarbij
-       position:fixed binnen een iframe niet aan de viewport plakt.
-       100% i.p.v. 100dvh: betrouwbaarder in iframe — neemt exact de
-       iframe-hoogte, ongeacht adresbalk-collapse of HA app-chrome. */
+    /* Strict viewport-lock: html, body en #root nemen exact de iframe-hoogte.
+       Body mag NIET scrollen (overflow: hidden). Alleen .app scrollt intern.
+       Resultaat: de fixed tabbar plakt altijd aan de viewport-bottom, want
+       er is geen body-scroll die hem kan wegduwen. Werkt op zowel mobiel als
+       desktop, in én buiten een iframe. */
     html, body {
       background: var(--claude-bg);
       color: var(--claude-cream);
       font-family: var(--sans);
       font-size: 14px;
       letter-spacing: -0.005em;
-      height: 100vh;          /* fallback iOS < 15.4 / oudere Android */
-      height: 100dvh;
+      height: 100%;
+      width: 100%;
       overflow: hidden;
-    }
-    body {
-      display: flex;
-      flex-direction: column;
+      position: relative;
     }
     #root {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      min-height: 0;
+      height: 100%;
+      width: 100%;
+      position: relative;
+      overflow: hidden;
     }
 
     /* ── Login ───────────────────────────────────────────────── */
     .login {
-      flex: 1;
+      height: 100%;
+      width: 100%;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
       display: grid;
       place-items: center;
       padding: 24px;
-    }
-
-    /* DESKTOP — terug naar normale flow met floating-pill tabbar.
-       Op desktop bestaat de iOS-iframe-fixed-bug niet, dus de oude layout
-       met `position: fixed` op de tabbar werkt prima en geeft het
-       claude.ai-look van de drijvende pill bovenop de scrollende content. */
-    @media (min-width: 768px) {
-      html, body {
-        height: auto;
-        overflow: visible;
-        overflow-x: hidden;
-      }
-      body {
-        display: block;
-        min-height: 100vh;
-      }
-      #root {
-        display: block;
-        flex: none;
-        min-height: auto;
-      }
-      .login {
-        flex: none;
-        overflow: visible;
-        min-height: 100vh;
-      }
     }
     .login-box {
       background: var(--claude-surface);
@@ -178,25 +150,18 @@
     }
 
     /* ── App layout ──────────────────────────────────────────── */
-    /* MOBIEL: .app is de scroll-container (flex:1). Tabbar zit eronder als
-       sibling. Padding-bottom is gewoon ademruimte boven de tabbar.
-       DESKTOP: .app is normale flow, padding-bottom reserveert ruimte
-       voor de fixed floating-pill tabbar. */
+    /* .app is de ENIGE scroll-container. Vult #root volledig (height: 100%).
+       padding-bottom reserveert ruimte voor de fixed tabbar zodat content
+       niet onder de tabbar verdwijnt. */
     .app {
-      flex: 1;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
+      height: 100%;
       width: 100%;
       max-width: 1400px;
       margin: 0 auto;
-      padding: max(16px, env(safe-area-inset-top)) 16px 16px;
-    }
-    @media (min-width: 768px) {
-      .app {
-        flex: none;
-        overflow: visible;
-        padding: 32px 48px calc(110px + env(safe-area-inset-bottom));
-      }
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      padding: max(16px, env(safe-area-inset-top)) 16px calc(110px + env(safe-area-inset-bottom));
     }
     @media (min-width: 871px) {
       .app { padding: 32px 48px calc(110px + env(safe-area-inset-bottom)); }
@@ -435,14 +400,15 @@
     }
 
     /* ── Bottom nav ──────────────────────────────────────────── */
-    /* MOBIEL: tabbar in flexbox-flow als sibling van .app (flex-shrink:0).
-       Geen position:fixed want die plakt niet aan de viewport in iOS-iframes.
-       DESKTOP: position:fixed floating-pill — werkt prima in desktop browsers
-       en geeft de claude.ai-look. */
+    /* Werkt mits body NIET scrollt (overflow: hidden op body, .app scrollt
+       intern). Dan plakt de fixed tabbar betrouwbaar aan de viewport-bottom.
+       Mobile: vol-breed gepind aan onderkant. Desktop: floating pill. */
     .tabbar {
-      flex-shrink: 0;
-      flex-grow: 0;
-      min-height: 60px;        /* safety net — buttons mogen nooit collapsen */
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      min-height: 60px;
       background: rgba(31, 30, 28, 0.92);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
@@ -452,11 +418,11 @@
       display: flex;
       justify-content: space-around;
       align-items: stretch;
+      z-index: 9999;
       isolation: isolate;
     }
     @media (min-width: 768px) {
       .tabbar {
-        position: fixed;
         bottom: 16px;
         left: 16px;
         right: 16px;
@@ -465,7 +431,6 @@
         border: 1px solid var(--claude-border);
         border-radius: 22px;
         padding: 6px 4px;
-        z-index: 9999;
       }
     }
     /* Houd Leaflet onder de fixed nav. Defensieve override: ALLE leaflet
@@ -1046,7 +1011,6 @@ class App {
     const items = [
       { path: 'start', label: 'Start', icon: '⌂' },
       { path: 'zon', label: 'Zon', icon: '☀' },
-      { path: 'media', label: 'Media', icon: '♫' },
       { path: 'lampen', label: 'Lampen', icon: '◐' },
       { path: 'afval', label: 'Afval', icon: '♺' },
       { path: 'weer', label: 'Weer', icon: '☁' },

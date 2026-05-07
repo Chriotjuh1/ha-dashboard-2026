@@ -2,12 +2,12 @@
 # Thuis App — full-screen wrapper voor de standalone webapp
 # Eén panel-view met een iframe naar /local/dashboard/
 #
-# Scroll-fix recept:
-#   1. 100dvh (dynamic viewport) i.p.v. 100vh — handelt iOS adresbalk-collapse
-#   2. -webkit-overflow-scrolling: touch op iframe PARENT (ha-card > div),
-#      niet op iframe zelf — iOS Safari quirk
-#   3. Geen position: absolute / overflow: hidden op de wrapper, anders
-#      blokkeert iOS Safari de iframe-content scroll
+# Layout-recept:
+#   - height: 100% (i.p.v. 100dvh) zodat de iframe exact het zichtbare
+#     panel-gebied vult, ongeacht HA app-chrome of adresbalk-collapse.
+#   - overflow: hidden op alle wrappers — body inside iframe heeft eigen
+#     overflow:hidden, dus alleen .app scrollt. De fixed tabbar blijft
+#     altijd zichtbaar omdat geen enkele wrapper kan scrollen.
 ################################################################################
 
 title: Thuis
@@ -29,22 +29,19 @@ views:
               padding: 0 !important;
               margin: 0 !important;
               border-radius: 0 !important;
-              height: 100dvh !important;
+              height: 100% !important;
               overflow: hidden !important;
             }
-            /* Iframe parent: krijgt -webkit-overflow-scrolling om iOS
-               iframe-content-scroll bug te omzeilen */
             ha-card > div {
               padding: 0 !important;
               margin: 0 !important;
-              height: 100dvh !important;
-              overflow: auto !important;
-              -webkit-overflow-scrolling: touch !important;
+              height: 100% !important;
+              overflow: hidden !important;
             }
             iframe {
               display: block !important;
               width: 100% !important;
-              height: 100dvh !important;
+              height: 100% !important;
               border: none !important;
               background: var(--claude-bg, #262624) !important;
             }
