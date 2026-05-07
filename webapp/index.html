@@ -44,18 +44,18 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-    /* Flexbox layout: body neemt exact viewport-hoogte, .app scrollt intern,
-       .tabbar zit in de natuurlijke flow eronder en is altijd zichtbaar.
-       Reden: position:fixed binnen iOS-iframes plakt niet aan de viewport;
-       deze layout omzeilt dat probleem volledig. */
+    /* MOBIEL — flexbox layout: body vult de iframe (height 100%), .app scrollt
+       intern, .tabbar zit eronder als sibling. Omzeilt de iOS-bug waarbij
+       position:fixed binnen een iframe niet aan de viewport plakt.
+       100% i.p.v. 100dvh: betrouwbaarder in iframe — neemt exact de
+       iframe-hoogte, ongeacht adresbalk-collapse of HA app-chrome. */
     html, body {
       background: var(--claude-bg);
       color: var(--claude-cream);
       font-family: var(--sans);
       font-size: 14px;
       letter-spacing: -0.005em;
-      height: 100vh;          /* fallback voor iOS Safari < 15.4 */
-      height: 100dvh;
+      height: 100%;
       overflow: hidden;
     }
     body {
@@ -66,7 +66,7 @@
       display: flex;
       flex-direction: column;
       flex: 1;
-      min-height: 0;          /* nodig voor flex-children om te kunnen krimpen */
+      min-height: 0;
     }
 
     /* ── Login ───────────────────────────────────────────────── */
@@ -77,6 +77,32 @@
       display: grid;
       place-items: center;
       padding: 24px;
+    }
+
+    /* DESKTOP — terug naar normale flow met floating-pill tabbar.
+       Op desktop bestaat de iOS-iframe-fixed-bug niet, dus de oude layout
+       met `position: fixed` op de tabbar werkt prima en geeft het
+       claude.ai-look van de drijvende pill bovenop de scrollende content. */
+    @media (min-width: 768px) {
+      html, body {
+        height: auto;
+        overflow: visible;
+        overflow-x: hidden;
+      }
+      body {
+        display: block;
+        min-height: 100vh;
+      }
+      #root {
+        display: block;
+        flex: none;
+        min-height: auto;
+      }
+      .login {
+        flex: none;
+        overflow: visible;
+        min-height: 100vh;
+      }
     }
     .login-box {
       background: var(--claude-surface);
@@ -151,9 +177,10 @@
     }
 
     /* ── App layout ──────────────────────────────────────────── */
-    /* .app is de scroll-container (flex: 1). Tabbar zit eronder als sibling
-       en heeft eigen safe-area; padding-bottom hier is alleen ademruimte
-       boven de tabbar. */
+    /* MOBIEL: .app is de scroll-container (flex:1). Tabbar zit eronder als
+       sibling. Padding-bottom is gewoon ademruimte boven de tabbar.
+       DESKTOP: .app is normale flow, padding-bottom reserveert ruimte
+       voor de fixed floating-pill tabbar. */
     .app {
       flex: 1;
       overflow-y: auto;
@@ -163,8 +190,15 @@
       margin: 0 auto;
       padding: max(16px, env(safe-area-inset-top)) 16px 16px;
     }
+    @media (min-width: 768px) {
+      .app {
+        flex: none;
+        overflow: visible;
+        padding: 32px 48px calc(110px + env(safe-area-inset-bottom));
+      }
+    }
     @media (min-width: 871px) {
-      .app { padding: 32px 48px 16px; }
+      .app { padding: 32px 48px calc(110px + env(safe-area-inset-bottom)); }
     }
 
     /* ── Hero ────────────────────────────────────────────────── */
@@ -400,10 +434,10 @@
     }
 
     /* ── Bottom nav ──────────────────────────────────────────── */
-    /* Tabbar zit in de natuurlijke flexbox-flow als sibling van .app.
-       Niet meer position:fixed (faalde in iOS-iframes) — flex-shrink: 0
-       garandeert dat 'ie altijd zichtbaar is onderaan, ongeacht scroll-staat
-       binnen .app. */
+    /* MOBIEL: tabbar in flexbox-flow als sibling van .app (flex-shrink:0).
+       Geen position:fixed want die plakt niet aan de viewport in iOS-iframes.
+       DESKTOP: position:fixed floating-pill — werkt prima in desktop browsers
+       en geeft de claude.ai-look. */
     .tabbar {
       flex-shrink: 0;
       background: rgba(31, 30, 28, 0.92);
@@ -418,11 +452,16 @@
     }
     @media (min-width: 768px) {
       .tabbar {
+        position: fixed;
+        bottom: 16px;
+        left: 16px;
+        right: 16px;
+        margin: 0 auto;
         max-width: 600px;
-        margin: 0 auto 16px;
         border: 1px solid var(--claude-border);
         border-radius: 22px;
         padding: 6px 4px;
+        z-index: 9999;
       }
     }
     /* Houd Leaflet onder de fixed nav. Defensieve override: ALLE leaflet
