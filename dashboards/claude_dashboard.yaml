@@ -1,249 +1,207 @@
 ################################################################################
-# Claude Dashboard — Home Assistant
-# Design taal: claude.ai (warm dark, koraal, Fraunces serif + Inter sans)
+# Claude Dashboard — exact pixel-match aan de mobile-mockup
+# Inline HTML+styles in markdown-cards omzeilen ha-markdown's shadow DOM,
+# zodat fonts en lay-out altijd kloppen ongeacht card-mod selectors.
 #
-# HACS-deps (Frontend):
-#   - mushroom
-#   - mini-graph-card
-#   - card-mod          ← essentieel voor de Claude-website look
-#   - neerslag-card     ← reeds in gebruik
-#
-# Tip: zoek op "FRAUNCES" / "INTER" om typografie globaal aan te passen.
+# HACS-deps: card-mod, mushroom, mini-graph-card, neerslag-card
+# Vereist www/claude-fonts.js voor Fraunces+Inter
 ################################################################################
 
 title: Claude
 
-# Herbruikbare style-snippets (YAML anchors)
-hero_style: &hero_style
+# ════════════════════════════════════════════════════════════════════════════
+# Herbruikbare card_mod blokken (YAML anchors)
+# ════════════════════════════════════════════════════════════════════════════
+
+# Transparante card zonder bg/border (voor heroes en nav)
+ghost_card: &ghost_card
   card_mod:
     style: |
       ha-card {
         background: transparent !important;
         border: none !important;
         box-shadow: none !important;
-        padding: 32px 4px 4px 4px;
-      }
-      ha-markdown {
         padding: 0 !important;
       }
-      ha-markdown h1 {
-        font-family: 'Fraunces', Georgia, serif;
-        font-weight: 400;
-        font-size: clamp(34px, 5vw, 52px);
-        line-height: 1.05;
-        letter-spacing: -0.02em;
-        color: var(--claude-cream);
-        margin: 0 0 12px 0;
-      }
-      ha-markdown h2 {
-        font-family: 'Fraunces', Georgia, serif;
-        font-weight: 400;
-        font-size: clamp(22px, 2.5vw, 28px);
-        line-height: 1.2;
-        letter-spacing: -0.01em;
-        color: var(--claude-cream);
-        margin: 0 0 6px 0;
-      }
-      ha-markdown p {
-        font-family: 'Inter', system-ui, sans-serif;
-        color: var(--claude-muted);
-        font-size: 16px;
-        line-height: 1.5;
-        margin: 0;
-        max-width: 680px;
-      }
-      ha-markdown .accent {
-        color: var(--claude-primary);
-      }
+      ha-markdown { padding: 0 !important; }
 
-stat_style: &stat_style
+# Standaard surface-card met subtiele border
+surface_card: &surface_card
   card_mod:
     style: |
       ha-card {
-        background: var(--claude-surface);
-        border: 1px solid var(--claude-border);
-        border-radius: 16px;
-        padding: 20px 22px;
+        background: var(--claude-surface) !important;
+        border: 1px solid var(--claude-border) !important;
+        border-radius: 16px !important;
+        box-shadow: none !important;
+        padding: 16px !important;
         transition: border-color 200ms ease, background 200ms ease;
       }
       ha-card:hover {
-        border-color: var(--claude-border-hover);
-        background: var(--claude-surface-2);
+        border-color: var(--claude-border-hover) !important;
       }
-      ha-markdown {
-        padding: 0 !important;
+      ha-markdown { padding: 0 !important; }
+
+# ════════════════════════════════════════════════════════════════════════════
+# Bottom navigation per view (active state hardcoded)
+# ════════════════════════════════════════════════════════════════════════════
+
+# Reusable nav button styles
+nav_active: &nav_active
+  card_mod:
+    style: |
+      ha-card { background: transparent !important; border: none !important; box-shadow: none !important; padding: 6px 4px !important; }
+      mushroom-shape-icon { --shape-color: transparent !important; --icon-color: var(--claude-primary) !important; --icon-size: 28px !important; }
+      .container { padding: 0 !important; }
+      .container .primary { color: var(--claude-primary) !important; font-size: 10px !important; font-weight: 500 !important; text-align: center; }
+      mushroom-state-info { text-align: center; }
+
+nav_inactive: &nav_inactive
+  card_mod:
+    style: |
+      ha-card { background: transparent !important; border: none !important; box-shadow: none !important; padding: 6px 4px !important; }
+      mushroom-shape-icon { --shape-color: transparent !important; --icon-color: var(--claude-muted) !important; --icon-size: 28px !important; }
+      .container { padding: 0 !important; }
+      .container .primary { color: var(--claude-muted) !important; font-size: 10px !important; font-weight: 500 !important; text-align: center; }
+      mushroom-state-info { text-align: center; }
+
+# Outer wrapper: maakt de nav fixed onderaan op mobile
+nav_wrapper: &nav_wrapper
+  card_mod:
+    style: |
+      :host {
+        display: block;
+        margin-top: 24px;
+        background: rgba(31, 30, 28, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid var(--claude-border);
+        border-radius: 22px;
+        padding: 4px 6px;
       }
-      ha-markdown h3 {
-        font-family: 'Inter', system-ui, sans-serif;
-        font-size: 12px;
-        font-weight: 500;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--claude-muted);
-        margin: 0 0 12px 0;
-      }
-      ha-markdown .figure {
-        font-family: 'Fraunces', Georgia, serif;
-        font-size: 40px;
-        font-weight: 400;
-        line-height: 1;
-        color: var(--claude-cream);
-        letter-spacing: -0.02em;
-      }
-      ha-markdown .unit {
-        font-family: 'Inter', system-ui, sans-serif;
-        font-size: 14px;
-        color: var(--claude-muted);
-        margin-left: 4px;
-      }
-      ha-markdown .delta {
-        font-family: 'Inter', system-ui, sans-serif;
-        font-size: 13px;
-        color: var(--claude-primary);
-        margin-top: 6px;
+      @media (max-width: 870px) {
+        :host {
+          position: fixed !important;
+          bottom: 12px !important;
+          left: 12px !important;
+          right: 12px !important;
+          z-index: 999 !important;
+          margin-top: 0 !important;
+        }
       }
 
+# ════════════════════════════════════════════════════════════════════════════
+# VIEWS
+# ════════════════════════════════════════════════════════════════════════════
 views:
-  # ════════════════════════════════════════════════════════════════════════════
+
+  # ───────────────────────────────────────────────────────────────────────
   # 1. START
-  # ════════════════════════════════════════════════════════════════════════════
+  # ───────────────────────────────────────────────────────────────────────
   - title: Start
     path: home
     icon: mdi:home
     type: sections
     max_columns: 4
     sections:
-      # Hero — serif begroeting
-      - type: grid
-        column_span: 4
-        cards:
-          - <<: *hero_style
-            type: markdown
-            content: |
-              # {% set h = now().hour %}{% if h < 6 %}Goedenacht{% elif h < 12 %}Goedemorgen{% elif h < 18 %}Goedemiddag{% else %}Goedenavond{% endif %}, Chris.
-              <p>{{ now().strftime('%A %-d %B') }} · <span class="accent">{{ states('weather.forecast_home') }}</span> · {{ state_attr('weather.forecast_home','temperature') }}°C buiten</p>
 
-      # Personen — strakke avatar-rij
+      # ── HERO ────────────────────────────────────────────────────────────
       - type: grid
         column_span: 4
         cards:
-          - type: horizontal-stack
-            cards:
-              - type: custom:mushroom-person-card
-                entity: person.chris_joosten
-                layout: vertical
-                primary_info: name
-                secondary_info: state
-                icon_type: entity-picture
-                fill_container: true
-                card_mod:
-                  style: |
-                    ha-card {
-                      background: var(--claude-surface);
-                      border: 1px solid var(--claude-border);
-                      border-radius: 16px;
-                      padding: 20px 16px;
-                    }
-                    ha-card:hover { border-color: var(--claude-border-hover); }
-                    .info .primary { font-family: 'Fraunces', Georgia, serif !important; font-weight: 400; font-size: 18px !important; }
-              - type: custom:mushroom-person-card
-                entity: person.marion_joosten
-                layout: vertical
-                primary_info: name
-                secondary_info: state
-                icon_type: entity-picture
-                fill_container: true
-                card_mod:
-                  style: |
-                    ha-card {
-                      background: var(--claude-surface);
-                      border: 1px solid var(--claude-border);
-                      border-radius: 16px;
-                      padding: 20px 16px;
-                    }
-                    ha-card:hover { border-color: var(--claude-border-hover); }
-                    .info .primary { font-family: 'Fraunces', Georgia, serif !important; font-weight: 400; font-size: 18px !important; }
-              - type: custom:mushroom-person-card
-                entity: person.edwin_joosten
-                layout: vertical
-                primary_info: name
-                secondary_info: state
-                icon_type: entity-picture
-                fill_container: true
-                card_mod:
-                  style: |
-                    ha-card {
-                      background: var(--claude-surface);
-                      border: 1px solid var(--claude-border);
-                      border-radius: 16px;
-                      padding: 20px 16px;
-                    }
-                    ha-card:hover { border-color: var(--claude-border-hover); }
-                    .info .primary { font-family: 'Fraunces', Georgia, serif !important; font-weight: 400; font-size: 18px !important; }
+          - <<: *ghost_card
+            type: markdown
+            content: |
+              <div style="padding:16px 4px 12px;">
+                <div style="font-family:'Fraunces',Georgia,serif; font-weight:400; font-size:clamp(34px,7vw,52px); line-height:1.05; letter-spacing:-0.02em; color:var(--claude-cream); margin-bottom:10px;">{% set h = now().hour %}{% if h < 6 %}Goedenacht{% elif h < 12 %}Goedemorgen{% elif h < 18 %}Goedemiddag{% else %}Goedenavond{% endif %}, Chris.</div>
+                <div style="font-family:'Inter',system-ui,sans-serif; font-size:14px; color:var(--claude-muted); line-height:1.5;">{{ now().strftime('%A %-d %B') }} · <span style="color:var(--claude-primary);">{{ states('weather.forecast_home') }}</span> · {{ state_attr('weather.forecast_home','temperature') }}°C</div>
+              </div>
 
-      # Vandaag in cijfers — 4 stat-cards
+      # ── PERSONS (gekleurde initiaal-avatars) ──────────────────────────
       - type: grid
         column_span: 4
         cards:
-          - type: heading
-            heading: Vandaag
-            heading_style: title
-            icon: mdi:weather-sunset
-            card_mod:
-              style: |
-                .container .title {
-                  font-family: 'Fraunces', Georgia, serif !important;
-                  font-weight: 400 !important;
-                  font-size: 28px !important;
-                  letter-spacing: -0.01em;
-                }
-          - <<: *stat_style
+          - <<: *ghost_card
             type: markdown
             content: |
-              ### Zonneproductie
-              <span class="figure">{{ states('sensor.sma_dagopbrengst') }}</span><span class="unit">kWh</span>
-              <div class="delta">Nu {{ states('sensor.zonnepanelen_vermogen') }} W</div>
-          - <<: *stat_style
-            type: markdown
-            content: |
-              ### Buitentemperatuur
-              <span class="figure">{{ state_attr('weather.forecast_home','temperature') }}</span><span class="unit">°C</span>
-              <div class="delta">{{ states('weather.forecast_home') }}</div>
-          - <<: *stat_style
-            type: markdown
-            content: |
-              ### Volgende afval
-              {% set bins = [
-                ('PMD', states('sensor.pmd')),
-                ('Restafval', states('sensor.restafval')),
-                ('Papier', states('sensor.papier'))
-              ] %}
-              {% set next = bins | sort(attribute=1) | first %}
-              <span class="figure" style="font-size:28px;">{{ next[0] }}</span>
-              <div class="delta" style="color: var(--claude-cream-dim);">{{ next[1] }}</div>
-          - <<: *stat_style
-            type: markdown
-            content: |
-              ### Lampen aan
-              <span class="figure">{{ states.switch | selectattr('state','eq','on') | list | count }}</span>
-              <div class="delta" style="color: var(--claude-muted);">van {{ states.switch | list | count }} schakelaars</div>
+              <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+                <div style="background:var(--claude-surface); border:1px solid var(--claude-border); border-radius:16px; padding:18px 12px; text-align:center;">
+                  <div style="width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#C96342,#A84F32); margin:0 auto 10px; display:flex; align-items:center; justify-content:center; font-family:'Fraunces',Georgia,serif; font-size:22px; font-weight:400; color:#F0EEE6;">CJ</div>
+                  <div style="font-family:'Fraunces',Georgia,serif; font-size:16px; color:var(--claude-cream);">Chris</div>
+                  <div style="font-size:11px; color:var(--claude-muted); margin-top:2px;">{% if is_state('person.chris_joosten','home') %}Thuis{% elif is_state('person.chris_joosten','not_home') %}Onderweg{% else %}{{ states('person.chris_joosten') }}{% endif %}</div>
+                </div>
+                <div style="background:var(--claude-surface); border:1px solid var(--claude-border); border-radius:16px; padding:18px 12px; text-align:center;">
+                  <div style="width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#7BA7C9,#4A6E8A); margin:0 auto 10px; display:flex; align-items:center; justify-content:center; font-family:'Fraunces',Georgia,serif; font-size:22px; font-weight:400; color:#F0EEE6;">MJ</div>
+                  <div style="font-family:'Fraunces',Georgia,serif; font-size:16px; color:var(--claude-cream);">Marion</div>
+                  <div style="font-size:11px; color:var(--claude-muted); margin-top:2px;">{% if is_state('person.marion_joosten','home') %}Thuis{% elif is_state('person.marion_joosten','not_home') %}Onderweg{% else %}{{ states('person.marion_joosten') }}{% endif %}</div>
+                </div>
+                <div style="background:var(--claude-surface); border:1px solid var(--claude-border); border-radius:16px; padding:18px 12px; text-align:center;">
+                  <div style="width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#7FB069,#4A7B4A); margin:0 auto 10px; display:flex; align-items:center; justify-content:center; font-family:'Fraunces',Georgia,serif; font-size:22px; font-weight:400; color:#F0EEE6;">EJ</div>
+                  <div style="font-family:'Fraunces',Georgia,serif; font-size:16px; color:var(--claude-cream);">Edwin</div>
+                  <div style="font-size:11px; color:var(--claude-muted); margin-top:2px;">{% if is_state('person.edwin_joosten','home') %}Thuis{% elif is_state('person.edwin_joosten','not_home') %}Onderweg{% else %}{{ states('person.edwin_joosten') }}{% endif %}</div>
+                </div>
+              </div>
 
-      # Snelle lamp-controles
+      # ── VANDAAG SECTION TITLE ──────────────────────────────────────────
       - type: grid
         column_span: 4
         cards:
-          - type: heading
-            heading: Verlichting
-            heading_style: title
-            icon: mdi:lightbulb-outline
-            card_mod:
-              style: |
-                .container .title {
-                  font-family: 'Fraunces', Georgia, serif !important;
-                  font-weight: 400 !important;
-                  font-size: 28px !important;
-                  letter-spacing: -0.01em;
-                }
+          - <<: *ghost_card
+            type: markdown
+            content: |
+              <div style="font-family:'Fraunces',Georgia,serif; font-weight:400; font-size:26px; letter-spacing:-0.01em; color:var(--claude-cream); margin:8px 4px 8px;">Vandaag</div>
+
+      # ── 4 STAT CARDS ───────────────────────────────────────────────────
+      - type: grid
+        column_span: 4
+        cards:
+          - <<: *surface_card
+            type: markdown
+            content: |
+              <div>
+                <div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--claude-muted); margin-bottom:10px;">Zon</div>
+                <div><span style="font-family:'Fraunces',Georgia,serif; font-size:32px; line-height:1; letter-spacing:-0.02em; color:var(--claude-cream);">{{ states('sensor.sma_dagopbrengst') }}</span><span style="font-size:13px; color:var(--claude-muted); margin-left:4px;">kWh</span></div>
+                <div style="font-size:12px; color:var(--claude-primary); margin-top:6px;">{{ states('sensor.zonnepanelen_vermogen') }} W nu</div>
+              </div>
+          - <<: *surface_card
+            type: markdown
+            content: |
+              <div>
+                <div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--claude-muted); margin-bottom:10px;">Buiten</div>
+                <div><span style="font-family:'Fraunces',Georgia,serif; font-size:32px; line-height:1; letter-spacing:-0.02em; color:var(--claude-cream);">{{ state_attr('weather.forecast_home','temperature') }}</span><span style="font-size:13px; color:var(--claude-muted); margin-left:4px;">°C</span></div>
+                <div style="font-size:12px; color:var(--claude-primary); margin-top:6px;">{{ states('weather.forecast_home') }}</div>
+              </div>
+          - <<: *surface_card
+            type: markdown
+            content: |
+              <div>
+                <div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--claude-muted); margin-bottom:10px;">Volgend afval</div>
+                <div><span style="font-family:'Fraunces',Georgia,serif; font-size:24px; line-height:1; letter-spacing:-0.02em; color:var(--claude-cream);">
+                {%- set bins = [
+                  ('PMD', states('sensor.pmd')),
+                  ('Restafval', states('sensor.restafval')),
+                  ('Papier', states('sensor.papier'))
+                ] -%}
+                {{ bins[0][0] }}</span></div>
+                <div style="font-size:12px; color:var(--claude-cream-dim); margin-top:6px;">{{ bins[0][1] }}</div>
+              </div>
+          - <<: *surface_card
+            type: markdown
+            content: |
+              <div>
+                <div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--claude-muted); margin-bottom:10px;">Lampen</div>
+                <div><span style="font-family:'Fraunces',Georgia,serif; font-size:32px; line-height:1; letter-spacing:-0.02em; color:var(--claude-cream);">{{ expand('switch.woonkamerlamp','switch.overkappinglamp','switch.opritlamp','switch.spotjes_overkapping') | selectattr('state','eq','on') | list | count }}</span><span style="font-size:13px; color:var(--claude-muted); margin-left:4px;">/4 aan</span></div>
+                <div style="font-size:12px; color:var(--claude-muted); margin-top:6px;">4 schakelaars</div>
+              </div>
+
+      # ── VERLICHTING ─────────────────────────────────────────────────────
+      - type: grid
+        column_span: 4
+        cards:
+          - <<: *ghost_card
+            type: markdown
+            content: |
+              <div style="font-family:'Fraunces',Georgia,serif; font-weight:400; font-size:26px; letter-spacing:-0.01em; color:var(--claude-cream); margin:16px 4px 8px;">Verlichting</div>
           - type: tile
             entity: switch.woonkamerlamp
             name: Woonkamer
@@ -261,260 +219,235 @@ views:
             name: Spotjes
             icon: mdi:track-light
 
-  # ════════════════════════════════════════════════════════════════════════════
+      # ── BOTTOM NAV (Start active) ──────────────────────────────────────
+      - type: grid
+        column_span: 4
+        cards:
+          - <<: *nav_wrapper
+            type: horizontal-stack
+            cards:
+              - <<: *nav_active
+                type: custom:mushroom-template-card
+                primary: Start
+                icon: mdi:home
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/home }
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Zon
+                icon: mdi:weather-sunny
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/zonnepanelen }
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Lampen
+                icon: mdi:lightbulb-outline
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/tv-klimaat }
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Afval
+                icon: mdi:recycle
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/afval }
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Weer
+                icon: mdi:weather-partly-cloudy
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/weer }
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Benzine
+                icon: mdi:gas-station
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/benzine }
+
+  # ───────────────────────────────────────────────────────────────────────
   # 2. ZONNEPANELEN
-  # ════════════════════════════════════════════════════════════════════════════
+  # ───────────────────────────────────────────────────────────────────────
   - title: Zonnepanelen
     path: zonnepanelen
-    icon: mdi:solar-power
+    icon: mdi:weather-sunny
     type: sections
     max_columns: 4
     sections:
+
       - type: grid
         column_span: 4
         cards:
-          - <<: *hero_style
+          - <<: *ghost_card
             type: markdown
             content: |
-              # Zonnepanelen
-              <p>Live opbrengst, opbrengstgeschiedenis en handmatige limietsturing voor de SMA-omvormer. Status nu: <span class="accent">{{ states('sensor.zonnepanelen_status') }}</span>, limiet <span class="accent">{{ states('sensor.zonnepanelen_limiet_percentage') }}%</span>.</p>
+              <div style="padding:16px 4px 12px;">
+                <div style="font-family:'Fraunces',Georgia,serif; font-weight:400; font-size:clamp(34px,7vw,52px); line-height:1.05; letter-spacing:-0.02em; color:var(--claude-cream); margin-bottom:10px;">Zonnepanelen</div>
+                <div style="font-family:'Inter',system-ui,sans-serif; font-size:14px; color:var(--claude-muted); line-height:1.5;">Status <span style="color:var(--claude-primary);">{{ states('sensor.zonnepanelen_status') }}</span> · limiet <span style="color:var(--claude-primary);">{{ states('sensor.zonnepanelen_limiet_percentage') }}%</span></div>
+              </div>
 
-      # Live cijfers
       - type: grid
         column_span: 4
         cards:
-          - <<: *stat_style
+          - <<: *surface_card
             type: markdown
             content: |
-              ### Vermogen nu
-              <span class="figure">{{ states('sensor.zonnepanelen_vermogen') }}</span><span class="unit">W</span>
-          - <<: *stat_style
+              <div>
+                <div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--claude-muted); margin-bottom:10px;">Nu</div>
+                <div><span style="font-family:'Fraunces',Georgia,serif; font-size:32px; line-height:1; letter-spacing:-0.02em; color:var(--claude-cream);">{{ states('sensor.zonnepanelen_vermogen') }}</span><span style="font-size:13px; color:var(--claude-muted); margin-left:4px;">W</span></div>
+              </div>
+          - <<: *surface_card
             type: markdown
             content: |
-              ### Vandaag
-              <span class="figure">{{ states('sensor.sma_dagopbrengst') }}</span><span class="unit">kWh</span>
-          - <<: *stat_style
+              <div>
+                <div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--claude-muted); margin-bottom:10px;">Vandaag</div>
+                <div><span style="font-family:'Fraunces',Georgia,serif; font-size:32px; line-height:1; letter-spacing:-0.02em; color:var(--claude-cream);">{{ states('sensor.sma_dagopbrengst') }}</span><span style="font-size:13px; color:var(--claude-muted); margin-left:4px;">kWh</span></div>
+              </div>
+          - <<: *surface_card
             type: markdown
             content: |
-              ### Totaal
-              <span class="figure">{{ states('sensor.sma_totale_opbrengst') }}</span><span class="unit">kWh</span>
-          - <<: *stat_style
+              <div>
+                <div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--claude-muted); margin-bottom:10px;">Totaal</div>
+                <div><span style="font-family:'Fraunces',Georgia,serif; font-size:32px; line-height:1; letter-spacing:-0.02em; color:var(--claude-cream);">{{ states('sensor.sma_totale_opbrengst') }}</span><span style="font-size:13px; color:var(--claude-muted); margin-left:4px;">kWh</span></div>
+              </div>
+          - <<: *surface_card
             type: markdown
             content: |
-              ### Limiet
-              <span class="figure">{{ states('sensor.zonnepanelen_limiet_percentage') }}</span><span class="unit">%</span>
-              <div class="delta">{{ states('sensor.zonnepanelen_status') }}</div>
+              <div>
+                <div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--claude-muted); margin-bottom:10px;">Limiet</div>
+                <div><span style="font-family:'Fraunces',Georgia,serif; font-size:32px; line-height:1; letter-spacing:-0.02em; color:var(--claude-cream);">{{ states('sensor.zonnepanelen_limiet_percentage') }}</span><span style="font-size:13px; color:var(--claude-muted); margin-left:4px;">%</span></div>
+              </div>
 
-      # Gauge + grafiek
+      # ── Vermogen + grafiek ──────────────────────────────────────────────
       - type: grid
         column_span: 2
         cards:
-          - type: heading
-            heading: Huidig vermogen
-            heading_style: subtitle
-            card_mod:
-              style: |
-                .container .title {
-                  font-family: 'Inter', sans-serif !important;
-                  font-size: 12px !important;
-                  letter-spacing: 0.08em;
-                  text-transform: uppercase;
-                  color: var(--claude-muted) !important;
-                }
+          - <<: *ghost_card
+            type: markdown
+            content: '<div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--claude-muted); margin:8px 4px;">Vermogen</div>'
           - type: gauge
             entity: sensor.zonnepanelen_vermogen
             name: ' '
             min: 0
             max: 6000
             needle: true
-            severity:
-              red: 0
-              yellow: 100
-              green: 1000
+            severity: { red: 0, yellow: 100, green: 1000 }
             card_mod:
               style: |
-                ha-card {
-                  background: var(--claude-surface);
-                  border: 1px solid var(--claude-border);
-                  border-radius: 16px;
-                  padding: 16px;
-                }
+                ha-card { background: var(--claude-surface) !important; border: 1px solid var(--claude-border) !important; border-radius: 16px !important; padding: 16px !important; box-shadow: none !important; }
 
       - type: grid
         column_span: 2
         cards:
-          - type: heading
-            heading: Verloop vandaag
-            heading_style: subtitle
-            card_mod:
-              style: |
-                .container .title {
-                  font-family: 'Inter', sans-serif !important;
-                  font-size: 12px !important;
-                  letter-spacing: 0.08em;
-                  text-transform: uppercase;
-                  color: var(--claude-muted) !important;
-                }
+          - <<: *ghost_card
+            type: markdown
+            content: '<div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--claude-muted); margin:8px 4px;">Verloop vandaag</div>'
           - type: custom:mini-graph-card
             entity: sensor.zonnepanelen_vermogen
             name: ' '
             hours_to_show: 24
             points_per_hour: 6
             line_width: 2
-            line_color: "#C96342"
+            line_color: '#C96342'
             smoothing: true
-            show:
-              fill: fade
-              extrema: true
-              labels: true
-              name: false
+            show: { fill: fade, extrema: true, labels: true, name: false }
             card_mod:
               style: |
-                ha-card {
-                  background: var(--claude-surface);
-                  border: 1px solid var(--claude-border);
-                  border-radius: 16px;
-                  padding: 12px;
-                }
+                ha-card { background: var(--claude-surface) !important; border: 1px solid var(--claude-border) !important; border-radius: 16px !important; padding: 12px !important; box-shadow: none !important; }
 
-      # Limietsturing — Claude pill-buttons
+      # ── Limiet pillen ───────────────────────────────────────────────────
       - type: grid
         column_span: 4
         cards:
-          - type: heading
-            heading: Limiet instellen
-            heading_style: title
-            icon: mdi:tune-vertical
-            card_mod:
-              style: |
-                .container .title {
-                  font-family: 'Fraunces', Georgia, serif !important;
-                  font-weight: 400 !important;
-                  font-size: 28px !important;
-                  letter-spacing: -0.01em;
-                }
+          - <<: *ghost_card
+            type: markdown
+            content: '<div style="font-family:''Fraunces'',Georgia,serif; font-weight:400; font-size:26px; letter-spacing:-0.01em; color:var(--claude-cream); margin:16px 4px 8px;">Limiet</div>'
           - type: button
-            name: Volledig
-            icon: mdi:solar-power-variant
+            name: 100%
+            icon: mdi:weather-sunny
             icon_height: 32px
-            tap_action:
-              action: call-service
-              service: script.zonnepanelen_aanzetten
-              confirmation:
-                text: Zonnepanelen op 100% zetten?
+            tap_action: { action: call-service, service: script.zonnepanelen_aanzetten, confirmation: { text: 'Op 100% zetten?' } }
             card_mod:
               style: |
-                ha-card {
-                  background: var(--claude-primary);
-                  border: 1px solid var(--claude-primary);
-                  border-radius: 16px;
-                  padding: 24px 12px;
-                  color: var(--claude-cream) !important;
-                  transition: background 200ms ease;
-                }
-                ha-card:hover { background: var(--claude-primary-soft); }
-                ha-card .name { font-family: 'Fraunces', Georgia, serif !important; font-size: 18px !important; color: var(--claude-cream) !important; }
+                ha-card { background: var(--claude-primary) !important; border: 1px solid var(--claude-primary) !important; border-radius: 16px !important; padding: 20px 12px !important; box-shadow: none !important; }
+                ha-card .name { font-family: 'Fraunces',Georgia,serif !important; font-size: 16px !important; color: var(--claude-cream) !important; font-weight: 400 !important; }
                 ha-card ha-icon { color: var(--claude-cream) !important; }
           - type: button
-            name: Halve kracht
-            icon: mdi:solar-power
+            name: 50%
+            icon: mdi:circle-half-full
             icon_height: 32px
-            tap_action:
-              action: call-service
-              service: script.zonnepanelen_50_procent
-              confirmation:
-                text: Zonnepanelen op 50% zetten?
+            tap_action: { action: call-service, service: script.zonnepanelen_50_procent, confirmation: { text: 'Op 50% zetten?' } }
             card_mod:
               style: |
-                ha-card {
-                  background: var(--claude-surface);
-                  border: 1px solid var(--claude-border-hover);
-                  border-radius: 16px;
-                  padding: 24px 12px;
-                  transition: background 200ms ease;
-                }
-                ha-card:hover { background: var(--claude-surface-2); }
-                ha-card .name { font-family: 'Fraunces', Georgia, serif !important; font-size: 18px !important; color: var(--claude-cream) !important; }
+                ha-card { background: var(--claude-surface) !important; border: 1px solid var(--claude-border-hover) !important; border-radius: 16px !important; padding: 20px 12px !important; box-shadow: none !important; }
+                ha-card .name { font-family: 'Fraunces',Georgia,serif !important; font-size: 16px !important; color: var(--claude-cream) !important; font-weight: 400 !important; }
                 ha-card ha-icon { color: var(--claude-primary-soft) !important; }
           - type: button
             name: Uit
             icon: mdi:power
             icon_height: 32px
-            tap_action:
-              action: call-service
-              service: script.zonnepanelen_uitschakelen
-              confirmation:
-                text: Zonnepanelen volledig uitschakelen?
+            tap_action: { action: call-service, service: script.zonnepanelen_uitschakelen, confirmation: { text: 'Volledig uitschakelen?' } }
             card_mod:
               style: |
-                ha-card {
-                  background: transparent;
-                  border: 1px solid var(--claude-border-hover);
-                  border-radius: 16px;
-                  padding: 24px 12px;
-                  transition: border-color 200ms ease;
-                }
-                ha-card:hover { border-color: var(--claude-danger); }
-                ha-card .name { font-family: 'Fraunces', Georgia, serif !important; font-size: 18px !important; color: var(--claude-cream-dim) !important; }
+                ha-card { background: transparent !important; border: 1px solid var(--claude-border-hover) !important; border-radius: 16px !important; padding: 20px 12px !important; box-shadow: none !important; }
+                ha-card .name { font-family: 'Fraunces',Georgia,serif !important; font-size: 16px !important; color: var(--claude-cream-dim) !important; font-weight: 400 !important; }
                 ha-card ha-icon { color: var(--claude-muted) !important; }
 
-      # Details
+      # ── Bottom nav (Zon active) ─────────────────────────────────────────
       - type: grid
         column_span: 4
         cards:
-          - type: heading
-            heading: Details
-            heading_style: subtitle
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: sensor.zonnepanelen_status
-                name: Status
-              - entity: sensor.zonnepanelen_limiet_percentage
-                name: Vermogenslimiet
-              - entity: sensor.sma_dc_vermogen_string_a
-                name: DC string A
-              - type: divider
-              - entity: sensor.sma_ac_vermogen
-                name: Raw AC vermogen
-              - entity: sensor.sma_limiet_percentage_raw
-                name: Raw limiet
-            card_mod:
-              style: |
-                ha-card {
-                  background: var(--claude-surface);
-                  border: 1px solid var(--claude-border);
-                  border-radius: 16px;
-                  padding: 8px 4px;
-                }
-                .card-header { font-family: 'Fraunces', Georgia, serif !important; font-weight: 400; }
+          - <<: *nav_wrapper
+            type: horizontal-stack
+            cards:
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Start
+                icon: mdi:home
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/home }
+              - <<: *nav_active
+                type: custom:mushroom-template-card
+                primary: Zon
+                icon: mdi:weather-sunny
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/zonnepanelen }
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Lampen
+                icon: mdi:lightbulb-outline
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/tv-klimaat }
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Afval
+                icon: mdi:recycle
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/afval }
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Weer
+                icon: mdi:weather-partly-cloudy
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/weer }
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Benzine
+                icon: mdi:gas-station
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/benzine }
 
-  # ════════════════════════════════════════════════════════════════════════════
-  # 3. TV & KLIMAAT (lampen + schema's)
-  # ════════════════════════════════════════════════════════════════════════════
+  # ───────────────────────────────────────────────────────────────────────
+  # 3. TV & KLIMAAT (lampen)
+  # ───────────────────────────────────────────────────────────────────────
   - title: TV & Klimaat
     path: tv-klimaat
-    icon: mdi:coach-lamp
+    icon: mdi:lightbulb-outline
     type: sections
     max_columns: 3
     sections:
       - type: grid
         column_span: 3
         cards:
-          - <<: *hero_style
+          - <<: *ghost_card
             type: markdown
             content: |
-              # Verlichting & schema's
-              <p>Schakel lampen handmatig of laat ze op de ingestelde tijden draaien.</p>
+              <div style="padding:16px 4px 12px;">
+                <div style="font-family:'Fraunces',Georgia,serif; font-weight:400; font-size:clamp(30px,7vw,46px); line-height:1.05; letter-spacing:-0.02em; color:var(--claude-cream); margin-bottom:10px;">Verlichting &amp; schema's</div>
+                <div style="font-family:'Inter',system-ui,sans-serif; font-size:14px; color:var(--claude-muted); line-height:1.5;">Schakel handmatig of laat ze op tijd draaien.</div>
+              </div>
 
-      # Lampen — links
       - type: grid
-        column_span: 1
         cards:
-          - type: heading
-            heading: Lampen
-            heading_style: subtitle
-            icon: mdi:lightbulb-multiple
+          - <<: *ghost_card
+            type: markdown
+            content: '<div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--claude-muted); margin:8px 4px;">Lampen</div>'
           - type: tile
             entity: switch.woonkamerlamp
             name: Woonkamer
@@ -532,14 +465,11 @@ views:
             name: Spotjes overkapping
             icon: mdi:track-light
 
-      # Schema woonkamer
       - type: grid
-        column_span: 1
         cards:
-          - type: heading
-            heading: Woonkamer schema
-            heading_style: subtitle
-            icon: mdi:clock-outline
+          - <<: *ghost_card
+            type: markdown
+            content: '<div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--claude-muted); margin:8px 4px;">Woonkamer schema</div>'
           - type: entities
             show_header_toggle: false
             entities:
@@ -549,21 +479,13 @@ views:
                 name: Uit om
             card_mod:
               style: |
-                ha-card {
-                  background: var(--claude-surface);
-                  border: 1px solid var(--claude-border);
-                  border-radius: 16px;
-                  padding: 8px 4px;
-                }
+                ha-card { background: var(--claude-surface) !important; border: 1px solid var(--claude-border) !important; border-radius: 16px !important; box-shadow: none !important; padding: 4px 8px !important; }
 
-      # Schema buitenlampen
       - type: grid
-        column_span: 1
         cards:
-          - type: heading
-            heading: Buitenlampen schema
-            heading_style: subtitle
-            icon: mdi:weather-sunset
+          - <<: *ghost_card
+            type: markdown
+            content: '<div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--claude-muted); margin:8px 4px;">Buitenlampen schema</div>'
           - type: entities
             show_header_toggle: false
             entities:
@@ -573,32 +495,66 @@ views:
                 name: Uit om
             card_mod:
               style: |
-                ha-card {
-                  background: var(--claude-surface);
-                  border: 1px solid var(--claude-border);
-                  border-radius: 16px;
-                  padding: 8px 4px;
-                }
+                ha-card { background: var(--claude-surface) !important; border: 1px solid var(--claude-border) !important; border-radius: 16px !important; box-shadow: none !important; padding: 4px 8px !important; }
 
-  # ════════════════════════════════════════════════════════════════════════════
+      # Bottom nav
+      - type: grid
+        column_span: 3
+        cards:
+          - <<: *nav_wrapper
+            type: horizontal-stack
+            cards:
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Start
+                icon: mdi:home
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/home }
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Zon
+                icon: mdi:weather-sunny
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/zonnepanelen }
+              - <<: *nav_active
+                type: custom:mushroom-template-card
+                primary: Lampen
+                icon: mdi:lightbulb-outline
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/tv-klimaat }
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Afval
+                icon: mdi:recycle
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/afval }
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Weer
+                icon: mdi:weather-partly-cloudy
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/weer }
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Benzine
+                icon: mdi:gas-station
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/benzine }
+
+  # ───────────────────────────────────────────────────────────────────────
   # 4. AFVAL
-  # ════════════════════════════════════════════════════════════════════════════
+  # ───────────────────────────────────────────────────────────────────────
   - title: Afval
     path: afval
-    icon: mdi:trash-can-outline
+    icon: mdi:recycle
     type: sections
     max_columns: 3
     sections:
       - type: grid
         column_span: 3
         cards:
-          - <<: *hero_style
+          - <<: *ghost_card
             type: markdown
             content: |
-              # Afvalkalender
-              <p>De volgende ophaaldagen volgens de gemeentekalender.</p>
+              <div style="padding:16px 4px 12px;">
+                <div style="font-family:'Fraunces',Georgia,serif; font-weight:400; font-size:clamp(34px,7vw,52px); line-height:1.05; letter-spacing:-0.02em; color:var(--claude-cream); margin-bottom:10px;">Afvalkalender</div>
+                <div style="font-family:'Inter',system-ui,sans-serif; font-size:14px; color:var(--claude-muted); line-height:1.5;">Volgende ophaaldagen volgens de gemeentekalender.</div>
+              </div>
 
-      # Conditioneel: morgen buitenzetten
       - type: grid
         column_span: 3
         cards:
@@ -606,77 +562,89 @@ views:
             conditions:
               - condition: or
                 conditions:
-                  - condition: state
-                    entity: sensor.pmd
-                    state: Morgen
-                  - condition: state
-                    entity: sensor.restafval
-                    state: Morgen
-                  - condition: state
-                    entity: sensor.papier
-                    state: Morgen
+                  - { condition: state, entity: sensor.pmd, state: Morgen }
+                  - { condition: state, entity: sensor.restafval, state: Morgen }
+                  - { condition: state, entity: sensor.papier, state: Morgen }
             card:
               type: markdown
               content: |
-                ## ✱ Morgen buitenzetten
-                <p>{% if is_state('sensor.pmd','Morgen') %}PMD · {% endif %}{% if is_state('sensor.restafval','Morgen') %}Restafval · {% endif %}{% if is_state('sensor.papier','Morgen') %}Papier{% endif %}</p>
+                <div>
+                  <div style="font-family:'Fraunces',Georgia,serif; font-size:22px; font-weight:400; color:var(--claude-cream); margin-bottom:4px;">✱ Morgen buitenzetten</div>
+                  <div style="font-family:'Inter',sans-serif; font-size:13px; color:var(--claude-cream-dim);">{% if is_state('sensor.pmd','Morgen') %}PMD{% endif %}{% if is_state('sensor.restafval','Morgen') %}{% if is_state('sensor.pmd','Morgen') %} · {% endif %}Restafval{% endif %}{% if is_state('sensor.papier','Morgen') %}{% if is_state('sensor.pmd','Morgen') or is_state('sensor.restafval','Morgen') %} · {% endif %}Papier{% endif %}</div>
+                </div>
               card_mod:
                 style: |
-                  ha-card {
-                    background: linear-gradient(135deg, rgba(201, 99, 66, 0.18) 0%, rgba(201, 99, 66, 0.04) 100%);
-                    border: 1px solid var(--claude-primary);
-                    border-radius: 16px;
-                    padding: 18px 22px;
-                  }
+                  ha-card { background: linear-gradient(135deg, rgba(201,99,66,0.18) 0%, rgba(201,99,66,0.04) 100%) !important; border: 1px solid var(--claude-primary) !important; border-radius: 16px !important; padding: 16px 18px !important; box-shadow: none !important; }
                   ha-markdown { padding: 0 !important; }
-                  ha-markdown h2 {
-                    font-family: 'Fraunces', Georgia, serif !important;
-                    font-weight: 400;
-                    font-size: 24px;
-                    color: var(--claude-cream) !important;
-                    margin: 0 0 6px 0;
-                  }
-                  ha-markdown p {
-                    font-family: 'Inter', sans-serif !important;
-                    color: var(--claude-cream-dim) !important;
-                    margin: 0;
-                  }
 
-      # Drie afval-cards met serif typografie
       - type: grid
         column_span: 3
         cards:
-          - <<: *stat_style
+          - <<: *surface_card
             type: markdown
             content: |
-              ### PMD
-              <span class="figure" style="font-size:32px;">{{ states('sensor.pmd') }}</span>
-              <div class="delta">Plastic, metaal & drinkpakken</div>
-            tap_action:
-              action: more-info
-              entity: sensor.pmd
-          - <<: *stat_style
+              <div>
+                <div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--claude-muted); margin-bottom:10px;">PMD</div>
+                <div style="font-family:'Fraunces',Georgia,serif; font-size:24px; line-height:1; letter-spacing:-0.02em; color:var(--claude-cream);">{{ states('sensor.pmd') }}</div>
+                <div style="font-size:12px; color:var(--claude-primary); margin-top:6px;">Plastic, metaal &amp; drinkpakken</div>
+              </div>
+          - <<: *surface_card
             type: markdown
             content: |
-              ### Restafval
-              <span class="figure" style="font-size:32px;">{{ states('sensor.restafval') }}</span>
-              <div class="delta">Niet recyclebaar</div>
-            tap_action:
-              action: more-info
-              entity: sensor.restafval
-          - <<: *stat_style
+              <div>
+                <div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--claude-muted); margin-bottom:10px;">Restafval</div>
+                <div style="font-family:'Fraunces',Georgia,serif; font-size:24px; line-height:1; letter-spacing:-0.02em; color:var(--claude-cream);">{{ states('sensor.restafval') }}</div>
+                <div style="font-size:12px; color:var(--claude-primary); margin-top:6px;">Niet recyclebaar</div>
+              </div>
+          - <<: *surface_card
             type: markdown
             content: |
-              ### Papier
-              <span class="figure" style="font-size:32px;">{{ states('sensor.papier') }}</span>
-              <div class="delta">Karton & papier</div>
-            tap_action:
-              action: more-info
-              entity: sensor.papier
+              <div>
+                <div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--claude-muted); margin-bottom:10px;">Papier</div>
+                <div style="font-family:'Fraunces',Georgia,serif; font-size:24px; line-height:1; letter-spacing:-0.02em; color:var(--claude-cream);">{{ states('sensor.papier') }}</div>
+                <div style="font-size:12px; color:var(--claude-primary); margin-top:6px;">Karton &amp; papier</div>
+              </div>
 
-  # ════════════════════════════════════════════════════════════════════════════
+      - type: grid
+        column_span: 3
+        cards:
+          - <<: *nav_wrapper
+            type: horizontal-stack
+            cards:
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Start
+                icon: mdi:home
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/home }
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Zon
+                icon: mdi:weather-sunny
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/zonnepanelen }
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Lampen
+                icon: mdi:lightbulb-outline
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/tv-klimaat }
+              - <<: *nav_active
+                type: custom:mushroom-template-card
+                primary: Afval
+                icon: mdi:recycle
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/afval }
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Weer
+                icon: mdi:weather-partly-cloudy
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/weer }
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Benzine
+                icon: mdi:gas-station
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/benzine }
+
+  # ───────────────────────────────────────────────────────────────────────
   # 5. WEER
-  # ════════════════════════════════════════════════════════════════════════════
+  # ───────────────────────────────────────────────────────────────────────
   - title: Weer
     path: weer
     icon: mdi:weather-partly-cloudy
@@ -686,85 +654,97 @@ views:
       - type: grid
         column_span: 3
         cards:
-          - <<: *hero_style
+          - <<: *ghost_card
             type: markdown
             content: |
-              # Weer & klimaat
-              <p>Het is nu <span class="accent">{{ state_attr('weather.forecast_home','temperature') }}°C</span> · {{ states('weather.forecast_home') }}. Binnen op {{ state_attr('climate.woonkamer','current_temperature') }}°C.</p>
+              <div style="padding:16px 4px 12px;">
+                <div style="font-family:'Fraunces',Georgia,serif; font-weight:400; font-size:clamp(34px,7vw,52px); line-height:1.05; letter-spacing:-0.02em; color:var(--claude-cream); margin-bottom:10px;">Weer &amp; klimaat</div>
+                <div style="font-family:'Inter',system-ui,sans-serif; font-size:14px; color:var(--claude-muted); line-height:1.5;">Het is nu <span style="color:var(--claude-primary);">{{ state_attr('weather.forecast_home','temperature') }}°C</span> · {{ states('weather.forecast_home') }}. Binnen op {{ state_attr('climate.woonkamer','current_temperature') }}°C.</div>
+              </div>
 
-      # Thermostaat
       - type: grid
-        column_span: 1
         cards:
-          - type: heading
-            heading: Thermostaat
-            heading_style: subtitle
+          - <<: *ghost_card
+            type: markdown
+            content: '<div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--claude-muted); margin:8px 4px;">Thermostaat</div>'
           - type: custom:mushroom-climate-card
             entity: climate.woonkamer
             name: Woonkamer
             show_temperature_control: true
-            hvac_modes:
-              - 'off'
-              - cool
-              - heat
-              - fan_only
+            hvac_modes: ['off', cool, heat, fan_only]
             fill_container: true
             card_mod:
               style: |
-                ha-card {
-                  background: var(--claude-surface);
-                  border: 1px solid var(--claude-border);
-                  border-radius: 16px;
-                  padding: 18px;
-                }
-                .info .primary {
-                  font-family: 'Fraunces', Georgia, serif !important;
-                  font-weight: 400 !important;
-                  font-size: 18px !important;
-                }
+                ha-card { background: var(--claude-surface) !important; border: 1px solid var(--claude-border) !important; border-radius: 16px !important; box-shadow: none !important; padding: 16px !important; }
+                .container .primary { font-family: 'Fraunces',Georgia,serif !important; font-weight: 400 !important; font-size: 17px !important; }
 
-      # Forecast
       - type: grid
         column_span: 2
         cards:
-          - type: heading
-            heading: 5-daagse voorspelling
-            heading_style: subtitle
+          - <<: *ghost_card
+            type: markdown
+            content: '<div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--claude-muted); margin:8px 4px;">5-daagse</div>'
           - type: weather-forecast
             entity: weather.forecast_home
             forecast_type: daily
             show_current: false
             card_mod:
               style: |
-                ha-card {
-                  background: var(--claude-surface);
-                  border: 1px solid var(--claude-border);
-                  border-radius: 16px;
-                  padding: 12px;
-                }
+                ha-card { background: var(--claude-surface) !important; border: 1px solid var(--claude-border) !important; border-radius: 16px !important; box-shadow: none !important; padding: 12px !important; }
 
-      # Neerslag
       - type: grid
         column_span: 3
         cards:
-          - type: heading
-            heading: Neerslag radar
-            heading_style: subtitle
+          - <<: *ghost_card
+            type: markdown
+            content: '<div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--claude-muted); margin:8px 4px;">Neerslag radar</div>'
           - type: custom:neerslag-card
             entity: sensor.neerslag_buienalarm_regen_data
             title: ' '
             card_mod:
               style: |
-                ha-card {
-                  background: var(--claude-surface);
-                  border: 1px solid var(--claude-border);
-                  border-radius: 16px;
-                  padding: 12px;
-                }
+                ha-card { background: var(--claude-surface) !important; border: 1px solid var(--claude-border) !important; border-radius: 16px !important; box-shadow: none !important; padding: 12px !important; }
 
-  # ════════════════════════════════════════════════════════════════════════════
+      - type: grid
+        column_span: 3
+        cards:
+          - <<: *nav_wrapper
+            type: horizontal-stack
+            cards:
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Start
+                icon: mdi:home
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/home }
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Zon
+                icon: mdi:weather-sunny
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/zonnepanelen }
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Lampen
+                icon: mdi:lightbulb-outline
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/tv-klimaat }
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Afval
+                icon: mdi:recycle
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/afval }
+              - <<: *nav_active
+                type: custom:mushroom-template-card
+                primary: Weer
+                icon: mdi:weather-partly-cloudy
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/weer }
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Benzine
+                icon: mdi:gas-station
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/benzine }
+
+  # ───────────────────────────────────────────────────────────────────────
   # 6. BENZINE
-  # ════════════════════════════════════════════════════════════════════════════
+  # ───────────────────────────────────────────────────────────────────────
   - title: Benzine
     path: benzine
     icon: mdi:gas-station
@@ -774,80 +754,72 @@ views:
       - type: grid
         column_span: 3
         cards:
-          - <<: *hero_style
+          - <<: *ghost_card
             type: markdown
             content: |
-              # Brandstofprijzen
-              <p>Live prijzen van Euro 95 (E10) bij grenstankstations in <span class="accent">Duitsland</span> en <span class="accent">België</span>.</p>
-
-      # Duitsland
-      - type: grid
-        column_span: 3
-        cards:
-          - type: heading
-            heading: Duitsland
-            heading_style: title
-            icon: mdi:flag
-            card_mod:
-              style: |
-                .container .title {
-                  font-family: 'Fraunces', Georgia, serif !important;
-                  font-weight: 400 !important;
-                  font-size: 26px !important;
-                }
-          - <<: *stat_style
-            type: markdown
-            content: |
-              ### OIL · Steyler Strasse 157
-              <span class="figure">{{ states('sensor.oil_steyler_strasse_157_euro_95_loodvrij_e10') }}</span><span class="unit">€/L</span>
-              <div class="delta">Euro 95 · E10</div>
-          - <<: *stat_style
-            type: markdown
-            content: |
-              ### Shell · Steyler Str 179
-              <span class="figure">{{ states('sensor.shell_steyler_str_179_euro_95_loodvrij_e10') }}</span><span class="unit">€/L</span>
-              <div class="delta">Euro 95 · E10</div>
-
-      # België
-      - type: grid
-        column_span: 3
-        cards:
-          - type: heading
-            heading: België
-            heading_style: title
-            icon: mdi:flag-outline
-            card_mod:
-              style: |
-                .container .title {
-                  font-family: 'Fraunces', Georgia, serif !important;
-                  font-weight: 400 !important;
-                  font-size: 26px !important;
-                }
-          - <<: *stat_style
-            type: markdown
-            content: |
-              ### Carbu.com · 3640
-              <span class="figure">{{ states('sensor.carbu_com_super95_3640_price') }}</span><span class="unit">€/L</span>
-              <div class="delta">Goedkoopste in postcode 3640</div>
-          - <<: *stat_style
-            type: markdown
-            content: |
-              ### Binnen 5 km
-              <span class="figure">{{ states('sensor.carbu_com_super95_3640_5km') }}</span><span class="unit">€/L</span>
-              <div class="delta">Beste prijs in 5 km radius</div>
-          - <<: *stat_style
-            type: markdown
-            content: |
-              ### Binnen 10 km
-              <span class="figure">{{ states('sensor.carbu_com_super95_3640_10km') }}</span><span class="unit">€/L</span>
-              <div class="delta">Beste prijs in 10 km radius</div>
+              <div style="padding:16px 4px 12px;">
+                <div style="font-family:'Fraunces',Georgia,serif; font-weight:400; font-size:clamp(34px,7vw,52px); line-height:1.05; letter-spacing:-0.02em; color:var(--claude-cream); margin-bottom:10px;">Brandstof</div>
+                <div style="font-family:'Inter',system-ui,sans-serif; font-size:14px; color:var(--claude-muted); line-height:1.5;">Euro 95 (E10) bij <span style="color:var(--claude-primary);">DE</span> en <span style="color:var(--claude-primary);">BE</span> grenstankstations.</div>
+              </div>
 
       - type: grid
         column_span: 3
         cards:
-          - type: heading
-            heading: Op de kaart
-            heading_style: subtitle
+          - <<: *ghost_card
+            type: markdown
+            content: '<div style="font-family:''Fraunces'',Georgia,serif; font-weight:400; font-size:24px; letter-spacing:-0.01em; color:var(--claude-cream); margin:16px 4px 8px;">⚐ Duitsland</div>'
+          - <<: *surface_card
+            type: markdown
+            content: |
+              <div>
+                <div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--claude-muted); margin-bottom:10px;">OIL · Steyler 157</div>
+                <div><span style="font-family:'Fraunces',Georgia,serif; font-size:32px; line-height:1; letter-spacing:-0.02em; color:var(--claude-cream);">{{ states('sensor.oil_steyler_strasse_157_euro_95_loodvrij_e10') }}</span><span style="font-size:13px; color:var(--claude-muted); margin-left:4px;">€/L</span></div>
+                <div style="font-size:12px; color:var(--claude-primary); margin-top:6px;">Euro 95 · E10</div>
+              </div>
+          - <<: *surface_card
+            type: markdown
+            content: |
+              <div>
+                <div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--claude-muted); margin-bottom:10px;">Shell · Steyler 179</div>
+                <div><span style="font-family:'Fraunces',Georgia,serif; font-size:32px; line-height:1; letter-spacing:-0.02em; color:var(--claude-cream);">{{ states('sensor.shell_steyler_str_179_euro_95_loodvrij_e10') }}</span><span style="font-size:13px; color:var(--claude-muted); margin-left:4px;">€/L</span></div>
+                <div style="font-size:12px; color:var(--claude-primary); margin-top:6px;">Euro 95 · E10</div>
+              </div>
+
+      - type: grid
+        column_span: 3
+        cards:
+          - <<: *ghost_card
+            type: markdown
+            content: '<div style="font-family:''Fraunces'',Georgia,serif; font-weight:400; font-size:24px; letter-spacing:-0.01em; color:var(--claude-cream); margin:16px 4px 8px;">⚑ België</div>'
+          - <<: *surface_card
+            type: markdown
+            content: |
+              <div>
+                <div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--claude-muted); margin-bottom:10px;">Postcode 3640</div>
+                <div><span style="font-family:'Fraunces',Georgia,serif; font-size:32px; line-height:1; letter-spacing:-0.02em; color:var(--claude-cream);">{{ states('sensor.carbu_com_super95_3640_price') }}</span><span style="font-size:13px; color:var(--claude-muted); margin-left:4px;">€/L</span></div>
+              </div>
+          - <<: *surface_card
+            type: markdown
+            content: |
+              <div>
+                <div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--claude-muted); margin-bottom:10px;">5 km</div>
+                <div><span style="font-family:'Fraunces',Georgia,serif; font-size:32px; line-height:1; letter-spacing:-0.02em; color:var(--claude-cream);">{{ states('sensor.carbu_com_super95_3640_5km') }}</span><span style="font-size:13px; color:var(--claude-muted); margin-left:4px;">€/L</span></div>
+              </div>
+          - <<: *surface_card
+            type: markdown
+            content: |
+              <div>
+                <div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--claude-muted); margin-bottom:10px;">10 km</div>
+                <div><span style="font-family:'Fraunces',Georgia,serif; font-size:32px; line-height:1; letter-spacing:-0.02em; color:var(--claude-cream);">{{ states('sensor.carbu_com_super95_3640_10km') }}</span><span style="font-size:13px; color:var(--claude-muted); margin-left:4px;">€/L</span></div>
+                <div style="font-size:12px; color:var(--claude-primary); margin-top:6px;">Beste prijs</div>
+              </div>
+
+      - type: grid
+        column_span: 3
+        cards:
+          - <<: *ghost_card
+            type: markdown
+            content: '<div style="font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--claude-muted); margin:8px 4px;">Op de kaart</div>'
           - type: map
             entities:
               - entity: sensor.carbu_com_super95_3640_price
@@ -858,9 +830,41 @@ views:
             theme_mode: dark
             card_mod:
               style: |
-                ha-card {
-                  background: var(--claude-surface);
-                  border: 1px solid var(--claude-border);
-                  border-radius: 16px;
-                  overflow: hidden;
-                }
+                ha-card { background: var(--claude-surface) !important; border: 1px solid var(--claude-border) !important; border-radius: 16px !important; box-shadow: none !important; overflow: hidden !important; }
+
+      - type: grid
+        column_span: 3
+        cards:
+          - <<: *nav_wrapper
+            type: horizontal-stack
+            cards:
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Start
+                icon: mdi:home
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/home }
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Zon
+                icon: mdi:weather-sunny
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/zonnepanelen }
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Lampen
+                icon: mdi:lightbulb-outline
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/tv-klimaat }
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Afval
+                icon: mdi:recycle
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/afval }
+              - <<: *nav_inactive
+                type: custom:mushroom-template-card
+                primary: Weer
+                icon: mdi:weather-partly-cloudy
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/weer }
+              - <<: *nav_active
+                type: custom:mushroom-template-card
+                primary: Benzine
+                icon: mdi:gas-station
+                tap_action: { action: navigate, navigation_path: /claude-dashboard/benzine }
