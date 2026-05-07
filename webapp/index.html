@@ -376,9 +376,9 @@
     .alert p { color: var(--claude-cream-dim); font-size: 13px; }
 
     /* ── Gauge ───────────────────────────────────────────────── */
-    .gauge { padding: 18px; text-align: center; }
-    .gauge svg { width: 100%; max-width: 200px; height: auto; }
-    .gauge .gauge-value { font-family: var(--serif); font-size: 28px; margin-top: 4px; }
+    .gauge { padding: 24px; text-align: center; }
+    .gauge svg { width: 100%; max-width: 320px; height: auto; display: block; margin: 0 auto; }
+    .gauge .gauge-value { font-family: var(--serif); font-size: 32px; margin-top: 8px; }
     .gauge .gauge-label { font-size: 11px; color: var(--claude-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
 
     /* ── Time picker ─────────────────────────────────────────── */
@@ -709,7 +709,9 @@ class App {
             <div class="brand-name">${titles[this.activeView] || 'Claude'}</div>
           </div>
           <div class="actions">
-            <button title="Uitloggen" onclick="app.logout()">⏻</button>
+            <button title="Uitloggen" onclick="app.logout()" aria-label="Uitloggen">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77.04"/></svg>
+            </button>
           </div>
         </div>
         ${viewHtml}
@@ -852,10 +854,15 @@ class App {
   renderZon(c) {
     const power = parseFloat(c.state('sensor.zonnepanelen_vermogen')) || 0;
     const max = 6000;
-    const angle = Math.min(180, (power / max) * 180);
-    const rad = (angle - 180) * Math.PI / 180;
-    const x = 100 + 80 * Math.cos(rad);
-    const y = 110 + 80 * Math.sin(rad);
+    const progress = Math.min(1, Math.max(0, power / max));
+    // Half-circle from 180° to 0° (left to right, top half).
+    // Compute end-point on the arc using proper trigonometry.
+    const theta = (180 - progress * 180) * Math.PI / 180;
+    const endX = 100 + 80 * Math.cos(theta);
+    const endY = 110 - 80 * Math.sin(theta);
+    const largeArc = progress > 0.5 ? 1 : 0;
+    const needleX = endX;
+    const needleY = endY;
 
     return `
       <div class="view active">
@@ -887,8 +894,8 @@ class App {
         <div class="card gauge">
           <svg viewBox="0 0 200 130">
             <path d="M 20 110 A 80 80 0 0 1 180 110" stroke="#46443F" stroke-width="14" fill="none" stroke-linecap="round" />
-            <path d="M 20 110 A 80 80 0 0 1 ${20 + 160 * (angle / 180)} ${110 - Math.sin(angle * Math.PI / 180) * 80}" stroke="#C96342" stroke-width="14" fill="none" stroke-linecap="round" />
-            <line x1="100" y1="110" x2="${x}" y2="${y}" stroke="#F0EEE6" stroke-width="2" stroke-linecap="round" />
+            ${progress > 0.005 ? `<path d="M 20 110 A 80 80 0 ${largeArc} 1 ${endX.toFixed(2)} ${endY.toFixed(2)}" stroke="#C96342" stroke-width="14" fill="none" stroke-linecap="round" />` : ''}
+            <line x1="100" y1="110" x2="${needleX.toFixed(2)}" y2="${needleY.toFixed(2)}" stroke="#F0EEE6" stroke-width="2" stroke-linecap="round" />
             <circle cx="100" cy="110" r="5" fill="#F0EEE6" />
           </svg>
           <div class="gauge-value">${formatNumber(power, 0)} W</div>
