@@ -1,6 +1,6 @@
 {
-  "name": "Joosten Dashboard",
-  "short_name": "Joosten",
+  "name": "Thuis Dashboard",
+  "short_name": "Thuis",
   "description": "Smart home dashboard voor Familie Joosten",
   "start_url": "./index.html",
   "display": "standalone",

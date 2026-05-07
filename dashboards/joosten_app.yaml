@@ -1,13 +1,13 @@
 ################################################################################
-# Joosten App — full-screen wrapper voor de standalone webapp
+# Thuis App — full-screen wrapper voor de standalone webapp
 # Eén panel-view met een iframe naar /local/dashboard/
 # Wanneer je de HA Companion app op je telefoon opent en dit dashboard als
 # standaard hebt ingesteld, krijg je de webapp full-screen te zien.
 ################################################################################
 
-title: Joosten
+title: Thuis
 views:
-  - title: Joosten
+  - title: Thuis
     path: app
     icon: mdi:hexagon-multiple
     panel: true
