@@ -80,7 +80,7 @@
     .login-box {
       background: var(--claude-surface);
       border: 1px solid var(--claude-border);
-      border-radius: 20px;
+      border-radius: 16px;
       padding: 32px;
       width: 100%;
       max-width: 420px;
@@ -195,35 +195,44 @@
       line-height: 1.5;
       margin: 0;
     }
-    .accent { color: var(--claude-primary); }
+    /* Accent class voor textuele nadruk — niet meer coral (gereserveerd voor
+       status-veranderingen zoals lamp aan, active tab, alert). Cream-dim
+       geeft subtiele nadruk zonder te schreeuwen. */
+    .accent { color: var(--claude-cream-dim); }
 
-    /* ── Section title ───────────────────────────────────────── */
+    /* ── Section titles ──────────────────────────────────────── */
+    /* Beide titels zijn nu Fraunces-serif (zelfde familie), alleen verschil
+       in grootte voor hierarchy. Consistent vertical rhythm. */
     .section-title {
       font-family: var(--serif);
       font-weight: 400;
-      font-size: 26px;
-      letter-spacing: -0.01em;
-      margin: 24px 4px 12px;
+      font-size: 22px;
+      letter-spacing: -0.015em;
+      margin: 32px 4px 12px;
     }
     .subsection-title {
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--claude-muted);
-      margin: 18px 4px 8px;
+      font-family: var(--serif);
+      font-weight: 400;
+      font-size: 15px;
+      letter-spacing: -0.01em;
+      color: var(--claude-cream-dim);
+      margin: 24px 4px 8px;
     }
 
     /* ── Card ────────────────────────────────────────────────── */
+    /* Statisch design: alleen border-color subtiel veranderen op hover.
+       Geen scale/transform animaties — minder visuele ruis. */
     .card {
       background: var(--claude-surface);
       border: 1px solid var(--claude-border);
       border-radius: 16px;
       padding: 18px 18px 16px;
-      transition: border-color 200ms ease, background 200ms ease, transform 150ms ease;
+      transition: border-color 200ms ease, background 200ms ease;
     }
-    .card:active { transform: scale(0.98); }
     .card:hover { border-color: var(--claude-border-hover); }
+    /* Kleine, kortere active-feedback alleen voor klikbare tiles */
+    .card[data-toggle]:active,
+    .card[data-mp-toggle]:active { background: var(--claude-surface-2); }
 
     /* ── Grid ────────────────────────────────────────────────── */
     .grid { display: grid; gap: 10px; }
@@ -240,32 +249,37 @@
     }
 
     /* ── Stat ────────────────────────────────────────────────── */
+    /* Hierarchy: figure > delta > label. Label is klein/subtiel, figure
+       is de hoofd-info, delta is supporting. Coral alleen voor expliciete
+       status-deltas (`.delta.accent`). */
     .stat .label {
-      font-size: 11px; font-weight: 500;
-      letter-spacing: 0.08em; text-transform: uppercase;
-      color: var(--claude-muted);
-      margin-bottom: 10px;
+      font-size: 10px; font-weight: 500;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--claude-muted-2);
+      margin-bottom: 12px;
     }
     .stat .figure {
       font-family: var(--serif);
       font-weight: 400;
-      font-size: 30px;
+      font-size: 32px;
       line-height: 1;
       letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;     /* uitgelijnde cijfers */
     }
     .stat .figure.small { font-size: 22px; }
     .stat .unit {
-      font-size: 13px;
+      font-size: 12px;
       color: var(--claude-muted);
       margin-left: 4px;
     }
     .stat .delta {
-      font-size: 12px;
-      color: var(--claude-primary);
-      margin-top: 6px;
+      font-size: 11px;
+      color: var(--claude-cream-dim);
+      margin-top: 8px;
     }
-    .stat .delta.muted { color: var(--claude-muted); }
+    .stat .delta.muted { color: var(--claude-muted-2); }
     .stat .delta.cream { color: var(--claude-cream-dim); }
+    .stat .delta.accent { color: var(--claude-primary); }   /* opt-in voor status */
 
     /* ── Person ──────────────────────────────────────────────── */
     .person {
