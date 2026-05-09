@@ -928,7 +928,7 @@ class App {
     try {
       this.client = new HAClient(cfg.url, cfg.token);
       await this.client.connect();
-      this.client.on(() => this.render());
+      this.client.on(() => this.scheduleRender());
       this.render();
     } catch (e) {
       this.renderLogin(e.message);
@@ -973,12 +973,26 @@ class App {
   navigate(view) {
     this.activeView = view;
     location.hash = view;
+    this._skipScrollRestore = true;     // bij view-switch wél naar boven scrollen
     this.render();
-    window.scrollTo(0, 0);
+    const app = this.root.querySelector('.app');
+    if (app) app.scrollTop = 0;
   }
 
   callService(domain, service, data) {
     if (this.client) this.client.call(domain, service, data);
+  }
+
+  // Coalesceert snelle state-updates tot 1 render per frame (~60fps).
+  // Voorkomt dat we tijdens scrollen 10x per seconde de hele DOM
+  // herbouwen, wat de glitch veroorzaakte.
+  scheduleRender() {
+    if (this._renderScheduled) return;
+    this._renderScheduled = true;
+    requestAnimationFrame(() => {
+      this._renderScheduled = false;
+      this.render();
+    });
   }
 
   render() {
@@ -994,6 +1008,21 @@ class App {
       weer: () => this.renderWeer(c),
       benzine: () => this.renderBenzine(c),
     };
+
+    // Bewaar scroll-positie + actief input-veld voor de innerHTML replace,
+    // anders springt de gebruiker bij elke state-update terug naar boven
+    // en verliest 'ie focus op de huidige input. Bij view-switch wordt
+    // _skipScrollRestore gezet zodat we wel naar boven gaan.
+    const skipScroll = this._skipScrollRestore === true;
+    this._skipScrollRestore = false;
+    const prevApp = this.root.querySelector('.app');
+    const prevScrollTop = (!skipScroll && prevApp) ? prevApp.scrollTop : 0;
+    const activeEl = document.activeElement;
+    const activeKey = activeEl && activeEl !== document.body
+      ? (activeEl.dataset.time || activeEl.id || null)
+      : null;
+    const activeSelStart = activeEl && activeEl.selectionStart;
+    const activeSelEnd = activeEl && activeEl.selectionEnd;
 
     // Stash de levende Leaflet-map-DOM voor de innerHTML-replace zodat we
     // 'm na de render kunnen herplaatsen — voorkomt flikkering en
@@ -1016,6 +1045,28 @@ class App {
         ${this.renderNav()}
       </nav>
     `;
+
+    // Herstel scroll-positie van de nieuwe .app — direct én na de paint
+    // (sommige browsers resetten scrollTop ná innerHTML als het content nog
+    // moet renderen).
+    const newApp = this.root.querySelector('.app');
+    if (newApp && prevScrollTop) {
+      newApp.scrollTop = prevScrollTop;
+      requestAnimationFrame(() => { newApp.scrollTop = prevScrollTop; });
+    }
+
+    // Herstel focus + cursor-positie op input dat actief was.
+    if (activeKey) {
+      const restore = this.root.querySelector(
+        activeKey.startsWith('#') ? activeKey : `[data-time="${activeKey}"], #${activeKey}`
+      );
+      if (restore && typeof restore.focus === 'function') {
+        restore.focus();
+        if (activeSelStart != null && typeof restore.setSelectionRange === 'function') {
+          try { restore.setSelectionRange(activeSelStart, activeSelEnd); } catch (_) {}
+        }
+      }
+    }
 
     // Herplaats de gestashde map als we nog op start staan en er een placeholder is.
     if (mapStash && this.activeView === 'start') {
