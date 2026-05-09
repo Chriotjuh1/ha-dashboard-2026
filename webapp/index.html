@@ -1346,7 +1346,10 @@ class App {
     const theta = (180 - progress * 180) * Math.PI / 180;
     const endX = 100 + 80 * Math.cos(theta);
     const endY = 110 - 80 * Math.sin(theta);
-    const largeArc = progress > 0.5 ? 1 : 0;
+    // Half-cirkel arc is altijd ≤ 180°, dus large-arc-flag is altijd 0.
+    // Hierdoor tekent de browser het korte pad over de bovenkant i.p.v.
+    // het lange pad onderlangs (wat de tweedelige glitch veroorzaakte).
+    const largeArc = 0;
     const needleX = endX;
     const needleY = endY;
 
@@ -1406,7 +1409,7 @@ class App {
             <span class="pill-icon">◐</span><span class="pill-label">50%</span>
           </div>
           <div class="pill ghost" data-script="script.zonnepanelen_uitschakelen" data-confirm="Volledig uit?">
-            <span class="pill-icon">⏻</span><span class="pill-label">Uit</span>
+            <span class="pill-icon">⊘</span><span class="pill-label">Uit</span>
           </div>
         </div>
       </div>
