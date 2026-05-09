@@ -828,6 +828,37 @@ function weatherIcon(cond) {
   };
   return map[cond] || '◐';
 }
+function weatherLabel(cond) {
+  const map = {
+    'sunny': 'zonnig',
+    'clear-night': 'helder',
+    'partlycloudy': 'half bewolkt',
+    'cloudy': 'bewolkt',
+    'rainy': 'regen',
+    'pouring': 'stortregen',
+    'snowy': 'sneeuw',
+    'snowy-rainy': 'natte sneeuw',
+    'fog': 'mist',
+    'windy': 'winderig',
+    'windy-variant': 'winderig',
+    'hail': 'hagel',
+    'lightning': 'onweer',
+    'lightning-rainy': 'onweer & regen',
+    'exceptional': 'extreem weer',
+  };
+  return map[cond] || cond || '—';
+}
+function compassDir(deg) {
+  if (deg == null || isNaN(deg)) return '';
+  const dirs = ['N', 'NO', 'O', 'ZO', 'Z', 'ZW', 'W', 'NW'];
+  return dirs[Math.round((deg % 360) / 45) % 8];
+}
+function timeOfDay(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+}
 // HTML-escape voor veilige string-interpolatie in template literals.
 // Gebruik voor ELKE waarde die uit Home Assistant komt (state, attribuut)
 // en in een innerHTML/template terechtkomt. Voorkomt XSS via een gecompromitteerde
@@ -1234,7 +1265,7 @@ class App {
       <div class="view active">
         <div class="hero">
           <h1>${getGreeting('Chris')}</h1>
-          <p>${getDateLabel()} · <span class="accent">${esc(c.state('weather.forecast_home')) || 'helder'}</span> · ${formatNumber(c.attr('weather.forecast_home', 'temperature'), 0)}°C</p>
+          <p>${getDateLabel()} · <span class="accent">${esc(weatherLabel(c.state('weather.forecast_home'))) || 'helder'}</span> · ${formatNumber(c.attr('weather.forecast_home', 'temperature'), 0)}°C</p>
         </div>
 
         <div class="grid grid-3">
@@ -1257,7 +1288,7 @@ class App {
           <div class="card stat">
             <div class="label">Buiten</div>
             <div><span class="figure">${formatNumber(c.attr('weather.forecast_home', 'temperature'), 0)}</span><span class="unit">°C</span></div>
-            <div class="delta">${esc(c.state('weather.forecast_home')) || '—'}</div>
+            <div class="delta">${esc(weatherLabel(c.state('weather.forecast_home'))) || '—'}</div>
           </div>
           <div class="card stat">
             <div class="label">Volgend afval</div>
@@ -1615,12 +1646,71 @@ class App {
     const current = c.attr('climate.woonkamer', 'current_temperature') || 21;
     const ratio = Math.min(1, Math.max(0, (current - 10) / 20));
 
+    // Extra weersgegevens uit weather.forecast_home attributen
+    const humidity = c.attr('weather.forecast_home', 'humidity');
+    const windSpeed = c.attr('weather.forecast_home', 'wind_speed');
+    const windBearing = c.attr('weather.forecast_home', 'wind_bearing');
+    const pressure = c.attr('weather.forecast_home', 'pressure');
+    const visibility = c.attr('weather.forecast_home', 'visibility');
+
+    // Zon op / onder uit sun.sun
+    const sunrise = c.attr('sun.sun', 'next_rising');
+    const sunset = c.attr('sun.sun', 'next_setting');
+
+    // Eerstvolgende neerslag-kans uit forecast (eerste entry met precipitation_probability)
+    const nextPrecip = forecast.find(f => f.precipitation_probability != null);
+
     return `
       <div class="view active">
         <div class="hero">
           <h1>Weer & klimaat</h1>
-          <p>Het is nu <span class="accent">${formatNumber(c.attr('weather.forecast_home', 'temperature'), 0)}°C</span> · ${esc(c.state('weather.forecast_home')) || '—'}. Binnen op ${formatNumber(current, 0)}°C.</p>
+          <p>Het is nu <span class="accent">${formatNumber(c.attr('weather.forecast_home', 'temperature'), 0)}°C</span> · ${esc(weatherLabel(c.state('weather.forecast_home'))) || '—'}. Binnen op ${formatNumber(current, 0)}°C.</p>
         </div>
+
+        <div class="subsection-title">Buiten nu</div>
+        <div class="grid grid-4">
+          <div class="card stat">
+            <div class="label">Vochtigheid</div>
+            <div><span class="figure">${formatNumber(humidity, 0)}</span><span class="unit">%</span></div>
+            <div class="delta">Relatieve luchtvochtigheid</div>
+          </div>
+          <div class="card stat">
+            <div class="label">Wind</div>
+            <div><span class="figure">${formatNumber(windSpeed, 0)}</span><span class="unit">km/u</span></div>
+            <div class="delta">${compassDir(windBearing) || '—'}${windBearing != null && !isNaN(windBearing) ? ' · ' + Math.round(windBearing) + '°' : ''}</div>
+          </div>
+          <div class="card stat">
+            <div class="label">Luchtdruk</div>
+            <div><span class="figure">${formatNumber(pressure, 0)}</span><span class="unit">hPa</span></div>
+            <div class="delta">${pressure ? (pressure >= 1013 ? 'Hoge druk' : 'Lage druk') : '—'}</div>
+          </div>
+          <div class="card stat">
+            <div class="label">Zicht</div>
+            <div><span class="figure">${formatNumber(visibility, 0)}</span><span class="unit">km</span></div>
+            <div class="delta">${visibility ? (visibility >= 10 ? 'Helder' : visibility >= 4 ? 'Matig' : 'Beperkt') : '—'}</div>
+          </div>
+        </div>
+
+        ${(sunrise || sunset || nextPrecip) ? `
+          <div class="subsection-title">Zon &amp; neerslag</div>
+          <div class="grid grid-3">
+            <div class="card stat">
+              <div class="label">Zon op</div>
+              <div><span class="figure small">${esc(timeOfDay(sunrise))}</span></div>
+              <div class="delta">Vandaag of morgen</div>
+            </div>
+            <div class="card stat">
+              <div class="label">Zon onder</div>
+              <div><span class="figure small">${esc(timeOfDay(sunset))}</span></div>
+              <div class="delta">Vandaag of morgen</div>
+            </div>
+            <div class="card stat">
+              <div class="label">Neerslag-kans</div>
+              <div><span class="figure">${nextPrecip ? formatNumber(nextPrecip.precipitation_probability, 0) : '—'}</span><span class="unit">%</span></div>
+              <div class="delta">Verwacht vandaag</div>
+            </div>
+          </div>
+        ` : ''}
 
         <div class="subsection-title">Thermostaat</div>
         <div class="card thermostat">
