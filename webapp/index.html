@@ -400,6 +400,21 @@
     .alert p { color: var(--claude-cream-dim); font-size: 13px; }
 
     /* ── Gauge ───────────────────────────────────────────────── */
+    /* ── Line chart labels (HTML overlay zodat ze niet rekken met
+       preserveAspectRatio="none" op de SVG) ─────────────────── */
+    .chart-wrap { width: 100%; }
+    .chart-label {
+      position: absolute;
+      left: 6px;
+      font-size: 11px;
+      color: var(--claude-muted);
+      font-family: var(--sans);
+      font-variant-numeric: tabular-nums;
+      pointer-events: none;
+    }
+    .chart-max { top: 6px; }
+    .chart-min { bottom: 4px; }
+
     .gauge { padding: 24px; text-align: center; }
     .gauge svg { width: 100%; max-width: 320px; height: auto; display: block; margin: 0 auto; }
     .gauge .gauge-value { font-family: var(--serif); font-size: 32px; margin-top: 8px; }
@@ -884,6 +899,8 @@ function formatTime(seconds) {
 }
 
 // SVG line chart — points are {t: Date, v: number}
+// Tekstlabels worden buiten de SVG gerenderd (HTML overlay) zodat ze niet
+// mee-rekken met preserveAspectRatio="none" op het pad.
 function lineChart(points, width = 600, height = 140, color = '#C96342') {
   if (!points || points.length < 2) {
     return `<div style="height:${height}px; display:grid; place-items:center; color:var(--claude-muted); font-size:12px;">Geen historische data</div>`;
@@ -906,18 +923,20 @@ function lineChart(points, width = 600, height = 140, color = '#C96342') {
   const fillPath = linePath + ` L ${width} ${height - padBottom} L 0 ${height - padBottom} Z`;
   const id = 'g' + Math.random().toString(36).slice(2, 8);
   return `
-    <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" style="width:100%; height:${height}px;">
-      <defs>
-        <linearGradient id="${id}" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stop-color="${color}" stop-opacity="0.4"/>
-          <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
-        </linearGradient>
-      </defs>
-      <path d="${fillPath}" fill="url(#${id})" />
-      <path d="${linePath}" stroke="${color}" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
-      <text x="6" y="14" font-size="10" fill="var(--claude-muted)" font-family="Inter,sans-serif">${formatNumber(maxV, 0)}</text>
-      <text x="6" y="${height - 4}" font-size="10" fill="var(--claude-muted)" font-family="Inter,sans-serif">${formatNumber(minV, 0)}</text>
-    </svg>
+    <div class="chart-wrap" style="position:relative; height:${height}px;">
+      <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" style="width:100%; height:100%; display:block;">
+        <defs>
+          <linearGradient id="${id}" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="${color}" stop-opacity="0.4"/>
+            <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="${fillPath}" fill="url(#${id})" />
+        <path d="${linePath}" stroke="${color}" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+      </svg>
+      <span class="chart-label chart-max">${esc(formatNumber(maxV, 0))}</span>
+      <span class="chart-label chart-min">${esc(formatNumber(minV, 0))}</span>
+    </div>
   `;
 }
 
