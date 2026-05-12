@@ -260,6 +260,74 @@ claude_dark:
       @media (max-width: 600px) {
         .header .toolbar { padding: 0 8px !important; }
       }
+    "ha-panel-profile$": |
+      /* Set CSS vars directly on ha-select elements (outer author declaration beats
+         inner :host default, so this overrides the white fill that CSS variable
+         inheritance from html cannot override). Covers both MDC and MD3 builds. */
+      ha-select,
+      ha-md-select {
+        --mdc-select-fill-color: #3A3936;
+        --mdc-select-ink-color: #F0EEE6;
+        --mdc-select-label-ink-color: #A8A29E;
+        --mdc-select-dropdown-icon-color: #A8A29E;
+        --mdc-theme-surface: #3A3936;
+        --mdc-theme-on-surface: #F0EEE6;
+        --md-sys-color-surface-container-highest: #46443F;
+        --md-sys-color-surface-container: #3A3936;
+        --md-sys-color-on-surface: #F0EEE6;
+        --md-filled-select-text-field-container-color: #3A3936;
+        --md-filled-select-text-field-input-text-color: #F0EEE6;
+        --md-filled-select-text-field-label-text-color: #A8A29E;
+        --md-outlined-select-text-field-input-text-color: #F0EEE6;
+        --md-outlined-select-text-field-label-text-color: #A8A29E;
+        --md-outlined-select-text-field-outline-color: rgba(240,238,230,0.14);
+      }
+      /* Fallback for native <select> */
+      select {
+        background: #3A3936 !important;
+        color: #F0EEE6 !important;
+        border-color: rgba(240,238,230,0.14) !important;
+      }
+    "ha-panel-profile$ ha-select$": |
+      /* Inside ha-select shadow root: override MDC fill + label classes */
+      .mdc-select__anchor,
+      .mdc-select__fill {
+        background-color: #3A3936 !important;
+      }
+      .mdc-select__selected-text,
+      .mdc-select__selected-text-container {
+        color: #F0EEE6 !important;
+      }
+      .mdc-floating-label,
+      .mdc-floating-label--float-above {
+        color: #A8A29E !important;
+      }
+      .mdc-select__dropdown-icon {
+        fill: #A8A29E !important;
+      }
+      mwc-select,
+      md-filled-select,
+      md-outlined-select {
+        --mdc-select-fill-color: #3A3936;
+        --mdc-theme-surface: #3A3936;
+        --md-filled-select-text-field-container-color: #3A3936;
+      }
+    "ha-panel-profile$ ha-select$ mwc-select$": |
+      :host {
+        --mdc-select-fill-color: #3A3936 !important;
+        --mdc-select-ink-color: #F0EEE6 !important;
+        --mdc-theme-surface: #3A3936 !important;
+        --mdc-theme-on-surface: #F0EEE6 !important;
+      }
+      .mdc-select__anchor {
+        background-color: #3A3936 !important;
+      }
+      .mdc-select__selected-text {
+        color: #F0EEE6 !important;
+      }
+      .mdc-floating-label {
+        color: #A8A29E !important;
+      }
   card-mod-view-yaml: |
     ".": |
       hui-view, hui-sections-view {
