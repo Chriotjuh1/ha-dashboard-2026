@@ -117,6 +117,51 @@ claude_dark:
   mdc-select-dropdown-icon-color: "var(--claude-muted)"
   mdc-select-outlined-idle-border-color: "var(--claude-border-hover)"
   mdc-select-outlined-hover-border-color: "var(--claude-primary-soft)"
+  # Nieuwere MWC token-namen (sommige HA-componenten zijn al geüpdatet)
+  mdc-filled-text-field-container-color: "var(--claude-surface-2)"
+  mdc-filled-text-field-disabled-container-color: "var(--claude-surface)"
+
+  # ── Material Web 3 tokens (md-sys-color-*) ────────────────────
+  # Nieuwere HA-componenten (ha-md-select, ha-md-dialog, profielpagina-
+  # dropdowns "Taal/Thema/Dashboard", picker-dialogs) gebruiken Material 3
+  # i.p.v. de oude MDC-componenten. Zonder deze overrides blijven die
+  # vakken WIT met onleesbare tekst.
+  md-sys-color-background: "var(--claude-bg)"
+  md-sys-color-on-background: "var(--claude-cream)"
+  md-sys-color-surface: "var(--claude-surface)"
+  md-sys-color-surface-dim: "var(--claude-bg-deep)"
+  md-sys-color-surface-bright: "var(--claude-surface-2)"
+  md-sys-color-surface-variant: "var(--claude-surface-2)"
+  md-sys-color-surface-container-lowest: "var(--claude-bg-deep)"
+  md-sys-color-surface-container-low: "var(--claude-surface)"
+  md-sys-color-surface-container: "var(--claude-surface-2)"
+  md-sys-color-surface-container-high: "var(--claude-surface-2)"
+  md-sys-color-surface-container-highest: "var(--claude-surface-3)"
+  md-sys-color-on-surface: "var(--claude-cream)"
+  md-sys-color-on-surface-variant: "var(--claude-muted)"
+  md-sys-color-inverse-surface: "var(--claude-cream)"
+  md-sys-color-inverse-on-surface: "var(--claude-bg)"
+  md-sys-color-primary: "var(--claude-primary)"
+  md-sys-color-on-primary: "var(--claude-cream)"
+  md-sys-color-primary-container: "var(--claude-surface-3)"
+  md-sys-color-on-primary-container: "var(--claude-cream)"
+  md-sys-color-inverse-primary: "var(--claude-primary-deep)"
+  md-sys-color-secondary: "var(--claude-primary-soft)"
+  md-sys-color-on-secondary: "var(--claude-cream)"
+  md-sys-color-secondary-container: "var(--claude-surface-2)"
+  md-sys-color-on-secondary-container: "var(--claude-cream)"
+  md-sys-color-tertiary: "var(--claude-info)"
+  md-sys-color-on-tertiary: "var(--claude-cream)"
+  md-sys-color-tertiary-container: "var(--claude-surface-2)"
+  md-sys-color-on-tertiary-container: "var(--claude-cream)"
+  md-sys-color-error: "var(--claude-danger)"
+  md-sys-color-on-error: "var(--claude-cream)"
+  md-sys-color-error-container: "var(--claude-surface-2)"
+  md-sys-color-on-error-container: "var(--claude-danger)"
+  md-sys-color-outline: "var(--claude-border-hover)"
+  md-sys-color-outline-variant: "var(--claude-border)"
+  md-sys-color-shadow: "rgba(0, 0, 0, 0.4)"
+  md-sys-color-scrim: "rgba(0, 0, 0, 0.6)"
 
   # ── Dialogs & menus (more-info popups, dropdowns) ─────────────
   mdc-dialog-scrim-color: "rgba(0, 0, 0, 0.6)"
