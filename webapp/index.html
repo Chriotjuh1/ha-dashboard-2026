@@ -1029,69 +1029,34 @@ class App {
   }
 
   async init() {
-    // 1. Draait de app binnen HA (zelfde origin, ingelogde sessie)? Dan
-    //    gebruiken we die sessie — geen long-lived token nodig.
+    // De webapp draait vanuit /local/dashboard/ binnen HA: zelfde origin, dus
+    // we gebruiken de ingelogde HA-sessie (hassTokens). Geen token-invoer nodig.
     const hassTokens = readHassTokens();
-    if (hassTokens && hassTokens.access_token) {
-      try {
-        this.client = new HAClient(hassBaseUrl(hassTokens), () => getHassAccessToken());
-        await this.client.connect();
-        this.client.on(() => this.scheduleRender());
-        this.render();
-        return;
-      } catch (e) {
-        // Sessie werkte niet — val terug op handmatige config hieronder.
-      }
-    }
-    // 2. Standalone (buiten HA): handmatige URL + long-lived token.
-    const cfg = JSON.parse(localStorage.getItem('claude-dashboard-config') || 'null');
-    if (!cfg || !cfg.url || !cfg.token) {
-      this.renderLogin();
+    if (!hassTokens || !hassTokens.access_token) {
+      this.renderNeedsHA('Geen Home Assistant sessie gevonden. Open dit dashboard binnen Home Assistant (zorg dat je daar bent ingelogd).');
       return;
     }
     try {
-      this.client = new HAClient(cfg.url, cfg.token);
+      this.client = new HAClient(hassBaseUrl(hassTokens), () => getHassAccessToken());
       await this.client.connect();
       this.client.on(() => this.scheduleRender());
       this.render();
     } catch (e) {
-      this.renderLogin(e.message);
+      this.renderNeedsHA('Verbinden met Home Assistant mislukt: ' + (e && e.message ? e.message : e));
     }
   }
 
-  renderLogin(error) {
+  renderNeedsHA(message) {
     this.root.innerHTML = `
       <div class="login">
         <div class="login-box">
           <h1>Thuis</h1>
-          <p>Verbind met je Home Assistant instance om het smart-home dashboard te tonen.</p>
-          <label for="url">Home Assistant URL</label>
-          <input id="url" type="text" placeholder="https://homeassistant.chrisjoosten.nl" />
-          <label for="token">Long-lived access token</label>
-          <input id="token" type="password" placeholder="eyJ0eXAi..." />
-          <p class="help">Maak een token aan in Home Assistant: profiel rechtsonder → tabblad <strong>Beveiliging</strong> → onderaan <strong>"Aanmaken token"</strong>.</p>
-          ${error ? `<p class="err">${esc(error)}</p>` : ''}
-          <button id="connect">Verbinden</button>
+          <p>${esc(message)}</p>
+          <button id="retry">Opnieuw proberen</button>
         </div>
       </div>
     `;
-    const urlInput = this.root.querySelector('#url');
-    const tokenInput = this.root.querySelector('#token');
-    if (location.hostname && location.hostname !== 'localhost') {
-      urlInput.value = location.protocol + '//' + location.host;
-    }
-    this.root.querySelector('#connect').addEventListener('click', () => {
-      const url = urlInput.value.trim();
-      const token = tokenInput.value.trim();
-      if (!url || !token) return;
-      localStorage.setItem('claude-dashboard-config', JSON.stringify({ url, token }));
-      this.init();
-    });
-  }
-
-  logout() {
-    localStorage.removeItem('claude-dashboard-config');
-    location.reload();
+    this.root.querySelector('#retry').addEventListener('click', () => this.init());
   }
 
   navigate(view) {
