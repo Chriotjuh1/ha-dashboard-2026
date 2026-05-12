@@ -832,29 +832,78 @@ class HAClient {
 }
 
 // ════════════════════════════════════════════════════════════════════════
-// HA session piggy-back — als de webapp vanaf /local/dashboard/ draait is dit
-// dezelfde origin als de HA-frontend, dus de ingelogde sessie (hassTokens in
-// localStorage) is bruikbaar. Geen long-lived token meer nodig.
+// Home Assistant login (OAuth2 IndieAuth flow, dezelfde als de HA-frontend)
+//
+// De webapp draait vanaf /local/dashboard/ — dezelfde origin als HA. We
+// hergebruiken de bestaande sessie (`hassTokens` in localStorage); is die er
+// niet, dan sturen we de gebruiker naar HA's eigen inlogpagina (/auth/authorize)
+// en wisselen de teruggegeven `code` in voor tokens. Geen aparte token-invoer.
 // ════════════════════════════════════════════════════════════════════════
+const HA_URL = location.protocol + '//' + location.host;          // HA serveert /local/
+const HA_CLIENT_ID = HA_URL + '/';                                // IndieAuth client_id
+const HA_REDIRECT_URI = HA_URL + location.pathname;               // terug naar deze pagina
+
 function readHassTokens() {
   try { return JSON.parse(window.localStorage.getItem('hassTokens') || 'null'); }
   catch (e) { return null; }
 }
-function hassBaseUrl(tok) {
-  return (tok && tok.hassUrl) || (location.protocol + '//' + location.host);
+function writeHassTokens(tok) {
+  try { window.localStorage.setItem('hassTokens', JSON.stringify(tok)); } catch (e) {}
 }
-async function refreshHassToken(tok) {
-  if (!tok || !tok.refresh_token) return null;
-  const base = hassBaseUrl(tok);
-  const body = new URLSearchParams({
-    grant_type: 'refresh_token',
-    refresh_token: tok.refresh_token,
-    client_id: tok.clientId || (location.protocol + '//' + location.host + '/'),
-  });
-  const res = await fetch(base + '/auth/token', {
+function hassBaseUrl(tok) {
+  return (tok && tok.hassUrl) || HA_URL;
+}
+
+// Stuur door naar HA's inlogpagina.
+function beginHaLogin() {
+  const url = HA_URL + '/auth/authorize'
+    + '?response_type=code'
+    + '&client_id=' + encodeURIComponent(HA_CLIENT_ID)
+    + '&redirect_uri=' + encodeURIComponent(HA_REDIRECT_URI);
+  location.replace(url);
+}
+
+// Wissel de ?code= uit de redirect in voor access/refresh tokens.
+// Geeft true terug als er een code verwerkt is.
+async function completeHaLogin() {
+  const params = new URLSearchParams(location.search);
+  const code = params.get('code');
+  if (!code) return false;
+  // URL opschonen zodat de code niet blijft staan / niet opnieuw gebruikt wordt.
+  history.replaceState(null, '', HA_REDIRECT_URI + location.hash);
+  const res = await fetch(HA_URL + '/auth/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body,
+    body: new URLSearchParams({
+      grant_type: 'authorization_code',
+      code,
+      client_id: HA_CLIENT_ID,
+    }),
+  });
+  if (!res.ok) throw new Error('Inloggen bij Home Assistant mislukt (' + res.status + ')');
+  const data = await res.json();
+  writeHassTokens({
+    access_token: data.access_token,
+    token_type: data.token_type || 'Bearer',
+    refresh_token: data.refresh_token,
+    expires_in: data.expires_in,
+    expires: Date.now() + data.expires_in * 1000,
+    hassUrl: HA_URL,
+    clientId: HA_CLIENT_ID,
+  });
+  return true;
+}
+
+async function refreshHassToken(tok) {
+  if (!tok || !tok.refresh_token) return null;
+  const res = await fetch(hassBaseUrl(tok) + '/auth/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: tok.refresh_token,
+      client_id: tok.clientId || HA_CLIENT_ID,
+    }),
   });
   if (!res.ok) return null;
   const data = await res.json();
@@ -863,17 +912,19 @@ async function refreshHassToken(tok) {
     expires_in: data.expires_in,
     expires: Date.now() + data.expires_in * 1000,
   });
-  try { window.localStorage.setItem('hassTokens', JSON.stringify(updated)); } catch (e) {}
+  writeHassTokens(updated);
   return updated;
 }
-// Returns a fresh access token, refreshing via the stored refresh_token when
-// the current one is (nearly) expired. Throws if no HA session exists.
+
+// Geeft een geldig access token; ververst zonodig via de refresh_token.
+// Throwt 'no-ha-session' als er geen (bruikbare) sessie is.
 async function getHassAccessToken() {
   let tok = readHassTokens();
   if (!tok || !tok.access_token) throw new Error('no-ha-session');
   if (!tok.expires || Date.now() >= tok.expires - 30000) {
     const refreshed = await refreshHassToken(tok);
-    if (refreshed) tok = refreshed;
+    if (!refreshed) throw new Error('no-ha-session');
+    tok = refreshed;
   }
   return tok.access_token;
 }
@@ -1029,34 +1080,45 @@ class App {
   }
 
   async init() {
-    // De webapp draait vanuit /local/dashboard/ binnen HA: zelfde origin, dus
-    // we gebruiken de ingelogde HA-sessie (hassTokens). Geen token-invoer nodig.
-    const hassTokens = readHassTokens();
-    if (!hassTokens || !hassTokens.access_token) {
-      this.renderNeedsHA('Geen Home Assistant sessie gevonden. Open dit dashboard binnen Home Assistant (zorg dat je daar bent ingelogd).');
+    // Terug van HA's inlogpagina? Wissel de code in voor tokens.
+    try {
+      await completeHaLogin();
+    } catch (e) {
+      this.renderAuthError(e && e.message ? e.message : String(e));
+      return;
+    }
+    // Geen geldige HA-sessie → naar HA's eigen inlogpagina.
+    const tok = readHassTokens();
+    if (!tok || !tok.access_token) {
+      beginHaLogin();
       return;
     }
     try {
-      this.client = new HAClient(hassBaseUrl(hassTokens), () => getHassAccessToken());
+      this.client = new HAClient(hassBaseUrl(tok), () => getHassAccessToken());
       await this.client.connect();
       this.client.on(() => this.scheduleRender());
       this.render();
     } catch (e) {
-      this.renderNeedsHA('Verbinden met Home Assistant mislukt: ' + (e && e.message ? e.message : e));
+      // Token afgekeurd of sessie verlopen → opnieuw inloggen via HA.
+      if (e && /no-ha-session|ongeldig|invalid/i.test(e.message || '')) {
+        beginHaLogin();
+        return;
+      }
+      this.renderAuthError(e && e.message ? e.message : String(e));
     }
   }
 
-  renderNeedsHA(message) {
+  renderAuthError(message) {
     this.root.innerHTML = `
       <div class="login">
         <div class="login-box">
           <h1>Thuis</h1>
           <p>${esc(message)}</p>
-          <button id="retry">Opnieuw proberen</button>
+          <button id="retry">Opnieuw inloggen</button>
         </div>
       </div>
     `;
-    this.root.querySelector('#retry').addEventListener('click', () => this.init());
+    this.root.querySelector('#retry').addEventListener('click', () => beginHaLogin());
   }
 
   navigate(view) {
