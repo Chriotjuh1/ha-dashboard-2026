@@ -827,6 +827,9 @@ class HAClient {
   attr(eid, a) { return this.states[eid] && this.states[eid].attributes ? this.states[eid].attributes[a] : ''; }
   isOn(eid) { return this.state(eid) === 'on'; }
   userName() { return this._userName || ''; }
+  entityIds(prefix) {
+    return Object.keys(this.states).filter(id => !prefix || id.startsWith(prefix));
+  }
 
   on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
   notify() { for (const fn of this.listeners) fn(); }
@@ -895,6 +898,10 @@ class ParentHassClient {
   attr(eid, a) { const s = this._st(eid); return s && s.attributes ? s.attributes[a] : ''; }
   isOn(eid) { return this.state(eid) === 'on'; }
   userName() { return (this.hass && this.hass.user && this.hass.user.name) || ''; }
+  entityIds(prefix) {
+    const s = this.hass && this.hass.states; if (!s) return [];
+    return Object.keys(s).filter(id => !prefix || id.startsWith(prefix));
+  }
 
   on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
   notify() { for (const fn of this.listeners) fn(); }
@@ -1016,6 +1023,29 @@ function firstName(client) {
   const full = (client && client.userName && client.userName()) || '';
   const first = full.trim().split(/\s+/)[0];
   return first || 'Chris';
+}
+
+// Dynamische lijst van alle person.* entiteiten, met naam/initialen/kleur.
+const PERSON_PALETTE = [
+  ['#C96342', '#A84F32'], ['#7BA7C9', '#4A6E8A'], ['#7FB069', '#4A7B4A'],
+  ['#E8B86E', '#B98B3E'], ['#B98AC9', '#7B5A8A'], ['#C9897B', '#8A5A4A'],
+];
+function personList(client) {
+  if (!client || !client.entityIds) return [];
+  return client.entityIds('person.').sort().map((eid, i) => {
+    const friendly = (client.attr(eid, 'friendly_name') || eid.slice('person.'.length).replace(/_/g, ' ')).trim();
+    const parts = friendly.split(/\s+/).filter(Boolean);
+    const first = parts[0] || friendly || eid;
+    let initials = ((parts[0] || '')[0] || '') + ((parts[1] || '')[0] || '');
+    if (!initials) initials = first.slice(0, 2);
+    return {
+      eid,
+      name: first,
+      friendly: friendly || first,
+      initials: initials.toUpperCase(),
+      g: PERSON_PALETTE[i % PERSON_PALETTE.length],
+    };
+  });
 }
 function getDateLabel() {
   return new Date().toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -1429,17 +1459,11 @@ class App {
       this._mapInstance = null;
     }
 
-    const persons = [
-      { eid: 'person.chris_joosten', name: 'Chris', initials: 'CJ', color: '#C96342' },
-      { eid: 'person.marion_joosten', name: 'Marion', initials: 'MJ', color: '#7BA7C9' },
-      { eid: 'person.edwin_joosten', name: 'Edwin', initials: 'EJ', color: '#7FB069' },
-    ];
-
-    const points = persons.map(p => {
+    const points = personList(this.client).map(p => {
       const lat = parseFloat(this.client.attr(p.eid, 'latitude'));
       const lon = parseFloat(this.client.attr(p.eid, 'longitude'));
       if (isNaN(lat) || isNaN(lon)) return null;
-      return { ...p, lat, lon };
+      return { ...p, color: p.g[0], lat, lon };
     }).filter(Boolean);
 
     if (!points.length) {
@@ -1461,7 +1485,7 @@ class App {
     points.forEach(p => {
       const html = `<div style="width:34px; height:34px; border-radius:50%; background: linear-gradient(135deg, ${p.color}, rgba(0,0,0,0.4)); display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-size:14px; color:#F0EEE6; box-shadow:0 4px 12px rgba(0,0,0,0.4); border: 2px solid #262624;">${p.initials}</div>`;
       const icon = L.divIcon({ html, className: 'claude-map-pin', iconSize: [34, 34], iconAnchor: [17, 17] });
-      L.marker([p.lat, p.lon], { icon }).addTo(map).bindPopup(`<b>${esc(p.name)}</b>`);
+      L.marker([p.lat, p.lon], { icon }).addTo(map).bindPopup(`<b>${esc(p.friendly)}</b>`);
       bounds.push([p.lat, p.lon]);
     });
     if (bounds.length > 1) map.fitBounds(bounds, { padding: [40, 40] });
@@ -1472,11 +1496,7 @@ class App {
   // VIEW: Start
   // ──────────────────────────────────────────────────────────────────
   renderStart(c) {
-    const persons = [
-      { entity: 'person.chris_joosten', name: 'Chris', initials: 'CJ', g: ['#C96342', '#A84F32'] },
-      { entity: 'person.marion_joosten', name: 'Marion', initials: 'MJ', g: ['#7BA7C9', '#4A6E8A'] },
-      { entity: 'person.edwin_joosten', name: 'Edwin', initials: 'EJ', g: ['#7FB069', '#4A7B4A'] },
-    ];
+    const persons = personList(c);
     const switches = ['switch.woonkamerlamp', 'switch.overkappinglamp', 'switch.opritlamp', 'switch.spotjes_overkapping'];
     const lampOn = switches.filter(e => c.isOn(e)).length;
 
@@ -1487,15 +1507,15 @@ class App {
           <p>${getDateLabel()} · <span class="accent">${esc(weatherLabel(c.state('weather.forecast_home'))) || 'helder'}</span> · ${formatNumber(c.attr('weather.forecast_home', 'temperature'), 0)}°C</p>
         </div>
 
-        <div class="grid grid-3">
+        ${persons.length ? `<div class="grid grid-3">
           ${persons.map(p => `
             <div class="card person">
-              <div class="avatar" style="background: linear-gradient(135deg, ${p.g[0]}, ${p.g[1]});">${p.initials}</div>
-              <div class="name">${p.name}</div>
-              <div class="state">${this._personStateLabel(c.state(p.entity))}</div>
+              <div class="avatar" style="background: linear-gradient(135deg, ${p.g[0]}, ${p.g[1]});">${esc(p.initials)}</div>
+              <div class="name">${esc(p.name)}</div>
+              <div class="state">${this._personStateLabel(c.state(p.eid))}</div>
             </div>
           `).join('')}
-        </div>
+        </div>` : ''}
 
         <h2 class="section-title">Vandaag</h2>
         <div class="grid grid-4">
