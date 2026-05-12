@@ -826,6 +826,7 @@ class HAClient {
   state(eid) { return this.states[eid] ? this.states[eid].state : ''; }
   attr(eid, a) { return this.states[eid] && this.states[eid].attributes ? this.states[eid].attributes[a] : ''; }
   isOn(eid) { return this.state(eid) === 'on'; }
+  userName() { return this._userName || ''; }
 
   on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
   notify() { for (const fn of this.listeners) fn(); }
@@ -893,6 +894,7 @@ class ParentHassClient {
   state(eid) { const s = this._st(eid); return s ? s.state : ''; }
   attr(eid, a) { const s = this._st(eid); return s && s.attributes ? s.attributes[a] : ''; }
   isOn(eid) { return this.state(eid) === 'on'; }
+  userName() { return (this.hass && this.hass.user && this.hass.user.name) || ''; }
 
   on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
   notify() { for (const fn of this.listeners) fn(); }
@@ -1008,6 +1010,12 @@ function getGreeting(name) {
   const h = new Date().getHours();
   const part = h < 6 ? 'Goedenacht' : h < 12 ? 'Goedemorgen' : h < 18 ? 'Goedemiddag' : 'Goedenavond';
   return `${part}, ${name}.`;
+}
+// Voornaam van de ingelogde HA-gebruiker (valt terug op 'Chris').
+function firstName(client) {
+  const full = (client && client.userName && client.userName()) || '';
+  const first = full.trim().split(/\s+/)[0];
+  return first || 'Chris';
 }
 function getDateLabel() {
   return new Date().toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -1475,7 +1483,7 @@ class App {
     return `
       <div class="view active">
         <div class="hero">
-          <h1>${getGreeting('Chris')}</h1>
+          <h1>${getGreeting(firstName(c))}</h1>
           <p>${getDateLabel()} · <span class="accent">${esc(weatherLabel(c.state('weather.forecast_home'))) || 'helder'}</span> · ${formatNumber(c.attr('weather.forecast_home', 'temperature'), 0)}°C</p>
         </div>
 
