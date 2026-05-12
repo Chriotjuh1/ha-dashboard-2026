@@ -736,14 +736,24 @@
 // HA WebSocket Client
 // ════════════════════════════════════════════════════════════════════════
 class HAClient {
-  constructor(url, token) {
+  // getToken: either a string (static long-lived token) or an async fn
+  // returning a fresh access token (used when piggy-backing on HA's session).
+  constructor(url, getToken) {
     this.url = url.replace(/\/$/, '');
-    this.token = token;
+    this._getToken = typeof getToken === 'function'
+      ? getToken
+      : () => Promise.resolve(getToken);
     this.states = {};
     this.id = 0;
     this.pending = new Map();
     this.listeners = new Set();
     this.ready = false;
+  }
+
+  async _token() {
+    const t = await this._getToken();
+    if (!t) throw new Error('Geen toegangstoken beschikbaar');
+    return t;
   }
 
   connect() {
@@ -768,7 +778,8 @@ class HAClient {
 
   _onMessage(msg) {
     if (msg.type === 'auth_required') {
-      this._send({ type: 'auth', access_token: this.token });
+      this._token().then(t => this._send({ type: 'auth', access_token: t }))
+                   .catch(e => this._authReject(e));
     } else if (msg.type === 'auth_ok') {
       this.ready = true;
       this._send({ id: ++this.id, type: 'get_states' });
@@ -804,7 +815,8 @@ class HAClient {
     const since = new Date(Date.now() - hours * 3600 * 1000).toISOString();
     const url = `${this.url}/api/history/period/${since}?filter_entity_id=${entityId}&minimal_response&no_attributes`;
     try {
-      const res = await fetch(url, { headers: { 'Authorization': `Bearer ${this.token}` } });
+      const token = await this._token();
+      const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
       if (!res.ok) return [];
       const data = await res.json();
       return (data && data[0]) ? data[0] : [];
@@ -817,6 +829,53 @@ class HAClient {
 
   on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
   notify() { for (const fn of this.listeners) fn(); }
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// HA session piggy-back — als de webapp vanaf /local/dashboard/ draait is dit
+// dezelfde origin als de HA-frontend, dus de ingelogde sessie (hassTokens in
+// localStorage) is bruikbaar. Geen long-lived token meer nodig.
+// ════════════════════════════════════════════════════════════════════════
+function readHassTokens() {
+  try { return JSON.parse(window.localStorage.getItem('hassTokens') || 'null'); }
+  catch (e) { return null; }
+}
+function hassBaseUrl(tok) {
+  return (tok && tok.hassUrl) || (location.protocol + '//' + location.host);
+}
+async function refreshHassToken(tok) {
+  if (!tok || !tok.refresh_token) return null;
+  const base = hassBaseUrl(tok);
+  const body = new URLSearchParams({
+    grant_type: 'refresh_token',
+    refresh_token: tok.refresh_token,
+    client_id: tok.clientId || (location.protocol + '//' + location.host + '/'),
+  });
+  const res = await fetch(base + '/auth/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body,
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  const updated = Object.assign({}, tok, {
+    access_token: data.access_token,
+    expires_in: data.expires_in,
+    expires: Date.now() + data.expires_in * 1000,
+  });
+  try { window.localStorage.setItem('hassTokens', JSON.stringify(updated)); } catch (e) {}
+  return updated;
+}
+// Returns a fresh access token, refreshing via the stored refresh_token when
+// the current one is (nearly) expired. Throws if no HA session exists.
+async function getHassAccessToken() {
+  let tok = readHassTokens();
+  if (!tok || !tok.access_token) throw new Error('no-ha-session');
+  if (!tok.expires || Date.now() >= tok.expires - 30000) {
+    const refreshed = await refreshHassToken(tok);
+    if (refreshed) tok = refreshed;
+  }
+  return tok.access_token;
 }
 
 // ════════════════════════════════════════════════════════════════════════
@@ -970,6 +1029,21 @@ class App {
   }
 
   async init() {
+    // 1. Draait de app binnen HA (zelfde origin, ingelogde sessie)? Dan
+    //    gebruiken we die sessie — geen long-lived token nodig.
+    const hassTokens = readHassTokens();
+    if (hassTokens && hassTokens.access_token) {
+      try {
+        this.client = new HAClient(hassBaseUrl(hassTokens), () => getHassAccessToken());
+        await this.client.connect();
+        this.client.on(() => this.scheduleRender());
+        this.render();
+        return;
+      } catch (e) {
+        // Sessie werkte niet — val terug op handmatige config hieronder.
+      }
+    }
+    // 2. Standalone (buiten HA): handmatige URL + long-lived token.
     const cfg = JSON.parse(localStorage.getItem('claude-dashboard-config') || 'null');
     if (!cfg || !cfg.url || !cfg.token) {
       this.renderLogin();
