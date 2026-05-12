@@ -832,6 +832,73 @@ class HAClient {
 }
 
 // ════════════════════════════════════════════════════════════════════════
+// Parent-HA client — als de webapp in een iframe binnen Home Assistant draait
+// (Lovelace iframe-card op /local/dashboard/) lenen we gewoon de al
+// geauthenticeerde verbinding van de HA-frontend. Werkt in de browser én in
+// de HA Companion-app (zelfde origin → window.parent is toegankelijk). Geen
+// login, geen tokens.
+// ════════════════════════════════════════════════════════════════════════
+class ParentHassClient {
+  constructor(haEl) {
+    this._haEl = haEl;
+    this.listeners = new Set();
+    this.ready = false;
+    this._unsub = null;
+    this.url = location.protocol + '//' + location.host;
+  }
+
+  // Zoek een <home-assistant> element met een geldige hass in een parent-window.
+  // Geeft null bij geen iframe / cross-origin / HA nog niet geladen.
+  static find() {
+    let w = window;
+    for (let i = 0; i < 8; i++) {
+      if (!w.parent || w.parent === w) break;
+      w = w.parent;
+      let el;
+      try { el = w.document && w.document.querySelector('home-assistant'); }
+      catch (e) { return null; }   // cross-origin → niet bruikbaar
+      if (el && el.hass && el.hass.states && el.hass.connection) return new ParentHassClient(el);
+    }
+    return null;
+  }
+
+  get hass() { return this._haEl.hass; }
+
+  async connect() {
+    // De HA-frontend houdt hass.states al up-to-date; we hoeven alleen te
+    // weten wanneer er iets verandert om opnieuw te renderen.
+    try {
+      this._unsub = await this.hass.connection.subscribeEvents(() => this.notify(), 'state_changed');
+    } catch (e) {
+      this._poll = setInterval(() => this.notify(), 5000);
+    }
+    this.ready = true;
+    return this;
+  }
+
+  call(domain, service, data) {
+    try { this.hass.callService(domain, service, data); } catch (e) {}
+  }
+
+  async fetchHistory(entityId, hours = 24) {
+    const since = new Date(Date.now() - hours * 3600 * 1000).toISOString();
+    try {
+      const data = await this.hass.callApi('GET',
+        `history/period/${since}?filter_entity_id=${entityId}&minimal_response&no_attributes`);
+      return (data && data[0]) ? data[0] : [];
+    } catch (e) { return []; }
+  }
+
+  _st(eid) { const s = this.hass && this.hass.states; return s ? s[eid] : undefined; }
+  state(eid) { const s = this._st(eid); return s ? s.state : ''; }
+  attr(eid, a) { const s = this._st(eid); return s && s.attributes ? s.attributes[a] : ''; }
+  isOn(eid) { return this.state(eid) === 'on'; }
+
+  on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
+  notify() { for (const fn of this.listeners) fn(); }
+}
+
+// ════════════════════════════════════════════════════════════════════════
 // Home Assistant login (OAuth2 IndieAuth flow, dezelfde als de HA-frontend)
 //
 // De webapp draait vanaf /local/dashboard/ — dezelfde origin als HA. We
@@ -1080,32 +1147,56 @@ class App {
   }
 
   async init() {
-    // Terug van HA's inlogpagina? Wissel de code in voor tokens.
-    try {
-      await completeHaLogin();
-    } catch (e) {
-      this.renderAuthError(e && e.message ? e.message : String(e));
-      return;
-    }
-    // Geen geldige HA-sessie → naar HA's eigen inlogpagina.
-    const tok = readHassTokens();
-    if (!tok || !tok.access_token) {
-      beginHaLogin();
-      return;
-    }
-    try {
-      this.client = new HAClient(hassBaseUrl(tok), () => getHassAccessToken());
-      await this.client.connect();
-      this.client.on(() => this.scheduleRender());
-      this.render();
-    } catch (e) {
-      // Token afgekeurd of sessie verlopen → opnieuw inloggen via HA.
-      if (e && /no-ha-session|ongeldig|invalid/i.test(e.message || '')) {
-        beginHaLogin();
-        return;
+    // 1. Draaien we in een iframe binnen de (ingelogde) HA-frontend? Leen die
+    //    verbinding — geen login nodig. Werkt in browser én Companion-app.
+    let parent = ParentHassClient.find();
+    if (window.top !== window.self) {
+      for (let i = 0; i < 16 && !parent; i++) {
+        await new Promise(r => setTimeout(r, 250));   // HA-frontend nog aan het laden
+        parent = ParentHassClient.find();
       }
-      this.renderAuthError(e && e.message ? e.message : String(e));
     }
+    if (parent) {
+      try {
+        await parent.connect();
+        this.client = parent;
+        this.client.on(() => this.scheduleRender());
+        this.render();
+        return;
+      } catch (e) { /* val terug op de methodes hieronder */ }
+    }
+
+    // 2. Terug van HA's inlogpagina met ?code=? Wissel in voor tokens.
+    try {
+      if (await completeHaLogin()) return this.init();
+    } catch (e) {
+      this.renderAuthError(e && e.message ? e.message : String(e));
+      return;
+    }
+
+    // 3. Bestaande HA-sessie in localStorage (browser, zelfde origin)?
+    const tok = readHassTokens();
+    if (tok && tok.access_token) {
+      try {
+        this.client = new HAClient(hassBaseUrl(tok), () => getHassAccessToken());
+        await this.client.connect();
+        this.client.on(() => this.scheduleRender());
+        this.render();
+        return;
+      } catch (e) {
+        if (!(e && /no-ha-session|ongeldig|invalid/i.test(e.message || ''))) {
+          this.renderAuthError(e && e.message ? e.message : String(e));
+          return;
+        }
+        // sessie verlopen → door naar stap 4
+      }
+    }
+
+    // 4. Echte browser-tab (geen iframe) → naar HA's eigen inlogpagina.
+    if (window.top === window.self) { beginHaLogin(); return; }
+
+    // 5. In een iframe maar geen toegang tot de HA-sessie.
+    this.renderAuthError('Kan geen verbinding maken met Home Assistant. Herlaad de pagina of open het dashboard opnieuw vanuit Home Assistant.');
   }
 
   renderAuthError(message) {
@@ -1114,11 +1205,11 @@ class App {
         <div class="login-box">
           <h1>Thuis</h1>
           <p>${esc(message)}</p>
-          <button id="retry">Opnieuw inloggen</button>
+          <button id="retry">Opnieuw proberen</button>
         </div>
       </div>
     `;
-    this.root.querySelector('#retry').addEventListener('click', () => beginHaLogin());
+    this.root.querySelector('#retry').addEventListener('click', () => this.init());
   }
 
   navigate(view) {
