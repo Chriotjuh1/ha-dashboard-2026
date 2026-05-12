@@ -20,6 +20,6 @@ lovelace:
     joosten-app:
       mode: yaml
       title: Thuis
-      icon: mdi:hexagon-multiple
+      icon: mdi:home
       show_in_sidebar: true
       filename: dashboards/joosten_app.yaml
