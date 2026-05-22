@@ -288,6 +288,17 @@ claude_dark:
         color: #F0EEE6 !important;
         border-color: rgba(240,238,230,0.14) !important;
       }
+      /* Buttons (o.a. "Bewerken" bij de zijbalk): koraal accent zodat de
+         hover-/focus-state geen witte vlek wordt. */
+      mwc-button,
+      ha-button {
+        --mdc-theme-primary: #D97757;
+        --mdc-theme-on-primary: #1F1E1C;
+        --mdc-ripple-color: #D97757;
+        --mdc-button-outline-color: rgba(240,238,230,0.18);
+        --md-sys-color-primary: #D97757;
+        --md-sys-color-on-primary: #1F1E1C;
+      }
     "ha-panel-profile$ ha-select$": |
       /* Inside ha-select shadow root: override MDC fill + label classes */
       .mdc-select__anchor,
@@ -327,6 +338,45 @@ claude_dark:
       }
       .mdc-floating-label {
         color: #A8A29E !important;
+      }
+    "ha-panel-profile$ mwc-button$": |
+      /* Tem de hover/focus state-layer: subtiele koraal i.p.v. wit, en
+         houd de knoptekst leesbaar. */
+      :host {
+        --mdc-theme-primary: #D97757 !important;
+        --mdc-ripple-color: #D97757 !important;
+      }
+      .mdc-button__ripple::before,
+      .mdc-button__ripple::after {
+        background-color: #D97757 !important;
+      }
+      .mdc-button:hover .mdc-button__ripple::before {
+        opacity: 0.14 !important;
+      }
+      .mdc-button:focus .mdc-button__ripple::before {
+        opacity: 0.18 !important;
+      }
+      .mdc-button__label,
+      .mdc-button .mdc-button__label {
+        color: #D97757 !important;
+      }
+    "ha-panel-profile$ ha-button$ mwc-button$": |
+      :host {
+        --mdc-theme-primary: #D97757 !important;
+        --mdc-ripple-color: #D97757 !important;
+      }
+      .mdc-button__ripple::before,
+      .mdc-button__ripple::after {
+        background-color: #D97757 !important;
+      }
+      .mdc-button:hover .mdc-button__ripple::before {
+        opacity: 0.14 !important;
+      }
+      .mdc-button:focus .mdc-button__ripple::before {
+        opacity: 0.18 !important;
+      }
+      .mdc-button__label {
+        color: #D97757 !important;
       }
   card-mod-view-yaml: |
     ".": |
