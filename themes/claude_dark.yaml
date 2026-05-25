@@ -309,6 +309,24 @@ claude_dark:
         --md-sys-color-primary: #D96D6D !important;
         color: #D96D6D !important;
       }
+      /* MD3-knopvarianten ("Bewerken" e.d. kunnen filled-tonal zijn) → koraal */
+      md-filled-tonal-button,
+      md-text-button,
+      md-outlined-button,
+      md-filled-button,
+      md-elevated-button {
+        --md-sys-color-primary: #D97757 !important;
+        --md-sys-color-on-primary: #1F1E1C !important;
+        --md-sys-color-secondary-container: #3A3936 !important;
+        --md-sys-color-on-secondary-container: #D97757 !important;
+        --md-filled-tonal-button-container-color: #3A3936 !important;
+        --md-filled-tonal-button-label-text-color: #D97757 !important;
+        --md-text-button-label-text-color: #D97757 !important;
+        --md-outlined-button-label-text-color: #D97757 !important;
+        --md-outlined-button-outline-color: rgba(240,238,230,0.18) !important;
+        --md-filled-button-container-color: #C96342 !important;
+        --md-filled-button-label-text-color: #F0EEE6 !important;
+      }
       /* Tekstlinks in de profielpagina (o.a. "Bewerken") → koraal i.p.v.
          blauw/cyaan default. Behalve de .warning-variant hierboven. */
       a:not(.warning),
@@ -486,6 +504,92 @@ claude_dark:
         --md-sys-color-surface-container: #30302E !important;
         --md-sys-color-on-surface: #F0EEE6 !important;
         --md-sys-color-on-surface-variant: #A8A29E !important;
+      }
+    "md-switch$": |
+      /* MD3 switch variant — komt voor naast / i.p.v. de MDC ha-switch */
+      :host {
+        --md-sys-color-primary: #D97757 !important;
+        --md-switch-selected-track-color: #D97757 !important;
+        --md-switch-selected-handle-color: #C96342 !important;
+        --md-switch-selected-icon-color: #F0EEE6 !important;
+        --md-switch-selected-focus-track-color: #D97757 !important;
+        --md-switch-selected-hover-track-color: #D97757 !important;
+        --md-switch-selected-pressed-track-color: #D97757 !important;
+        --md-switch-selected-focus-handle-color: #C96342 !important;
+        --md-switch-selected-hover-handle-color: #C96342 !important;
+        --md-switch-selected-pressed-handle-color: #C96342 !important;
+      }
+    "ha-textfield$": |
+      /* Tekstvakken (o.a. "Huidig wachtwoord") globaal donker — anders typ je
+         witte tekst op een witte achtergrond. */
+      :host {
+        --mdc-text-field-fill-color: #3A3936 !important;
+        --mdc-text-field-ink-color: #F0EEE6 !important;
+        --mdc-text-field-label-ink-color: #A8A29E !important;
+        --mdc-text-field-idle-line-color: rgba(240,238,230,0.14) !important;
+        --mdc-text-field-hover-line-color: #D97757 !important;
+        --mdc-text-field-focused-label-color: #D97757 !important;
+        --mdc-text-field-outlined-idle-border-color: rgba(240,238,230,0.18) !important;
+        --mdc-text-field-outlined-hover-border-color: #D97757 !important;
+        --mdc-text-field-outlined-disabled-border-color: rgba(240,238,230,0.06) !important;
+        --mdc-filled-text-field-container-color: #3A3936 !important;
+        --mdc-filled-text-field-disabled-container-color: #30302E !important;
+        --md-sys-color-surface-container-highest: #3A3936 !important;
+        --md-sys-color-on-surface: #F0EEE6 !important;
+        --md-sys-color-on-surface-variant: #A8A29E !important;
+        --md-sys-color-primary: #D97757 !important;
+        --md-filled-text-field-container-color: #3A3936 !important;
+        --md-filled-text-field-input-text-color: #F0EEE6 !important;
+        --md-filled-text-field-label-text-color: #A8A29E !important;
+        --md-filled-text-field-focus-label-text-color: #D97757 !important;
+        --md-outlined-text-field-input-text-color: #F0EEE6 !important;
+        --md-outlined-text-field-label-text-color: #A8A29E !important;
+        --md-outlined-text-field-outline-color: rgba(240,238,230,0.18) !important;
+      }
+      .mdc-text-field,
+      .mdc-text-field--filled,
+      .mdc-text-field__resizer {
+        background-color: #3A3936 !important;
+      }
+      .mdc-text-field__input,
+      input,
+      textarea {
+        color: #F0EEE6 !important;
+        caret-color: #F0EEE6 !important;
+        -webkit-text-fill-color: #F0EEE6 !important;
+      }
+      .mdc-floating-label,
+      .mdc-floating-label--float-above {
+        color: #A8A29E !important;
+      }
+    "mwc-textfield$": |
+      :host {
+        --mdc-text-field-fill-color: #3A3936 !important;
+        --mdc-text-field-ink-color: #F0EEE6 !important;
+        --mdc-text-field-label-ink-color: #A8A29E !important;
+      }
+      .mdc-text-field, .mdc-text-field--filled { background-color: #3A3936 !important; }
+      input { color: #F0EEE6 !important; caret-color: #F0EEE6 !important; }
+    "ha-md-textfield$": |
+      :host {
+        --md-sys-color-surface-container-highest: #3A3936 !important;
+        --md-filled-text-field-container-color: #3A3936 !important;
+        --md-filled-text-field-input-text-color: #F0EEE6 !important;
+        --md-filled-text-field-label-text-color: #A8A29E !important;
+      }
+    "md-filled-text-field$": |
+      :host {
+        --md-filled-text-field-container-color: #3A3936 !important;
+        --md-filled-text-field-input-text-color: #F0EEE6 !important;
+        --md-filled-text-field-label-text-color: #A8A29E !important;
+        --md-filled-text-field-focus-label-text-color: #D97757 !important;
+      }
+    "md-outlined-text-field$": |
+      :host {
+        --md-outlined-text-field-input-text-color: #F0EEE6 !important;
+        --md-outlined-text-field-label-text-color: #A8A29E !important;
+        --md-outlined-text-field-outline-color: rgba(240,238,230,0.18) !important;
+        --md-outlined-text-field-focus-outline-color: #D97757 !important;
       }
   card-mod-view-yaml: |
     ".": |
