@@ -202,7 +202,7 @@
     .icon,ha-svg-icon{color:${MUTED}!important}
   `;
 
-  // Tag → CSS bundle
+  // Tag → CSS bundle (voor de <style>-injectie in de shadow root)
   const STYLES = {
     'ha-select': SELECT_CSS,
     'mwc-select': SELECT_CSS,
@@ -230,20 +230,149 @@
     'ha-expansion-panel': EXPANSION_CSS,
   };
 
+  // Tag → CSS-vars die we OOK als inline-style op de host zetten.
+  // Inline style wint qua specificity altijd van :host {} rules in de
+  // shadow DOM én cascadeert mee naar binnen, dus deze laag is de
+  // betrouwbaarste override-mechanisme.
+  const INLINE_VARS = {
+    'ha-switch':       switchVars(),
+    'mwc-switch':      switchVars(),
+    'md-switch':       switchVars(),
+    'ha-textfield':    textFieldVars(),
+    'mwc-textfield':   textFieldVars(),
+    'ha-md-textfield': textFieldVars(),
+    'md-filled-text-field':  textFieldVars(),
+    'md-outlined-text-field': textFieldVars(),
+    'ha-select':       selectVars(),
+    'mwc-select':      selectVars(),
+    'ha-md-select':    selectVars(),
+    'md-filled-select':  selectVars(),
+    'md-outlined-select': selectVars(),
+    'mwc-button':      buttonVars(),
+    'ha-button':       buttonVars(),
+    'md-text-button':  buttonVars(),
+    'md-outlined-button': buttonVars(),
+    'md-elevated-button': buttonVars(),
+    'md-filled-tonal-button': buttonTonalVars(),
+    'ha-expansion-panel': expansionVars(),
+  };
+
+  function switchVars() {
+    return {
+      '--mdc-theme-secondary': CORAL,
+      '--mdc-switch-selected-track-color': CORAL,
+      '--mdc-switch-selected-handle-color': CORAL_DEEP,
+      '--mdc-switch-selected-icon-color': CREAM,
+      '--mdc-switch-selected-focus-track-color': CORAL,
+      '--mdc-switch-selected-hover-track-color': CORAL,
+      '--mdc-switch-selected-pressed-track-color': CORAL,
+      '--mdc-switch-selected-focus-handle-color': CORAL_DEEP,
+      '--mdc-switch-selected-hover-handle-color': CORAL_DEEP,
+      '--mdc-switch-selected-pressed-handle-color': CORAL_DEEP,
+      '--md-sys-color-primary': CORAL,
+      '--md-sys-color-on-primary': CREAM,
+      '--md-switch-selected-track-color': CORAL,
+      '--md-switch-selected-handle-color': CORAL_DEEP,
+      '--md-switch-selected-icon-color': CREAM,
+      '--md-switch-selected-focus-track-color': CORAL,
+      '--md-switch-selected-hover-track-color': CORAL,
+      '--md-switch-selected-pressed-track-color': CORAL,
+      '--md-switch-selected-focus-handle-color': CORAL_DEEP,
+      '--md-switch-selected-hover-handle-color': CORAL_DEEP,
+      '--md-switch-selected-pressed-handle-color': CORAL_DEEP,
+    };
+  }
+  function textFieldVars() {
+    return {
+      '--mdc-text-field-fill-color': SURFACE_2,
+      '--mdc-text-field-ink-color': CREAM,
+      '--mdc-text-field-label-ink-color': MUTED,
+      '--mdc-filled-text-field-container-color': SURFACE_2,
+      '--md-sys-color-surface-container-highest': SURFACE_2,
+      '--md-sys-color-on-surface': CREAM,
+      '--md-sys-color-on-surface-variant': MUTED,
+      '--md-sys-color-primary': CORAL,
+      '--md-filled-text-field-container-color': SURFACE_2,
+      '--md-filled-text-field-input-text-color': CREAM,
+      '--md-filled-text-field-label-text-color': MUTED,
+      '--md-filled-text-field-focus-label-text-color': CORAL,
+      '--md-outlined-text-field-input-text-color': CREAM,
+      '--md-outlined-text-field-label-text-color': MUTED,
+      '--md-outlined-text-field-outline-color': BORDER_HOVER,
+      '--md-outlined-text-field-focus-outline-color': CORAL,
+    };
+  }
+  function selectVars() {
+    return {
+      '--mdc-select-fill-color': SURFACE_2,
+      '--mdc-select-ink-color': CREAM,
+      '--mdc-select-label-ink-color': MUTED,
+      '--mdc-select-dropdown-icon-color': MUTED,
+      '--mdc-theme-surface': SURFACE_2,
+      '--mdc-theme-on-surface': CREAM,
+      '--md-sys-color-surface-container-highest': SURFACE_3,
+      '--md-sys-color-on-surface': CREAM,
+      '--md-filled-select-text-field-container-color': SURFACE_2,
+      '--md-filled-select-text-field-input-text-color': CREAM,
+      '--md-filled-select-text-field-label-text-color': MUTED,
+    };
+  }
+  function buttonVars() {
+    return {
+      '--mdc-theme-primary': CORAL,
+      '--mdc-ripple-color': CORAL,
+      '--md-sys-color-primary': CORAL,
+      '--md-text-button-label-text-color': CORAL,
+      '--md-outlined-button-label-text-color': CORAL,
+      '--md-outlined-button-outline-color': BORDER_HOVER,
+    };
+  }
+  function buttonTonalVars() {
+    return {
+      '--md-sys-color-secondary-container': SURFACE_2,
+      '--md-sys-color-on-secondary-container': CORAL,
+      '--md-filled-tonal-button-container-color': SURFACE_2,
+      '--md-filled-tonal-button-label-text-color': CORAL,
+      '--md-filled-tonal-button-hover-state-layer-color': CORAL,
+    };
+  }
+  function expansionVars() {
+    return {
+      '--ha-card-background': SURFACE,
+      '--card-background-color': SURFACE,
+      '--primary-text-color': CREAM,
+      '--secondary-text-color': MUTED,
+      '--md-sys-color-surface': SURFACE,
+      '--md-sys-color-surface-container': SURFACE,
+      '--md-sys-color-on-surface': CREAM,
+      '--md-sys-color-on-surface-variant': MUTED,
+    };
+  }
+
   const TAGS = Object.keys(STYLES);
   const TAGS_SELECTOR = TAGS.join(',');
 
   const patched = new WeakSet();
 
   function patchOne(el) {
-    if (!el || !el.shadowRoot || patched.has(el)) return;
-    const css = STYLES[el.tagName.toLowerCase()];
-    if (!css) return;
+    if (!el || patched.has(el)) return;
+    const tag = el.tagName.toLowerCase();
+    // Inline CSS-vars op de host: wint cascadeer-strijd van :host {} defaults
+    // in de shadow DOM én van CSS-vars die wij of een ander op <html> zetten.
+    const vars = INLINE_VARS[tag];
+    if (vars) {
+      for (const k in vars) el.style.setProperty(k, vars[k], 'important');
+    }
+    // Plus: <style>-injectie in de shadow root als backup voor inner classes
+    // (.mdc-* / .track / .container) die geen CSS-var lezen.
+    const css = STYLES[tag];
+    if (css && el.shadowRoot && !el.shadowRoot.querySelector('style[data-claude-dark]')) {
+      const s = document.createElement('style');
+      s.setAttribute('data-claude-dark', '');
+      s.textContent = css;
+      el.shadowRoot.appendChild(s);
+    }
     patched.add(el);
-    const s = document.createElement('style');
-    s.setAttribute('data-claude-dark', '');
-    s.textContent = css;
-    el.shadowRoot.appendChild(s);
   }
 
   // Recursive shadow-DOM walk. Visited set on shadow roots prevents revisiting
