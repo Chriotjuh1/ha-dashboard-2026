@@ -299,6 +299,23 @@ claude_dark:
         --md-sys-color-primary: #D97757;
         --md-sys-color-on-primary: #1F1E1C;
       }
+      /* Destructieve knoppen ("Afmelden") krijgen claude-danger i.p.v. fel rood. */
+      mwc-button.warning,
+      ha-button.warning,
+      a.warning,
+      [class*="destructive"] {
+        --mdc-theme-primary: #D96D6D !important;
+        --mdc-ripple-color: #D96D6D !important;
+        --md-sys-color-primary: #D96D6D !important;
+        color: #D96D6D !important;
+      }
+      /* Tekstlinks in de profielpagina (o.a. "Bewerken") → koraal i.p.v.
+         blauw/cyaan default. Behalve de .warning-variant hierboven. */
+      a:not(.warning),
+      a:link:not(.warning),
+      a:visited:not(.warning) {
+        color: #D97757 !important;
+      }
     "ha-panel-profile$ ha-select$": |
       /* Inside ha-select shadow root: override MDC fill + label classes */
       .mdc-select__anchor,
@@ -377,6 +394,55 @@ claude_dark:
       }
       .mdc-button__label {
         color: #D97757 !important;
+      }
+    "ha-panel-profile$ mwc-button.warning$": |
+      /* "Afmelden" en andere destructieve knoppen → muted-red. */
+      :host {
+        --mdc-theme-primary: #D96D6D !important;
+        --mdc-ripple-color: #D96D6D !important;
+      }
+      .mdc-button__ripple::before,
+      .mdc-button__ripple::after {
+        background-color: #D96D6D !important;
+      }
+      .mdc-button__label {
+        color: #D96D6D !important;
+      }
+    "ha-switch$": |
+      /* Switches (o.a. "Geavanceerde modus") globaal naar koraal i.p.v.
+         de blauwe MDC/MD3-default. */
+      :host {
+        --switch-checked-color: #D97757 !important;
+        --switch-checked-button-color: #C96342 !important;
+        --switch-checked-track-color: #C96342 !important;
+        --mdc-theme-secondary: #D97757 !important;
+        --mdc-switch-selected-track-color: #D97757 !important;
+        --mdc-switch-selected-handle-color: #C96342 !important;
+        --mdc-switch-selected-icon-color: #F0EEE6 !important;
+        --mdc-switch-selected-focus-track-color: #D97757 !important;
+        --mdc-switch-selected-hover-track-color: #D97757 !important;
+        --mdc-switch-selected-pressed-track-color: #D97757 !important;
+        --mdc-switch-selected-focus-handle-color: #C96342 !important;
+        --mdc-switch-selected-hover-handle-color: #C96342 !important;
+        --mdc-switch-selected-pressed-handle-color: #C96342 !important;
+        --md-sys-color-primary: #D97757 !important;
+        --md-switch-selected-handle-color: #C96342 !important;
+        --md-switch-selected-track-color: #D97757 !important;
+        --md-switch-selected-icon-color: #F0EEE6 !important;
+      }
+    "ha-switch$ mwc-switch$": |
+      :host {
+        --mdc-switch-selected-track-color: #D97757 !important;
+        --mdc-switch-selected-handle-color: #C96342 !important;
+        --mdc-theme-secondary: #D97757 !important;
+      }
+      .mdc-switch--selected .mdc-switch__track::after,
+      .mdc-switch--selected .mdc-switch__track::before {
+        background-color: #D97757 !important;
+        border-color: #D97757 !important;
+      }
+      .mdc-switch--selected .mdc-switch__handle::after {
+        background-color: #C96342 !important;
       }
     "ha-expansion-panel$": |
       /* "Geavanceerde opties" en andere inklap-headers (komen in dialogs door
