@@ -378,6 +378,49 @@ claude_dark:
       .mdc-button__label {
         color: #D97757 !important;
       }
+    "ha-expansion-panel$": |
+      /* "Geavanceerde opties" en andere inklap-headers (komen in dialogs door
+         heel HA voor). De header rendert standaard met een lichte achtergrond;
+         we forceren de dark surface en cream tekst. Geldt globaal, niet alleen
+         op de profielpagina. */
+      :host {
+        --ha-card-background: #30302E !important;
+        --card-background-color: #30302E !important;
+        --primary-text-color: #F0EEE6 !important;
+        --secondary-text-color: #A8A29E !important;
+        --md-sys-color-surface: #30302E !important;
+        --md-sys-color-surface-container: #30302E !important;
+        --md-sys-color-surface-container-low: #30302E !important;
+        --md-sys-color-surface-container-high: #3A3936 !important;
+        --md-sys-color-surface-container-highest: #3A3936 !important;
+        --md-sys-color-on-surface: #F0EEE6 !important;
+        --md-sys-color-on-surface-variant: #A8A29E !important;
+        --mdc-theme-surface: #30302E !important;
+        --mdc-theme-on-surface: #F0EEE6 !important;
+      }
+      .top,
+      .summary,
+      .container,
+      .header,
+      [class*="summary"],
+      [class*="header"] {
+        background-color: #30302E !important;
+        color: #F0EEE6 !important;
+      }
+      .icon,
+      ha-svg-icon,
+      ha-icon-button {
+        color: #A8A29E !important;
+        --mdc-icon-button-ink-color: #A8A29E !important;
+      }
+    "ha-md-list-item$": |
+      /* Material 3 list items (komen voor in dezelfde dialogs). */
+      :host {
+        --md-sys-color-surface: #30302E !important;
+        --md-sys-color-surface-container: #30302E !important;
+        --md-sys-color-on-surface: #F0EEE6 !important;
+        --md-sys-color-on-surface-variant: #A8A29E !important;
+      }
   card-mod-view-yaml: |
     ".": |
       hui-view, hui-sections-view {
