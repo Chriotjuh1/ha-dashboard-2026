@@ -435,8 +435,7 @@
     .timer .row:last-child { border-bottom: none; }
     .timer .row .name { flex: 1; font-size: 14px; }
     .timer input[type="time"] {
-      background: var(--claude-surface-2) !important;
-      background-color: var(--claude-surface-2) !important;
+      background: var(--claude-bg-deep);
       border: 1px solid var(--claude-border-hover);
       border-radius: 8px;
       padding: 6px 10px;
@@ -444,21 +443,18 @@
       font-family: var(--sans);
       font-size: 13px;
       /* color-scheme:dark vertelt webkit/blink: gebruik donkere system-UI
-         voor form controls. Zonder dit overlayt de browser een lichte
-         achtergrond op de hh:mm-velden ongeacht background. */
+         voor form controls. Zonder dit overlayt Android Chrome/iOS Safari
+         een lichte achtergrond op de hh:mm-velden ongeacht background. */
       color-scheme: dark;
     }
-    .timer input[type="time"]::-webkit-datetime-edit {
-      background-color: var(--claude-surface-2) !important;
-      color: var(--claude-cream) !important;
-    }
+    .timer input[type="time"]::-webkit-datetime-edit,
     .timer input[type="time"]::-webkit-datetime-edit-fields-wrapper,
     .timer input[type="time"]::-webkit-datetime-edit-hour-field,
     .timer input[type="time"]::-webkit-datetime-edit-minute-field,
     .timer input[type="time"]::-webkit-datetime-edit-text,
     .timer input[type="time"]::-webkit-datetime-edit-ampm-field {
-      color: var(--claude-cream) !important;
-      background-color: transparent !important;
+      color: var(--claude-cream);
+      background: transparent;
     }
     .timer input[type="time"]::-webkit-calendar-picker-indicator {
       filter: invert(0.85);
