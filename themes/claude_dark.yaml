@@ -592,50 +592,88 @@ claude_dark:
         --md-outlined-text-field-focus-outline-color: #D97757 !important;
       }
     "ha-time-input$": |
-      /* hh:mm tijdvelden — werkt voor zowel oudere HA's (twee
-         ha-textfields) als nieuwere HA's (één native <input type="time">).
-         color-scheme:dark forceert donkere system-form-controls (anders
-         overlayt Chrome/Safari een witte achtergrond). De
-         ::-webkit-datetime-edit pseudo's herkleuren de cijfers en de
-         picker-knop. */
-      input[type="time"],
-      input[type="date"],
-      input[type="datetime-local"] {
-        background: #3A3936 !important;
-        background-color: #3A3936 !important;
+      /* Nieuwere HA: ha-time-input → ha-base-time-input → ha-input →
+         wa-input. We propageren door zodat ook number-inputs binnen
+         wa-input transparant zijn over de donkere .text-field-div. */
+      input[type="number"] {
+        background: transparent !important;
         color: #F0EEE6 !important;
-        border: 1px solid rgba(240,238,230,0.14) !important;
-        border-radius: 8px !important;
-        padding: 6px 10px !important;
+        caret-color: #F0EEE6 !important;
         color-scheme: dark !important;
       }
-      input[type="time"]::-webkit-datetime-edit {
+    "ha-base-time-input$": |
+      input[type="number"] {
+        background: transparent !important;
+        color: #F0EEE6 !important;
+        color-scheme: dark !important;
+      }
+    "ha-input$": |
+      :host {
+        color-scheme: dark;
+        --wa-color-surface-default: #3A3936 !important;
+        --wa-color-text-normal: #F0EEE6 !important;
+        --wa-color-text-quiet: #A8A29E !important;
+        --wa-color-border-default: rgba(240,238,230,0.14) !important;
+        --wa-form-control-background-color: #3A3936 !important;
+        --wa-form-control-border-color: rgba(240,238,230,0.14) !important;
+      }
+    "ha-input$ wa-input$": |
+      /* Web Awesome input: de witte bak is <div part="base" class="text-field">.
+         Recolor + recolor de input erin. */
+      :host {
+        color-scheme: dark;
+        --wa-color-surface-default: #3A3936 !important;
+        --wa-color-text-normal: #F0EEE6 !important;
+        --wa-color-text-quiet: #A8A29E !important;
+        --wa-form-control-background-color: #3A3936 !important;
+        --wa-form-control-border-color: rgba(240,238,230,0.14) !important;
+      }
+      .text-field,
+      [part="base"] {
+        background: #3A3936 !important;
         background-color: #3A3936 !important;
+        border: 1px solid rgba(240,238,230,0.14) !important;
+        border-radius: 8px !important;
         color: #F0EEE6 !important;
       }
-      input[type="time"]::-webkit-datetime-edit-fields-wrapper,
-      input[type="time"]::-webkit-datetime-edit-hour-field,
-      input[type="time"]::-webkit-datetime-edit-minute-field,
-      input[type="time"]::-webkit-datetime-edit-second-field,
-      input[type="time"]::-webkit-datetime-edit-text,
-      input[type="time"]::-webkit-datetime-edit-ampm-field {
+      .control,
+      input,
+      input[part="input"] {
+        background: transparent !important;
         color: #F0EEE6 !important;
-        background-color: transparent !important;
+        caret-color: #F0EEE6 !important;
+        -webkit-text-fill-color: #F0EEE6 !important;
       }
-      input[type="time"]::-webkit-calendar-picker-indicator,
-      input[type="date"]::-webkit-calendar-picker-indicator {
-        filter: invert(0.85);
-        opacity: 0.6;
-        cursor: pointer;
+      .label,
+      [part="form-control-label"] {
+        color: #A8A29E !important;
       }
-      /* Legacy: twee aparte ha-textfields binnen ha-time-input */
-      ha-textfield {
-        --mdc-text-field-fill-color: #3A3936 !important;
-        --mdc-text-field-ink-color: #F0EEE6 !important;
-        --mdc-text-field-label-ink-color: #A8A29E !important;
-        --mdc-text-field-idle-line-color: rgba(240,238,230,0.18) !important;
-        --mdc-text-field-hover-line-color: #D97757 !important;
-        --mdc-text-field-focused-label-color: #D97757 !important;
+    "wa-input$": |
+      :host {
+        color-scheme: dark;
+        --wa-color-surface-default: #3A3936 !important;
+        --wa-color-text-normal: #F0EEE6 !important;
+        --wa-form-control-background-color: #3A3936 !important;
+      }
+      .text-field,
+      [part="base"] {
+        background: #3A3936 !important;
+        background-color: #3A3936 !important;
+        border: 1px solid rgba(240,238,230,0.14) !important;
+        border-radius: 8px !important;
+        color: #F0EEE6 !important;
+      }
+      .control,
+      input,
+      input[part="input"] {
+        background: transparent !important;
+        color: #F0EEE6 !important;
+        caret-color: #F0EEE6 !important;
+        -webkit-text-fill-color: #F0EEE6 !important;
+      }
+      .label,
+      [part="form-control-label"] {
+        color: #A8A29E !important;
       }
   card-mod-view-yaml: |
     ".": |

@@ -197,9 +197,12 @@
     }
   `;
 
-  // ha-time-input rendert óf twee ha-textfields (oude HA) óf één
-  // native <input type="time"> (nieuwere HA). Beide gevallen afdekken.
+  // ha-time-input (nieuwere HA) rendert ha-base-time-input → ha-input →
+  // wa-input (Web Awesome) → <div class="text-field"> + <input type="number">.
+  // De witte bak is die .text-field-div binnen wa-input's shadow root.
+  // Voor de zekerheid ook native input[type="time"] dekken (oudere variants).
   const TIMEINPUT_CSS = `
+    /* Native time/date inputs (legacy) */
     input[type="time"],input[type="date"],input[type="datetime-local"]{
       background:${SURFACE_2}!important;
       background-color:${SURFACE_2}!important;
@@ -210,27 +213,62 @@
       color-scheme:dark!important;
     }
     input[type="time"]::-webkit-datetime-edit,
-    input[type="date"]::-webkit-datetime-edit,
-    input[type="datetime-local"]::-webkit-datetime-edit{
+    input[type="date"]::-webkit-datetime-edit{
       background-color:${SURFACE_2}!important;color:${CREAM}!important
     }
     input[type="time"]::-webkit-datetime-edit-fields-wrapper,
     input[type="time"]::-webkit-datetime-edit-hour-field,
     input[type="time"]::-webkit-datetime-edit-minute-field,
-    input[type="time"]::-webkit-datetime-edit-second-field,
-    input[type="time"]::-webkit-datetime-edit-text,
-    input[type="time"]::-webkit-datetime-edit-ampm-field{
+    input[type="time"]::-webkit-datetime-edit-text{
       color:${CREAM}!important;background-color:transparent!important
     }
-    input[type="time"]::-webkit-calendar-picker-indicator,
-    input[type="date"]::-webkit-calendar-picker-indicator{
+    input[type="time"]::-webkit-calendar-picker-indicator{
       filter:invert(0.85);opacity:0.6;cursor:pointer
     }
-    /* ha-textfield-variant van ha-time-input */
-    ha-textfield{
-      --mdc-text-field-fill-color:${SURFACE_2}!important;
-      --mdc-text-field-ink-color:${CREAM}!important;
-      --mdc-text-field-label-ink-color:${MUTED}!important;
+    /* Number inputs binnen ha-input/wa-input (de echte hh + mm velden) */
+    input[type="number"]{
+      background:transparent!important;
+      background-color:transparent!important;
+      color:${CREAM}!important;
+      caret-color:${CREAM}!important;
+      -webkit-text-fill-color:${CREAM}!important;
+      color-scheme:dark!important;
+    }
+  `;
+
+  // Web Awesome wa-input: witte container is <div part="base" class="text-field">.
+  // ha-input is een lichte HA-wrapper rondom wa-input.
+  const WA_INPUT_CSS = `
+    :host {
+      color-scheme: dark;
+      --wa-color-surface-default: ${SURFACE_2} !important;
+      --wa-color-surface-raised: ${SURFACE_2} !important;
+      --wa-color-fill-quiet: ${SURFACE_2} !important;
+      --wa-color-text-normal: ${CREAM} !important;
+      --wa-color-text-quiet: ${MUTED} !important;
+      --wa-color-text-link: ${CORAL} !important;
+      --wa-color-border-default: ${BORDER_HOVER} !important;
+      --wa-form-control-background-color: ${SURFACE_2} !important;
+      --wa-form-control-border-color: ${BORDER_HOVER} !important;
+      --wa-form-control-resting-color: ${CREAM} !important;
+      --wa-form-control-label-color: ${MUTED} !important;
+    }
+    .text-field,[part="base"],[part~="base"]{
+      background:${SURFACE_2}!important;
+      background-color:${SURFACE_2}!important;
+      border:1px solid ${BORDER_HOVER}!important;
+      border-radius:8px!important;
+      color:${CREAM}!important;
+    }
+    .control,input,input[part="input"]{
+      background:transparent!important;
+      background-color:transparent!important;
+      color:${CREAM}!important;
+      caret-color:${CREAM}!important;
+      -webkit-text-fill-color:${CREAM}!important;
+    }
+    .label,[part="form-control-label"],[part~="label"]{
+      color:${MUTED}!important
     }
   `;
 
@@ -287,6 +325,8 @@
 
     'ha-time-input': TIMEINPUT_CSS,
     'ha-base-time-input': TIMEINPUT_CSS,
+    'ha-input': WA_INPUT_CSS,
+    'wa-input': WA_INPUT_CSS,
   };
 
   // Tag → CSS-vars die we OOK als inline-style op de host zetten.
