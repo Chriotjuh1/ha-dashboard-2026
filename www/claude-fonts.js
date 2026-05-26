@@ -229,24 +229,30 @@
       --wa-color-danger-on-quiet: ${DANGER} !important;
       color: ${CORAL} !important;
     }
-    /* Slotted tekst (de "Annuleren" / "Opslaan" string die als child wordt
-       geprojecteerd): de slot zelf is geen renderend element, dus we moeten
-       ::slotted(*) gebruiken om de child te kleuren. */
-    ::slotted(*){
-      color:${CORAL}!important;
-    }
-    :host([appearance="accent"]) ::slotted(*),
-    :host([appearance="filled"]) ::slotted(*){
+    /* Slotted bare-text inherit'd van host-color (::slotted matcht alleen
+       elementen, niet text nodes), dus we moeten :host zelf herkleuren */
+    :host([appearance="accent"]),
+    :host([appearance="filled"]){
       color:${CREAM}!important;
     }
-    :host([variant="danger"]) ::slotted(*),
-    :host([variant="warning"]) ::slotted(*){
+    :host([variant="danger"]),
+    :host([variant="warning"]){
       color:${DANGER}!important;
     }
-    :host([appearance="accent"][variant="danger"]) ::slotted(*),
-    :host([appearance="filled"][variant="danger"]) ::slotted(*){
+    :host([variant="danger"][appearance="accent"]),
+    :host([variant="warning"][appearance="accent"]),
+    :host([variant="danger"][appearance="filled"]),
+    :host([variant="warning"][appearance="filled"]){
       color:${CREAM}!important;
     }
+    /* Als slotted child wél een element is, ook expliciet kleuren */
+    ::slotted(*){ color:${CORAL}!important; }
+    :host([appearance="accent"]) ::slotted(*),
+    :host([appearance="filled"]) ::slotted(*){ color:${CREAM}!important; }
+    :host([variant="danger"]) ::slotted(*),
+    :host([variant="warning"]) ::slotted(*){ color:${DANGER}!important; }
+    :host([variant="danger"][appearance="accent"]) ::slotted(*),
+    :host([variant="danger"][appearance="filled"]) ::slotted(*){ color:${CREAM}!important; }
     /* MDC (oudere componenten) */
     .mdc-button__ripple::before,.mdc-button__ripple::after{background-color:${CORAL}!important}
     .mdc-button:hover .mdc-button__ripple::before{opacity:.14!important}

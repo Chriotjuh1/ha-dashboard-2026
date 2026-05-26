@@ -789,7 +789,23 @@ claude_dark:
         --wa-color-danger-on-quiet: #D96D6D !important;
         color: #D97757 !important;
       }
-      /* Slotted tekst ("Annuleren", "Opslaan" etc.) */
+      /* Bare-text slotted content erft van :host color (::slotted matcht
+         alleen elementen, niet text nodes). Dus :host zelf herkleuren. */
+      :host([appearance="accent"]),
+      :host([appearance="filled"]) {
+        color: #F0EEE6 !important;
+      }
+      :host([variant="danger"]),
+      :host([variant="warning"]) {
+        color: #D96D6D !important;
+      }
+      :host([variant="danger"][appearance="accent"]),
+      :host([variant="warning"][appearance="accent"]),
+      :host([variant="danger"][appearance="filled"]),
+      :host([variant="warning"][appearance="filled"]) {
+        color: #F0EEE6 !important;
+      }
+      /* Als slotted child een element is, ook expliciet kleuren */
       ::slotted(*) { color: #D97757 !important; }
       :host([appearance="accent"]) ::slotted(*),
       :host([appearance="filled"]) ::slotted(*) { color: #F0EEE6 !important; }
