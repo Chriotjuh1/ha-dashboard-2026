@@ -225,6 +225,13 @@
     input[type="time"]::-webkit-calendar-picker-indicator{
       filter:invert(0.85);opacity:0.6;cursor:pointer
     }
+    /* Override de nieuwe --ha-color-* tokens binnen deze shadow root */
+    :host {
+      --ha-color-form-background: ${SURFACE_2} !important;
+      --ha-color-form-foreground: ${CREAM} !important;
+      --ha-color-form-border: ${BORDER_HOVER} !important;
+      --ha-color-form-label: ${MUTED} !important;
+    }
     /* Number inputs binnen ha-input/wa-input (de echte hh + mm velden) */
     input[type="number"]{
       background:transparent!important;
@@ -234,9 +241,11 @@
       -webkit-text-fill-color:${CREAM}!important;
       color-scheme:dark!important;
     }
-    /* Dubbele punt tussen hh en mm */
-    .time-separator{
+    /* Dubbele punt tussen hh en mm — beide longhand+shorthand voor zekerheid */
+    .time-separator,
+    [class*="time-separator"]{
       background:${SURFACE_2}!important;
+      background-color:${SURFACE_2}!important;
       color:${CREAM}!important;
       align-self:stretch!important;
       display:flex!important;

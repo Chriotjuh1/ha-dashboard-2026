@@ -653,13 +653,24 @@ claude_dark:
         color-scheme: dark !important;
       }
     "ha-base-time-input$": |
+      /* Override de nieuwe --ha-color-* tokens lokaal in de shadow root.
+         De .time-separator leest --ha-color-form-background en valt anders
+         terug op een hardcoded rgb(243,243,243). */
+      :host {
+        --ha-color-form-background: #3A3936 !important;
+        --ha-color-form-foreground: #F0EEE6 !important;
+        --ha-color-form-border: rgba(240,238,230,0.14) !important;
+        --ha-color-form-label: #A8A29E !important;
+      }
       input[type="number"] {
         background: transparent !important;
         color: #F0EEE6 !important;
         color-scheme: dark !important;
       }
-      .time-separator {
+      .time-separator,
+      [class*="time-separator"] {
         background: #3A3936 !important;
+        background-color: #3A3936 !important;
         color: #F0EEE6 !important;
         align-self: stretch !important;
         display: flex !important;
