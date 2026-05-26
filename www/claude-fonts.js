@@ -92,10 +92,21 @@
       --md-filled-text-field-label-text-color: ${MUTED} !important;
       --md-filled-text-field-focus-label-text-color: ${CORAL} !important;
       --md-filled-text-field-caret-color: ${CREAM} !important;
+      --md-filled-text-field-supporting-text-color: ${MUTED} !important;
       --md-outlined-text-field-input-text-color: ${CREAM} !important;
       --md-outlined-text-field-label-text-color: ${MUTED} !important;
       --md-outlined-text-field-outline-color: ${BORDER_HOVER} !important;
       --md-outlined-text-field-focus-outline-color: ${CORAL} !important;
+      /* MD3 wraps het tekstvak in een <md-filled-field> met token
+         --md-filled-field-container-color (zonder "text-"). Die is de
+         echte boosdoener voor de witte .text-field-div. */
+      --md-filled-field-container-color: ${SURFACE_2} !important;
+      --md-filled-field-content-color: ${CREAM} !important;
+      --md-filled-field-label-text-color: ${MUTED} !important;
+      --md-filled-field-focus-label-text-color: ${CORAL} !important;
+      --md-outlined-field-content-color: ${CREAM} !important;
+      --md-outlined-field-label-text-color: ${MUTED} !important;
+      --md-outlined-field-outline-color: ${BORDER_HOVER} !important;
     }
     /* MDC */
     .mdc-text-field,.mdc-text-field--filled,.mdc-text-field--outlined,.mdc-text-field__resizer{
@@ -105,10 +116,15 @@
       color:${CREAM}!important;caret-color:${CREAM}!important;-webkit-text-fill-color:${CREAM}!important
     }
     .mdc-floating-label,.mdc-floating-label--float-above{color:${MUTED}!important}
-    /* MD3 internal classes */
-    .container,.field,.background{background-color:${SURFACE_2}!important}
-    .input-wrapper input,.input{color:${CREAM}!important;caret-color:${CREAM}!important}
-    .label-text,.label{color:${MUTED}!important}
+    /* MD3 internal classes — incl. .text-field (de wrapper-div met het
+       lichte vlak dat in DevTools opdook) en .background (de gevulde laag). */
+    .text-field,.field,.container,.background,.surface{
+      background-color:${SURFACE_2}!important;background:${SURFACE_2}!important
+    }
+    .input-wrapper input,.input,input.md3-text-field__input{
+      color:${CREAM}!important;caret-color:${CREAM}!important;-webkit-text-fill-color:${CREAM}!important
+    }
+    .label-text,.label,.floating-label{color:${MUTED}!important}
   `;
 
   const SWITCH_CSS = `
@@ -213,8 +229,11 @@
     'ha-textfield': TEXTFIELD_CSS,
     'mwc-textfield': TEXTFIELD_CSS,
     'ha-md-textfield': TEXTFIELD_CSS,
+    'ha-password-textfield': TEXTFIELD_CSS,
     'md-filled-text-field': TEXTFIELD_CSS,
     'md-outlined-text-field': TEXTFIELD_CSS,
+    'md-filled-field': TEXTFIELD_CSS,
+    'md-outlined-field': TEXTFIELD_CSS,
 
     'ha-switch': SWITCH_CSS,
     'mwc-switch': SWITCH_CSS,
@@ -241,8 +260,11 @@
     'ha-textfield':    textFieldVars(),
     'mwc-textfield':   textFieldVars(),
     'ha-md-textfield': textFieldVars(),
+    'ha-password-textfield': textFieldVars(),
     'md-filled-text-field':  textFieldVars(),
     'md-outlined-text-field': textFieldVars(),
+    'md-filled-field':  textFieldVars(),
+    'md-outlined-field': textFieldVars(),
     'ha-select':       selectVars(),
     'mwc-select':      selectVars(),
     'ha-md-select':    selectVars(),
@@ -300,6 +322,14 @@
       '--md-outlined-text-field-label-text-color': MUTED,
       '--md-outlined-text-field-outline-color': BORDER_HOVER,
       '--md-outlined-text-field-focus-outline-color': CORAL,
+      // De inner <md-filled-field> gebruikt -field- (zonder "text-")
+      '--md-filled-field-container-color': SURFACE_2,
+      '--md-filled-field-content-color': CREAM,
+      '--md-filled-field-label-text-color': MUTED,
+      '--md-filled-field-focus-label-text-color': CORAL,
+      '--md-outlined-field-content-color': CREAM,
+      '--md-outlined-field-label-text-color': MUTED,
+      '--md-outlined-field-outline-color': BORDER_HOVER,
     };
   }
   function selectVars() {
