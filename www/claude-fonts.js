@@ -245,6 +245,41 @@
     }
   `;
 
+  // Web Awesome wa-switch: <span part="control" class="switch"> +
+  // <span part="thumb" class="thumb"> in shadow root.
+  const WA_SWITCH_CSS = `
+    :host {
+      color-scheme: dark;
+      --wa-color-surface-default: ${SURFACE_2} !important;
+      --wa-color-fill-loud: ${SURFACE_2} !important;
+      --wa-color-fill-loud-on-fill-loud: ${CORAL} !important;
+      --wa-form-control-background-color: ${SURFACE_2} !important;
+    }
+    .switch,[part="control"]{
+      background:${SURFACE_2}!important;
+      background-color:${SURFACE_2}!important;
+      border-color:${BORDER_HOVER}!important;
+    }
+    .thumb,[part="thumb"]{
+      background:${CORAL}!important;
+      background-color:${CORAL}!important;
+    }
+    /* Uit-staat: muted bolletje */
+    :host(:not([checked]):not([aria-checked="true"])) .thumb,
+    :host(:not([checked]):not([aria-checked="true"])) [part="thumb"]{
+      background:${MUTED}!important;
+      background-color:${MUTED}!important;
+    }
+    /* Aan-staat: koraal bolletje (expliciet voor specificity) */
+    :host([checked]) .thumb,
+    :host([aria-checked="true"]) .thumb,
+    :host([checked]) [part="thumb"],
+    :host([aria-checked="true"]) [part="thumb"]{
+      background:${CORAL}!important;
+      background-color:${CORAL}!important;
+    }
+  `;
+
   // Web Awesome wa-input: witte container is <div part="base" class="text-field">.
   // ha-input is een lichte HA-wrapper rondom wa-input.
   const WA_INPUT_CSS = `
@@ -336,6 +371,7 @@
     'ha-base-time-input': TIMEINPUT_CSS,
     'ha-input': WA_INPUT_CSS,
     'wa-input': WA_INPUT_CSS,
+    'wa-switch': WA_SWITCH_CSS,
   };
 
   // Tag → CSS-vars die we OOK als inline-style op de host zetten.

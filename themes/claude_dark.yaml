@@ -656,6 +656,38 @@ claude_dark:
       [part="form-control-label"] {
         color: #A8A29E !important;
       }
+    "wa-switch$": |
+      /* Web Awesome switch — track grijs, bolletje koraal in aan-staat,
+         muted in uit-staat. */
+      :host {
+        color-scheme: dark;
+        --wa-color-surface-default: #3A3936 !important;
+        --wa-color-fill-loud: #3A3936 !important;
+        --wa-form-control-background-color: #3A3936 !important;
+      }
+      .switch,
+      [part="control"] {
+        background: #3A3936 !important;
+        background-color: #3A3936 !important;
+        border-color: rgba(240,238,230,0.14) !important;
+      }
+      .thumb,
+      [part="thumb"] {
+        background: #D97757 !important;
+        background-color: #D97757 !important;
+      }
+      :host(:not([checked]):not([aria-checked="true"])) .thumb,
+      :host(:not([checked]):not([aria-checked="true"])) [part="thumb"] {
+        background: #A8A29E !important;
+        background-color: #A8A29E !important;
+      }
+      :host([checked]) .thumb,
+      :host([aria-checked="true"]) .thumb,
+      :host([checked]) [part="thumb"],
+      :host([aria-checked="true"]) [part="thumb"] {
+        background: #D97757 !important;
+        background-color: #D97757 !important;
+      }
     "wa-input$": |
       :host {
         color-scheme: dark;
