@@ -779,36 +779,64 @@ claude_dark:
         border-color: rgba(240,238,230,0.18) !important;
       }
     "wa-switch$": |
-      /* Web Awesome switch — track grijs, bolletje koraal in aan-staat,
-         muted in uit-staat. */
+      /* Web Awesome switch — track surface in uit-staat, koraal in aan-staat;
+         bolletje altijd crème (verschuift visueel naar de andere kant). */
       :host {
         color-scheme: dark;
         --wa-color-surface-default: #3A3936 !important;
-        --wa-color-fill-loud: #3A3936 !important;
+        --wa-color-fill-loud: #C96342 !important;
+        --wa-color-fill-quiet: #3A3936 !important;
         --wa-form-control-background-color: #3A3936 !important;
+        --wa-form-control-border-color: rgba(240,238,230,0.14) !important;
       }
       .switch,
       [part="control"] {
         background: #3A3936 !important;
         background-color: #3A3936 !important;
-        border-color: rgba(240,238,230,0.14) !important;
+        border: 1px solid rgba(240,238,230,0.14) !important;
+      }
+      :host([checked]) .switch,
+      :host([aria-checked="true"]) .switch,
+      :host([checked]) [part="control"],
+      :host([aria-checked="true"]) [part="control"] {
+        background: #C96342 !important;
+        background-color: #C96342 !important;
+        border-color: #D97757 !important;
       }
       .thumb,
       [part="thumb"] {
-        background: #D97757 !important;
-        background-color: #D97757 !important;
+        background: #F0EEE6 !important;
+        background-color: #F0EEE6 !important;
       }
-      :host(:not([checked]):not([aria-checked="true"])) .thumb,
-      :host(:not([checked]):not([aria-checked="true"])) [part="thumb"] {
-        background: #A8A29E !important;
-        background-color: #A8A29E !important;
+    "ha-button-toggle-group$": |
+      /* Toggle group ("Samengesteld"/"Aangepast" e.d.) — geselecteerde
+         tab koraal, niet-geselecteerde tab surface. */
+      :host {
+        --mdc-theme-primary: #D97757 !important;
+        --md-sys-color-primary: #D97757 !important;
+        --ha-button-toggle-group-button-bg-color: #3A3936 !important;
+        --ha-button-toggle-group-button-color: #A8A29E !important;
+        --ha-button-toggle-group-button-selected-bg-color: #C96342 !important;
+        --ha-button-toggle-group-button-selected-color: #F0EEE6 !important;
       }
-      :host([checked]) .thumb,
-      :host([aria-checked="true"]) .thumb,
-      :host([checked]) [part="thumb"],
-      :host([aria-checked="true"]) [part="thumb"] {
-        background: #D97757 !important;
-        background-color: #D97757 !important;
+      button,
+      .button,
+      [part="base"] {
+        background: #3A3936 !important;
+        color: #F0EEE6 !important;
+        border-color: rgba(240,238,230,0.14) !important;
+      }
+      button.selected,
+      button[selected],
+      button[aria-selected="true"],
+      .button.selected,
+      [part="base"].selected {
+        background: #C96342 !important;
+        background-color: #C96342 !important;
+        color: #F0EEE6 !important;
+      }
+      button:not(.selected):not([selected]):not([aria-selected="true"]):hover {
+        background: #46443F !important;
       }
     "wa-input$": |
       :host {

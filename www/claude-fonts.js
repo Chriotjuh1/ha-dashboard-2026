@@ -177,11 +177,83 @@
       --md-outlined-button-hover-state-layer-color: ${CORAL} !important;
       --md-filled-button-container-color: ${CORAL_DEEP} !important;
       --md-filled-button-label-text-color: ${CREAM} !important;
+      /* Web Awesome tokens */
+      --wa-color-brand-fill-loud: ${CORAL_DEEP} !important;
+      --wa-color-brand-on-loud: ${CREAM} !important;
+      --wa-color-brand-fill-quiet: ${SURFACE_2} !important;
+      --wa-color-brand-on-quiet: ${CORAL} !important;
+      --wa-color-text-link: ${CORAL} !important;
+      --wa-color-text-loud: ${CORAL} !important;
+      color: ${CORAL} !important;
     }
+    /* MDC (oudere componenten) */
     .mdc-button__ripple::before,.mdc-button__ripple::after{background-color:${CORAL}!important}
     .mdc-button:hover .mdc-button__ripple::before{opacity:.14!important}
     .mdc-button:focus .mdc-button__ripple::before{opacity:.18!important}
     .mdc-button__label{color:${CORAL}!important}
+    /* Web Awesome (ha-button is nu wa-button intern) */
+    .button,[part="base"]{
+      color:${CORAL}!important;
+      background:transparent!important;
+      background-color:transparent!important;
+      border-color:transparent!important;
+    }
+    .label,[part="label"]{
+      color:${CORAL}!important;
+    }
+    /* appearance="accent" — primaire actie ("Opslaan") = gevuld koraal */
+    :host([appearance="accent"]) .button,
+    :host([appearance="accent"]) [part="base"]{
+      background:${CORAL_DEEP}!important;
+      background-color:${CORAL_DEEP}!important;
+      color:${CREAM}!important;
+      border-color:${CORAL_DEEP}!important;
+    }
+    :host([appearance="accent"]) .label,
+    :host([appearance="accent"]) [part="label"]{
+      color:${CREAM}!important;
+    }
+    /* Filled variant: koraal-deep vlak */
+    :host([appearance="filled"]) .button,
+    :host([appearance="filled"]) [part="base"]{
+      background:${CORAL_DEEP}!important;
+      background-color:${CORAL_DEEP}!important;
+      color:${CREAM}!important;
+    }
+    :host([appearance="filled"]) .label,
+    :host([appearance="filled"]) [part="label"]{
+      color:${CREAM}!important;
+    }
+    /* Outlined variant: subtiele rand */
+    :host([appearance="outlined"]) .button,
+    :host([appearance="outlined"]) [part="base"]{
+      border-color:${BORDER_HOVER}!important;
+    }
+    /* Hover: koraal tint i.p.v. wit */
+    :host(:hover) .button,
+    :host(:hover) [part="base"],
+    .button:hover,[part="base"]:hover{
+      background:rgba(217,119,87,0.12)!important;
+      background-color:rgba(217,119,87,0.12)!important;
+    }
+    :host([appearance="accent"]:hover) .button,
+    :host([appearance="accent"]:hover) [part="base"],
+    :host([appearance="filled"]:hover) .button,
+    :host([appearance="filled"]:hover) [part="base"]{
+      background:${CORAL}!important;
+      background-color:${CORAL}!important;
+    }
+    /* Danger / warning variant */
+    :host([variant="danger"]),
+    :host([variant="warning"]){
+      color:${DANGER}!important;
+    }
+    :host([variant="danger"]) .label,
+    :host([variant="warning"]) .label,
+    :host([variant="danger"]) [part="label"],
+    :host([variant="warning"]) [part="label"]{
+      color:${DANGER}!important;
+    }
   `;
 
   const BUTTON_TONAL_CSS = `
@@ -254,6 +326,47 @@
     }
   `;
 
+  // ha-button-toggle-group: rij van toggles ("Samengesteld" / "Aangepast").
+  // De selected/unselected tabs picken default brand-color → blauw/cyaan.
+  const TOGGLE_GROUP_CSS = `
+    :host {
+      --mdc-theme-primary: ${CORAL} !important;
+      --md-sys-color-primary: ${CORAL} !important;
+      --md-sys-color-on-primary: ${CREAM} !important;
+      --md-sys-color-secondary-container: ${CORAL_DEEP} !important;
+      --md-sys-color-on-secondary-container: ${CREAM} !important;
+      --wa-color-brand-fill-loud: ${CORAL_DEEP} !important;
+      --wa-color-brand-on-loud: ${CREAM} !important;
+      --wa-color-fill-quiet: ${SURFACE_2} !important;
+      --wa-color-on-quiet: ${CREAM} !important;
+      --ha-button-toggle-group-button-bg-color: ${SURFACE_2} !important;
+      --ha-button-toggle-group-button-color: ${MUTED} !important;
+      --ha-button-toggle-group-button-selected-bg-color: ${CORAL_DEEP} !important;
+      --ha-button-toggle-group-button-selected-color: ${CREAM} !important;
+    }
+    /* Niet-geselecteerd: subtiele surface */
+    button,.button,[part="base"]{
+      background:${SURFACE_2}!important;
+      background-color:${SURFACE_2}!important;
+      color:${CREAM}!important;
+      border-color:${BORDER_HOVER}!important;
+    }
+    /* Geselecteerde tab → koraal vlak */
+    button.selected,button[aria-selected="true"],button[selected],
+    .button.selected,[part="base"].selected,
+    button:has(>.selected){
+      background:${CORAL_DEEP}!important;
+      background-color:${CORAL_DEEP}!important;
+      color:${CREAM}!important;
+    }
+    /* Hover op niet-selected → lichtere surface */
+    button:not(.selected):not([selected]):not([aria-selected="true"]):hover,
+    .button:not(.selected):hover{
+      background:${SURFACE_3}!important;
+      background-color:${SURFACE_3}!important;
+    }
+  `;
+
   // Web Awesome wa-button: <button part="base" class="button"> in shadow root.
   // Variants: appearance="plain|filled|outlined", variant="neutral|brand|danger".
   const WA_BUTTON_CSS = `
@@ -304,32 +417,44 @@
     :host {
       color-scheme: dark;
       --wa-color-surface-default: ${SURFACE_2} !important;
-      --wa-color-fill-loud: ${SURFACE_2} !important;
-      --wa-color-fill-loud-on-fill-loud: ${CORAL} !important;
+      --wa-color-fill-loud: ${CORAL_DEEP} !important;
+      --wa-color-fill-loud-on-fill-loud: ${CREAM} !important;
+      --wa-color-fill-quiet: ${SURFACE_2} !important;
       --wa-form-control-background-color: ${SURFACE_2} !important;
+      --wa-form-control-border-color: ${BORDER_HOVER} !important;
     }
+    /* Track — staat in beide states donker (Web Awesome heeft hier soms
+       een fill-loud op de track gezet in selected state) */
     .switch,[part="control"]{
       background:${SURFACE_2}!important;
       background-color:${SURFACE_2}!important;
-      border-color:${BORDER_HOVER}!important;
+      border:1px solid ${BORDER_HOVER}!important;
     }
+    /* Aan-staat track (selected) — track wordt koraal */
+    :host([checked]) .switch,
+    :host([aria-checked="true"]) .switch,
+    :host(:state(checked)) .switch,
+    :host([checked]) [part="control"],
+    :host([aria-checked="true"]) [part="control"],
+    :host(:state(checked)) [part="control"]{
+      background:${CORAL_DEEP}!important;
+      background-color:${CORAL_DEEP}!important;
+      border-color:${CORAL}!important;
+    }
+    /* Bolletje default */
     .thumb,[part="thumb"]{
-      background:${CORAL}!important;
-      background-color:${CORAL}!important;
+      background:${CREAM}!important;
+      background-color:${CREAM}!important;
     }
-    /* Uit-staat: muted bolletje */
-    :host(:not([checked]):not([aria-checked="true"])) .thumb,
-    :host(:not([checked]):not([aria-checked="true"])) [part="thumb"]{
-      background:${MUTED}!important;
-      background-color:${MUTED}!important;
-    }
-    /* Aan-staat: koraal bolletje (expliciet voor specificity) */
+    /* Aan-staat bolletje */
     :host([checked]) .thumb,
     :host([aria-checked="true"]) .thumb,
+    :host(:state(checked)) .thumb,
     :host([checked]) [part="thumb"],
-    :host([aria-checked="true"]) [part="thumb"]{
-      background:${CORAL}!important;
-      background-color:${CORAL}!important;
+    :host([aria-checked="true"]) [part="thumb"],
+    :host(:state(checked)) [part="thumb"]{
+      background:${CREAM}!important;
+      background-color:${CREAM}!important;
     }
   `;
 
@@ -447,6 +572,9 @@
     'wa-input': WA_INPUT_CSS,
     'wa-switch': WA_SWITCH_CSS,
     'wa-button': WA_BUTTON_CSS,
+
+    'ha-button-toggle-group': TOGGLE_GROUP_CSS,
+    'mwc-button-toggle-group': TOGGLE_GROUP_CSS,
   };
 
   // Tag → CSS-vars die we OOK als inline-style op de host zetten.
