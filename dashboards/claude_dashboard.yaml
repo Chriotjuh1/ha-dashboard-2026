@@ -623,9 +623,36 @@ views:
                 name: Aan om
               - entity: input_datetime.woonkamerlamp_off_time
                 name: Uit om
-            card_mod:
-              style: |
-                ha-card { background: var(--claude-surface) !important; border: 1px solid var(--claude-border) !important; border-radius: 16px !important; box-shadow: none !important; padding: 4px 8px !important; }
+            card_mod: &time_entities_mod
+              style:
+                .: |
+                  ha-card { background: var(--claude-surface) !important; border: 1px solid var(--claude-border) !important; border-radius: 16px !important; box-shadow: none !important; padding: 4px 8px !important; }
+                hui-input-datetime-entity-row$ ha-time-input $: |
+                  ha-textfield {
+                    --mdc-text-field-fill-color: #3A3936 !important;
+                    --mdc-text-field-ink-color: #F0EEE6 !important;
+                    --mdc-text-field-label-ink-color: #A8A29E !important;
+                    --mdc-text-field-idle-line-color: rgba(240,238,230,0.18) !important;
+                    --mdc-text-field-hover-line-color: #D97757 !important;
+                    --mdc-text-field-focused-label-color: #D97757 !important;
+                  }
+                hui-input-datetime-entity-row$ ha-time-input$ ha-textfield$: |
+                  :host {
+                    --mdc-text-field-fill-color: #3A3936 !important;
+                    --mdc-text-field-ink-color: #F0EEE6 !important;
+                    --mdc-text-field-label-ink-color: #A8A29E !important;
+                  }
+                  .mdc-text-field,.mdc-text-field--filled {
+                    background-color: #3A3936 !important;
+                  }
+                  .mdc-text-field__input,input {
+                    color: #F0EEE6 !important;
+                    caret-color: #F0EEE6 !important;
+                    -webkit-text-fill-color: #F0EEE6 !important;
+                  }
+                  .mdc-floating-label,.mdc-floating-label--float-above {
+                    color: #A8A29E !important;
+                  }
 
       - type: grid
         cards:
@@ -639,9 +666,7 @@ views:
                 name: Aan om
               - entity: input_datetime.buitenlampen_off_time
                 name: Uit om
-            card_mod:
-              style: |
-                ha-card { background: var(--claude-surface) !important; border: 1px solid var(--claude-border) !important; border-radius: 16px !important; box-shadow: none !important; padding: 4px 8px !important; }
+            card_mod: *time_entities_mod
 
       - type: grid
         column_span: 3
