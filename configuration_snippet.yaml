@@ -10,6 +10,14 @@ frontend:
     # i.p.v. de gecachte. Bump het nummer wanneer je claude-fonts.js update.
     - /local/claude-fonts.js?v=4
 
+notify:
+  - name: gezin_joosten
+    platform: group
+    services:
+      - service: mobile_app_pixel_10_van_chris
+      - service: mobile_app_marion
+      - service: mobile_app_sm_s921b   # Edwin – verifieer naam via Ontwikkeltools → Acties → notify.mobile_app
+
 lovelace:
   mode: storage
   dashboards:
