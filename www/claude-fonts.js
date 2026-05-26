@@ -213,14 +213,39 @@
       --md-outlined-button-hover-state-layer-color: ${CORAL} !important;
       --md-filled-button-container-color: ${CORAL_DEEP} !important;
       --md-filled-button-label-text-color: ${CREAM} !important;
-      /* Web Awesome tokens */
+      /* Web Awesome tokens — brand */
       --wa-color-brand-fill-loud: ${CORAL_DEEP} !important;
+      --wa-color-brand-fill-loud-hover: ${CORAL} !important;
       --wa-color-brand-on-loud: ${CREAM} !important;
       --wa-color-brand-fill-quiet: ${SURFACE_2} !important;
       --wa-color-brand-on-quiet: ${CORAL} !important;
       --wa-color-text-link: ${CORAL} !important;
       --wa-color-text-loud: ${CORAL} !important;
+      /* Danger — felrood → muted Claude danger */
+      --wa-color-danger-fill-loud: ${DANGER} !important;
+      --wa-color-danger-fill-loud-hover: ${DANGER} !important;
+      --wa-color-danger-on-loud: ${CREAM} !important;
+      --wa-color-danger-fill-quiet: ${SURFACE_2} !important;
+      --wa-color-danger-on-quiet: ${DANGER} !important;
       color: ${CORAL} !important;
+    }
+    /* Slotted tekst (de "Annuleren" / "Opslaan" string die als child wordt
+       geprojecteerd): de slot zelf is geen renderend element, dus we moeten
+       ::slotted(*) gebruiken om de child te kleuren. */
+    ::slotted(*){
+      color:${CORAL}!important;
+    }
+    :host([appearance="accent"]) ::slotted(*),
+    :host([appearance="filled"]) ::slotted(*){
+      color:${CREAM}!important;
+    }
+    :host([variant="danger"]) ::slotted(*),
+    :host([variant="warning"]) ::slotted(*){
+      color:${DANGER}!important;
+    }
+    :host([appearance="accent"][variant="danger"]) ::slotted(*),
+    :host([appearance="filled"][variant="danger"]) ::slotted(*){
+      color:${CREAM}!important;
     }
     /* MDC (oudere componenten) */
     .mdc-button__ripple::before,.mdc-button__ripple::after{background-color:${CORAL}!important}
@@ -279,7 +304,7 @@
       background:${CORAL}!important;
       background-color:${CORAL}!important;
     }
-    /* Danger / warning variant */
+    /* Danger / warning variant: muted danger ipv felrood */
     :host([variant="danger"]),
     :host([variant="warning"]){
       color:${DANGER}!important;
@@ -289,6 +314,22 @@
     :host([variant="danger"]) [part="label"],
     :host([variant="warning"]) [part="label"]{
       color:${DANGER}!important;
+    }
+    /* appearance="accent" of "filled" + danger → gevuld muted danger */
+    :host([variant="danger"][appearance="accent"]) .button,
+    :host([variant="danger"][appearance="accent"]) [part="base"],
+    :host([variant="danger"][appearance="filled"]) .button,
+    :host([variant="danger"][appearance="filled"]) [part="base"]{
+      background:${DANGER}!important;
+      background-color:${DANGER}!important;
+      color:${CREAM}!important;
+      border-color:${DANGER}!important;
+    }
+    :host([variant="danger"][appearance="accent"]) .label,
+    :host([variant="danger"][appearance="accent"]) [part="label"],
+    :host([variant="danger"][appearance="filled"]) .label,
+    :host([variant="danger"][appearance="filled"]) [part="label"]{
+      color:${CREAM}!important;
     }
   `;
 

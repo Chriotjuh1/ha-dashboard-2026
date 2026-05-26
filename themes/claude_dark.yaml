@@ -769,23 +769,35 @@ claude_dark:
       [part="form-control-label"] {
         color: #A8A29E !important;
       }
-    "wa-button$": |
+    "wa-button$,ha-button$": |
       /* Web Awesome button — kleurt tekst-knoppen koraal i.p.v. de
-         default blauwe/cyaan link-kleur. */
+         default blauwe/cyaan link-kleur. Geldt voor zowel <wa-button>
+         als <ha-button> (HA wrapper, intern hetzelfde shadow DOM). */
       :host {
         color-scheme: dark;
         --wa-color-brand-fill-loud: #C96342 !important;
+        --wa-color-brand-fill-loud-hover: #D97757 !important;
         --wa-color-brand-fill-quiet: #3A3936 !important;
         --wa-color-brand-on-loud: #F0EEE6 !important;
         --wa-color-brand-on-quiet: #D97757 !important;
         --wa-color-text-link: #D97757 !important;
         --wa-color-text-loud: #D97757 !important;
+        --wa-color-danger-fill-loud: #D96D6D !important;
+        --wa-color-danger-fill-loud-hover: #D96D6D !important;
+        --wa-color-danger-on-loud: #F0EEE6 !important;
+        --wa-color-danger-fill-quiet: #3A3936 !important;
+        --wa-color-danger-on-quiet: #D96D6D !important;
         color: #D97757 !important;
       }
-      :host([variant="danger"]),
-      :host([variant="warning"]) {
-        --wa-color-text-link: #D96D6D !important;
-        color: #D96D6D !important;
+      /* Slotted tekst ("Annuleren", "Opslaan" etc.) */
+      ::slotted(*) { color: #D97757 !important; }
+      :host([appearance="accent"]) ::slotted(*),
+      :host([appearance="filled"]) ::slotted(*) { color: #F0EEE6 !important; }
+      :host([variant="danger"]) ::slotted(*),
+      :host([variant="warning"]) ::slotted(*) { color: #D96D6D !important; }
+      :host([variant="danger"][appearance="accent"]) ::slotted(*),
+      :host([variant="danger"][appearance="filled"]) ::slotted(*) {
+        color: #F0EEE6 !important;
       }
       .button,
       [part="base"] {
@@ -796,11 +808,15 @@ claude_dark:
       [part="label"] {
         color: #D97757 !important;
       }
+      :host([appearance="accent"]) .button,
+      :host([appearance="accent"]) [part="base"],
       :host([appearance="filled"]) .button,
       :host([appearance="filled"]) [part="base"] {
         background: #C96342 !important;
         color: #F0EEE6 !important;
       }
+      :host([appearance="accent"]) .label,
+      :host([appearance="accent"]) [part="label"],
       :host([appearance="filled"]) .label,
       :host([appearance="filled"]) [part="label"] {
         color: #F0EEE6 !important;
@@ -808,6 +824,22 @@ claude_dark:
       :host([appearance="outlined"]) .button,
       :host([appearance="outlined"]) [part="base"] {
         border-color: rgba(240,238,230,0.18) !important;
+      }
+      /* Danger variant — muted i.p.v. felrood */
+      :host([variant="danger"][appearance="accent"]) .button,
+      :host([variant="danger"][appearance="accent"]) [part="base"],
+      :host([variant="danger"][appearance="filled"]) .button,
+      :host([variant="danger"][appearance="filled"]) [part="base"] {
+        background: #D96D6D !important;
+        background-color: #D96D6D !important;
+        color: #F0EEE6 !important;
+        border-color: #D96D6D !important;
+      }
+      :host([variant="danger"][appearance="accent"]) .label,
+      :host([variant="danger"][appearance="accent"]) [part="label"],
+      :host([variant="danger"][appearance="filled"]) .label,
+      :host([variant="danger"][appearance="filled"]) [part="label"] {
+        color: #F0EEE6 !important;
       }
     "wa-switch$": |
       /* Web Awesome switch — track surface in uit-staat, koraal in aan-staat;
