@@ -245,6 +245,50 @@
     }
   `;
 
+  // Web Awesome wa-button: <button part="base" class="button"> in shadow root.
+  // Variants: appearance="plain|filled|outlined", variant="neutral|brand|danger".
+  const WA_BUTTON_CSS = `
+    :host {
+      color-scheme: dark;
+      --wa-color-brand-fill-loud: ${CORAL_DEEP} !important;
+      --wa-color-brand-fill-quiet: ${SURFACE_2} !important;
+      --wa-color-brand-on-loud: ${CREAM} !important;
+      --wa-color-brand-on-quiet: ${CORAL} !important;
+      --wa-color-text-link: ${CORAL} !important;
+      --wa-color-text-loud: ${CORAL} !important;
+      --wa-color-on-quiet: ${CORAL} !important;
+      color: ${CORAL} !important;
+    }
+    :host([variant="danger"]),
+    :host([variant="warning"]) {
+      --wa-color-brand-fill-loud: ${DANGER} !important;
+      --wa-color-text-link: ${DANGER} !important;
+      color: ${DANGER} !important;
+    }
+    .button,[part="base"]{
+      color:${CORAL}!important;
+      background:transparent!important;
+    }
+    .label,[part="label"]{
+      color:${CORAL}!important;
+    }
+    /* Filled variant: koraal vlak met crème tekst */
+    :host([appearance="filled"]) .button,
+    :host([appearance="filled"]) [part="base"]{
+      background:${CORAL_DEEP}!important;
+      color:${CREAM}!important;
+    }
+    :host([appearance="filled"]) .label,
+    :host([appearance="filled"]) [part="label"]{
+      color:${CREAM}!important;
+    }
+    /* Outlined variant: rand */
+    :host([appearance="outlined"]) .button,
+    :host([appearance="outlined"]) [part="base"]{
+      border-color:${BORDER_HOVER}!important;
+    }
+  `;
+
   // Web Awesome wa-switch: <span part="control" class="switch"> +
   // <span part="thumb" class="thumb"> in shadow root.
   const WA_SWITCH_CSS = `
@@ -372,6 +416,7 @@
     'ha-input': WA_INPUT_CSS,
     'wa-input': WA_INPUT_CSS,
     'wa-switch': WA_SWITCH_CSS,
+    'wa-button': WA_BUTTON_CSS,
   };
 
   // Tag → CSS-vars die we OOK als inline-style op de host zetten.
