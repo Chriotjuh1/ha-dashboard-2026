@@ -197,6 +197,43 @@
     }
   `;
 
+  // ha-time-input rendert óf twee ha-textfields (oude HA) óf één
+  // native <input type="time"> (nieuwere HA). Beide gevallen afdekken.
+  const TIMEINPUT_CSS = `
+    input[type="time"],input[type="date"],input[type="datetime-local"]{
+      background:${SURFACE_2}!important;
+      background-color:${SURFACE_2}!important;
+      color:${CREAM}!important;
+      border:1px solid ${BORDER_HOVER}!important;
+      border-radius:8px!important;
+      padding:6px 10px!important;
+      color-scheme:dark!important;
+    }
+    input[type="time"]::-webkit-datetime-edit,
+    input[type="date"]::-webkit-datetime-edit,
+    input[type="datetime-local"]::-webkit-datetime-edit{
+      background-color:${SURFACE_2}!important;color:${CREAM}!important
+    }
+    input[type="time"]::-webkit-datetime-edit-fields-wrapper,
+    input[type="time"]::-webkit-datetime-edit-hour-field,
+    input[type="time"]::-webkit-datetime-edit-minute-field,
+    input[type="time"]::-webkit-datetime-edit-second-field,
+    input[type="time"]::-webkit-datetime-edit-text,
+    input[type="time"]::-webkit-datetime-edit-ampm-field{
+      color:${CREAM}!important;background-color:transparent!important
+    }
+    input[type="time"]::-webkit-calendar-picker-indicator,
+    input[type="date"]::-webkit-calendar-picker-indicator{
+      filter:invert(0.85);opacity:0.6;cursor:pointer
+    }
+    /* ha-textfield-variant van ha-time-input */
+    ha-textfield{
+      --mdc-text-field-fill-color:${SURFACE_2}!important;
+      --mdc-text-field-ink-color:${CREAM}!important;
+      --mdc-text-field-label-ink-color:${MUTED}!important;
+    }
+  `;
+
   const EXPANSION_CSS = `
     :host {
       --ha-card-background: ${SURFACE} !important;
@@ -247,6 +284,9 @@
     'md-filled-tonal-button': BUTTON_TONAL_CSS,
 
     'ha-expansion-panel': EXPANSION_CSS,
+
+    'ha-time-input': TIMEINPUT_CSS,
+    'ha-base-time-input': TIMEINPUT_CSS,
   };
 
   // Tag → CSS-vars die we OOK als inline-style op de host zetten.
