@@ -607,6 +607,14 @@ claude_dark:
         color: #F0EEE6 !important;
         color-scheme: dark !important;
       }
+      .time-separator {
+        background: #3A3936 !important;
+        color: #F0EEE6 !important;
+        align-self: stretch !important;
+        display: flex !important;
+        align-items: center !important;
+        padding: 0 4px !important;
+      }
     "ha-input$": |
       :host {
         color-scheme: dark;

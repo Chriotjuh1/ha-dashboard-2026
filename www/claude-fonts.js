@@ -234,6 +234,15 @@
       -webkit-text-fill-color:${CREAM}!important;
       color-scheme:dark!important;
     }
+    /* Dubbele punt tussen hh en mm */
+    .time-separator{
+      background:${SURFACE_2}!important;
+      color:${CREAM}!important;
+      align-self:stretch!important;
+      display:flex!important;
+      align-items:center!important;
+      padding:0 4px!important;
+    }
   `;
 
   // Web Awesome wa-input: witte container is <div part="base" class="text-field">.
