@@ -686,10 +686,13 @@ claude_dark:
         --wa-color-border-default: rgba(240,238,230,0.14) !important;
         --wa-form-control-background-color: #3A3936 !important;
         --wa-form-control-border-color: rgba(240,238,230,0.14) !important;
+        --ha-color-form-background: #3A3936 !important;
+        --ha-color-form-background-hover: #46443F !important;
+        --ha-color-form-background-focus: #3A3936 !important;
       }
     "ha-input$ wa-input$": |
       /* Web Awesome input: de witte bak is <div part="base" class="text-field">.
-         Recolor + recolor de input erin. */
+         Recolor + hover/focus states zodat het veld donker blijft bij mouseover. */
       :host {
         color-scheme: dark;
         --wa-color-surface-default: #3A3936 !important;
@@ -697,6 +700,9 @@ claude_dark:
         --wa-color-text-quiet: #A8A29E !important;
         --wa-form-control-background-color: #3A3936 !important;
         --wa-form-control-border-color: rgba(240,238,230,0.14) !important;
+        --ha-color-form-background: #3A3936 !important;
+        --ha-color-form-background-hover: #46443F !important;
+        --ha-color-form-background-focus: #3A3936 !important;
       }
       .text-field,
       [part="base"] {
@@ -705,6 +711,20 @@ claude_dark:
         border: 1px solid rgba(240,238,230,0.14) !important;
         border-radius: 8px !important;
         color: #F0EEE6 !important;
+      }
+      :host(:hover) .text-field,
+      :host(:hover) [part="base"],
+      .text-field:hover,
+      [part="base"]:hover {
+        background: #46443F !important;
+        background-color: #46443F !important;
+        color: #F0EEE6 !important;
+      }
+      :host(:focus-within) .text-field,
+      :host(:focus-within) [part="base"] {
+        background: #3A3936 !important;
+        background-color: #3A3936 !important;
+        border-color: #D97757 !important;
       }
       .control,
       input,
@@ -796,6 +816,9 @@ claude_dark:
         --wa-color-surface-default: #3A3936 !important;
         --wa-color-text-normal: #F0EEE6 !important;
         --wa-form-control-background-color: #3A3936 !important;
+        --ha-color-form-background: #3A3936 !important;
+        --ha-color-form-background-hover: #46443F !important;
+        --ha-color-form-background-focus: #3A3936 !important;
       }
       .text-field,
       [part="base"] {
@@ -804,6 +827,20 @@ claude_dark:
         border: 1px solid rgba(240,238,230,0.14) !important;
         border-radius: 8px !important;
         color: #F0EEE6 !important;
+      }
+      :host(:hover) .text-field,
+      :host(:hover) [part="base"],
+      .text-field:hover,
+      [part="base"]:hover {
+        background: #46443F !important;
+        background-color: #46443F !important;
+        color: #F0EEE6 !important;
+      }
+      :host(:focus-within) .text-field,
+      :host(:focus-within) [part="base"] {
+        background: #3A3936 !important;
+        background-color: #3A3936 !important;
+        border-color: #D97757 !important;
       }
       .control,
       input,

@@ -349,6 +349,12 @@
       --wa-form-control-border-color: ${BORDER_HOVER} !important;
       --wa-form-control-resting-color: ${CREAM} !important;
       --wa-form-control-label-color: ${MUTED} !important;
+      /* Hover/focus state tokens — voorkomt witte flash bij mouseover */
+      --ha-color-form-background: ${SURFACE_2} !important;
+      --ha-color-form-background-hover: ${SURFACE_3} !important;
+      --ha-color-form-background-focus: ${SURFACE_2} !important;
+      --ha-color-form-foreground: ${CREAM} !important;
+      --ha-color-form-border: ${BORDER_HOVER} !important;
     }
     .text-field,[part="base"],[part~="base"]{
       background:${SURFACE_2}!important;
@@ -356,6 +362,21 @@
       border:1px solid ${BORDER_HOVER}!important;
       border-radius:8px!important;
       color:${CREAM}!important;
+    }
+    /* Expliciete hover/focus override — wint van Web Awesome's eigen :hover */
+    :host(:hover) .text-field,
+    :host(:hover) [part="base"],
+    .text-field:hover,
+    [part="base"]:hover{
+      background:${SURFACE_3}!important;
+      background-color:${SURFACE_3}!important;
+      color:${CREAM}!important;
+    }
+    :host(:focus-within) .text-field,
+    :host(:focus-within) [part="base"]{
+      background:${SURFACE_2}!important;
+      background-color:${SURFACE_2}!important;
+      border-color:${CORAL}!important;
     }
     .control,input,input[part="input"]{
       background:transparent!important;
