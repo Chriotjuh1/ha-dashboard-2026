@@ -351,8 +351,13 @@
     /* ── Pill button ─────────────────────────────────────────── */
     .pills {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: repeat(4, 1fr);
       gap: 10px;
+    }
+    @media (max-width: 480px) {
+      .pills { gap: 8px; }
+      .pill { padding: 16px 4px; }
+      .pill .pill-label { font-size: 13px; }
     }
     .pill {
       padding: 18px 6px;
@@ -1646,6 +1651,9 @@ class App {
           </div>
           <div class="pill secondary" data-script="script.zonnepanelen_50_procent" data-confirm="Op 50% zetten?">
             <span class="pill-icon">◐</span><span class="pill-label">50%</span>
+          </div>
+          <div class="pill secondary" data-script="script.zonnepanelen_25_procent" data-confirm="Op 25% zetten?">
+            <span class="pill-icon">◔</span><span class="pill-label">25%</span>
           </div>
           <div class="pill ghost" data-script="script.zonnepanelen_uitschakelen" data-confirm="Volledig uit?">
             <span class="pill-icon">⊘</span><span class="pill-label">Uit</span>
