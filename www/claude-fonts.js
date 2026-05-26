@@ -152,6 +152,12 @@
       --md-switch-selected-focus-handle-color: ${CORAL_DEEP} !important;
       --md-switch-selected-hover-handle-color: ${CORAL_DEEP} !important;
       --md-switch-selected-pressed-handle-color: ${CORAL_DEEP} !important;
+      /* Web Awesome */
+      --wa-color-surface-default: ${SURFACE_2} !important;
+      --wa-color-fill-loud: ${CORAL_DEEP} !important;
+      --wa-color-fill-quiet: ${SURFACE_2} !important;
+      --wa-form-control-background-color: ${SURFACE_2} !important;
+      --wa-form-control-border-color: ${BORDER_HOVER} !important;
     }
     /* MDC switch internals */
     .mdc-switch--selected .mdc-switch__track::after,
@@ -163,6 +169,36 @@
     /* MD3 switch internals */
     .switch.selected .track{background-color:${CORAL}!important}
     .switch.selected .handle{background-color:${CORAL_DEEP}!important}
+    /* Web Awesome — ha-switch is nu direct wa-switch intern */
+    .switch,[part="control"]{
+      background:${SURFACE_2}!important;
+      background-color:${SURFACE_2}!important;
+      border:1px solid ${BORDER_HOVER}!important;
+    }
+    .thumb,[part="thumb"]{
+      background:${CREAM}!important;
+      background-color:${CREAM}!important;
+    }
+    /* Aan-staat (track → koraal-deep) */
+    :host([checked]) .switch,
+    :host([aria-checked="true"]) .switch,
+    :host(:state(checked)) .switch,
+    :host([checked]) [part="control"],
+    :host([aria-checked="true"]) [part="control"],
+    :host(:state(checked)) [part="control"]{
+      background:${CORAL_DEEP}!important;
+      background-color:${CORAL_DEEP}!important;
+      border-color:${CORAL}!important;
+    }
+    :host([checked]) .thumb,
+    :host([aria-checked="true"]) .thumb,
+    :host(:state(checked)) .thumb,
+    :host([checked]) [part="thumb"],
+    :host([aria-checked="true"]) [part="thumb"],
+    :host(:state(checked)) [part="thumb"]{
+      background:${CREAM}!important;
+      background-color:${CREAM}!important;
+    }
   `;
 
   const BUTTON_CSS = `

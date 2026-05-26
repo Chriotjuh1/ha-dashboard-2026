@@ -513,6 +513,37 @@ claude_dark:
       .mdc-switch--selected .mdc-switch__handle::after {
         background-color: #C96342 !important;
       }
+    "ha-switch$": |
+      /* ha-switch is nu Web Awesome intern (.switch + .thumb in shadow root).
+         Track surface in uit-staat, koraal-deep in aan-staat. Bolletje
+         altijd crème zodat het tegen beide achtergronden zichtbaar is. */
+      :host {
+        color-scheme: dark;
+        --wa-color-surface-default: #3A3936 !important;
+        --wa-color-fill-loud: #C96342 !important;
+        --wa-color-fill-quiet: #3A3936 !important;
+        --wa-form-control-background-color: #3A3936 !important;
+        --wa-form-control-border-color: rgba(240,238,230,0.14) !important;
+      }
+      .switch,
+      [part="control"] {
+        background: #3A3936 !important;
+        background-color: #3A3936 !important;
+        border: 1px solid rgba(240,238,230,0.14) !important;
+      }
+      :host([checked]) .switch,
+      :host([aria-checked="true"]) .switch,
+      :host([checked]) [part="control"],
+      :host([aria-checked="true"]) [part="control"] {
+        background: #C96342 !important;
+        background-color: #C96342 !important;
+        border-color: #D97757 !important;
+      }
+      .thumb,
+      [part="thumb"] {
+        background: #F0EEE6 !important;
+        background-color: #F0EEE6 !important;
+      }
     "ha-expansion-panel$": |
       /* "Geavanceerde opties" en andere inklap-headers (komen in dialogs door
          heel HA voor). De header rendert standaard met een lichte achtergrond;
