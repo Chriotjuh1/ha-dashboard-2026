@@ -627,6 +627,8 @@ views:
               style:
                 .: |
                   ha-card { background: var(--claude-surface) !important; border: 1px solid var(--claude-border) !important; border-radius: 16px !important; box-shadow: none !important; padding: 4px 8px !important; }
+                # Variant A: oudere HA's gebruiken twee aparte ha-textfields
+                # binnen ha-time-input (hh / mm).
                 hui-input-datetime-entity-row$ ha-time-input $: |
                   ha-textfield {
                     --mdc-text-field-fill-color: #3A3936 !important;
@@ -652,6 +654,38 @@ views:
                   }
                   .mdc-floating-label,.mdc-floating-label--float-above {
                     color: #A8A29E !important;
+                  }
+                # Variant B: nieuwere HA's gebruiken één native <input
+                # type="time"> met de hh:mm placeholder zichtbaar als één
+                # gecombineerd vlak. color-scheme:dark forceert donkere
+                # browser-form-controls; pseudo-elements herkleuren de
+                # cijfers en de picker-knop.
+                hui-input-datetime-entity-row$ ha-time-input$: |
+                  input[type="time"] {
+                    background: #3A3936 !important;
+                    background-color: #3A3936 !important;
+                    color: #F0EEE6 !important;
+                    border: 1px solid rgba(240,238,230,0.14) !important;
+                    border-radius: 8px !important;
+                    padding: 6px 10px !important;
+                    color-scheme: dark !important;
+                  }
+                  input[type="time"]::-webkit-datetime-edit {
+                    background-color: #3A3936 !important;
+                    color: #F0EEE6 !important;
+                  }
+                  input[type="time"]::-webkit-datetime-edit-fields-wrapper,
+                  input[type="time"]::-webkit-datetime-edit-hour-field,
+                  input[type="time"]::-webkit-datetime-edit-minute-field,
+                  input[type="time"]::-webkit-datetime-edit-text,
+                  input[type="time"]::-webkit-datetime-edit-ampm-field {
+                    color: #F0EEE6 !important;
+                    background-color: transparent !important;
+                  }
+                  input[type="time"]::-webkit-calendar-picker-indicator {
+                    filter: invert(0.85);
+                    opacity: 0.6;
+                    cursor: pointer;
                   }
 
       - type: grid
