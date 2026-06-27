@@ -33,3 +33,9 @@ lovelace:
       icon: mdi:home
       show_in_sidebar: true
       filename: dashboards/joosten_app.yaml
+    haard-app:
+      mode: yaml
+      title: Haard
+      icon: mdi:fireplace
+      show_in_sidebar: true
+      filename: dashboards/warm_app.yaml

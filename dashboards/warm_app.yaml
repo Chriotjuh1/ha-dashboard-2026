@@ -1,0 +1,48 @@
+################################################################################
+# Haard — full-screen wrapper voor de "warme kamer" webapp
+# Eén panel-view met een iframe naar /local/dashboard-warm/
+#
+# Dit is een NIEUW, los dashboard naast 'Thuis' (joosten_app.yaml). Zelfde
+# functies/entiteiten, maar een compleet eigen cozy-evening design.
+#
+# Layout-recept (identiek aan Thuis):
+#   - height: 100% zodat de iframe exact het zichtbare panel-gebied vult.
+#   - overflow: hidden op alle wrappers — alleen .app binnen de iframe scrollt,
+#     dus de fixed tabbar blijft altijd onderaan plakken.
+################################################################################
+
+title: Haard
+views:
+  - title: Haard
+    path: app
+    icon: mdi:fireplace
+    panel: true
+    cards:
+      - type: iframe
+        url: /local/dashboard-warm/index.html?v=1
+        aspect_ratio: '0'
+        card_mod:
+          style: |
+            ha-card {
+              background: var(--claude-bg, #1E1712) !important;
+              border: none !important;
+              box-shadow: none !important;
+              padding: 0 !important;
+              margin: 0 !important;
+              border-radius: 0 !important;
+              height: 100% !important;
+              overflow: hidden !important;
+            }
+            ha-card > div {
+              padding: 0 !important;
+              margin: 0 !important;
+              height: 100% !important;
+              overflow: hidden !important;
+            }
+            iframe {
+              display: block !important;
+              width: 100% !important;
+              height: 100% !important;
+              border: none !important;
+              background: #1E1712 !important;
+            }

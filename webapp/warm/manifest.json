@@ -1,0 +1,18 @@
+{
+  "name": "Haard Dashboard",
+  "short_name": "Haard",
+  "description": "Warm smart-home dashboard voor Familie Joosten",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1E1712",
+  "theme_color": "#1E1712",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

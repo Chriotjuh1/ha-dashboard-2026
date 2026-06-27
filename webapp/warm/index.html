@@ -1,0 +1,2163 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#1E1712" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Haard" />
+  <link rel="manifest" href="manifest.json" />
+  <title>Haard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..600&family=Inter:wght@300..600&display=swap" rel="stylesheet" />
+  <!-- Leaflet 1.9.4 with SRI integrity hashes (supply-chain protection) -->
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin="anonymous" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+          crossorigin="anonymous"></script>
+  <style>
+    /* ════════════════════════════════════════════════════════════════
+       HAARD — "Cozy evening" warm room design
+       Diep espresso, warme lamplicht-gloed, amber + terracotta accenten.
+       De --claude-* namen blijven bestaan (sommige inline-styles in de JS
+       verwijzen ernaar) maar wijzen nu naar het warme palet.
+       ════════════════════════════════════════════════════════════════ */
+    :root {
+      /* Warme basis */
+      --bg: #1E1712;              /* diep espresso */
+      --bg-deep: #17110D;
+      --surface: #2E2620;         /* warm donkerbruin */
+      --surface-2: #392F27;
+      --surface-3: #463A30;
+      --surface-glow: #34291F;
+      /* Accenten — lamplicht */
+      --amber: #E0A458;           /* gloeiend amber */
+      --amber-soft: #EBC07E;
+      --terra: #C9663E;           /* terracotta (solide vlakken) */
+      --terra-deep: #A84F32;
+      --peach: #E8B894;
+      /* Tekst */
+      --cream: #F0E6D8;           /* warm crème */
+      --cream-dim: #CFC2B2;
+      --muted: #9A8C7C;
+      --muted-2: #6E6155;
+      /* Lijnen & gloed */
+      --border: rgba(240, 230, 216, 0.07);
+      --border-hover: rgba(240, 230, 216, 0.15);
+      --glow-amber: rgba(224, 164, 88, 0.22);
+      --glow-terra: rgba(201, 102, 62, 0.20);
+      /* Status */
+      --success: #9CB97F;
+      --warning: #E0A458;
+      --danger: #D98A6D;
+      --info: #9DB4C9;
+
+      /* ── Aliassen voor inline-style refs in de JS (thermostaat-ring,
+            gauge, charts gebruiken var(--claude-*)) ── */
+      --claude-bg: var(--bg);
+      --claude-bg-deep: var(--bg-deep);
+      --claude-surface: var(--surface);
+      --claude-surface-2: var(--surface-2);
+      --claude-surface-3: var(--surface-3);
+      --claude-primary: var(--terra);
+      --claude-primary-soft: var(--amber);
+      --claude-primary-deep: var(--terra-deep);
+      --claude-cream: var(--cream);
+      --claude-cream-dim: var(--cream-dim);
+      --claude-muted: var(--muted);
+      --claude-muted-2: var(--muted-2);
+      --claude-border: var(--border);
+      --claude-border-hover: var(--border-hover);
+      --claude-success: var(--success);
+      --claude-warning: var(--warning);
+      --claude-danger: var(--danger);
+      --claude-info: var(--info);
+
+      --serif: 'Fraunces', Georgia, serif;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    /* Strict viewport-lock: html, body en #root nemen exact de iframe-hoogte.
+       Body mag NIET scrollen (overflow: hidden). Alleen .app scrollt intern.
+       Resultaat: de fixed tabbar plakt altijd aan de viewport-bottom, want
+       er is geen body-scroll die hem kan wegduwen. Werkt op zowel mobiel als
+       desktop, in én buiten een iframe. */
+    html, body {
+      background: var(--bg);
+      color: var(--cream);
+      font-family: var(--sans);
+      font-size: 14px;
+      letter-spacing: -0.005em;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      position: relative;
+    }
+    /* Lamplicht: warme radiale gloed vanuit de rechterbovenhoek, alsof er
+       een schemerlamp in de kamer staat. Tweede, koelere gloed linksonder
+       voor diepte. Vast t.o.v. de viewport, onder alle content. */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(135% 70% at 82% -8%, rgba(224,164,88,0.18), transparent 58%),
+        radial-gradient(110% 60% at 6% 4%, rgba(201,102,62,0.10), transparent 55%),
+        radial-gradient(90% 90% at 50% 120%, rgba(23,17,13,0.6), transparent 60%);
+    }
+    #root {
+      height: 100%;
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    /* ── Login ───────────────────────────────────────────────── */
+    .login {
+      height: 100%;
+      width: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    .login-box {
+      background: var(--claude-surface);
+      border: 1px solid var(--claude-border);
+      border-radius: 16px;
+      padding: 32px;
+      width: 100%;
+      max-width: 420px;
+    }
+    .login h1 {
+      font-family: var(--serif);
+      font-weight: 400;
+      font-size: 36px;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+    .login p {
+      color: var(--claude-muted);
+      margin-bottom: 24px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .login label {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--claude-muted);
+      margin: 16px 0 6px;
+    }
+    .login input {
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--claude-bg-deep);
+      border: 1px solid var(--claude-border-hover);
+      border-radius: 12px;
+      color: var(--claude-cream);
+      font-family: var(--sans);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 200ms;
+    }
+    .login input:focus { border-color: var(--claude-primary); }
+    .login button {
+      all: unset;
+      display: block;
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(160deg, var(--terra), var(--terra-deep));
+      color: var(--cream);
+      text-align: center;
+      border-radius: 14px;
+      font-family: var(--serif);
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 24px;
+      box-shadow: 0 0 20px var(--glow-terra);
+      transition: background 200ms, box-shadow 200ms;
+    }
+    .login button:hover {
+      background: linear-gradient(160deg, var(--amber), var(--terra));
+      box-shadow: 0 0 28px var(--glow-amber);
+    }
+    .login .help {
+      font-size: 12px;
+      color: var(--claude-muted);
+      margin-top: 16px;
+      line-height: 1.5;
+    }
+    .login .help a { color: var(--claude-primary); text-decoration: none; }
+    .login .err {
+      color: var(--claude-danger);
+      font-size: 13px;
+      margin-top: 12px;
+    }
+
+    /* ── App layout ──────────────────────────────────────────── */
+    /* .app is de ENIGE scroll-container. Vult #root volledig (height: 100%).
+       padding-bottom reserveert ruimte voor de fixed tabbar zodat content
+       niet onder de tabbar verdwijnt. */
+    .app {
+      height: 100%;
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;     /* geen rubber-band chain naar parent */
+      touch-action: pan-y;              /* duidelijke scroll-as voor mobiel */
+      transform: translateZ(0);         /* GPU layer — voorkomt scroll-glitches op iOS */
+      padding: max(16px, env(safe-area-inset-top)) 16px calc(110px + env(safe-area-inset-bottom));
+      /* Verberg scrollbar, behoud scroll-functionaliteit */
+      scrollbar-width: none;            /* Firefox */
+      -ms-overflow-style: none;         /* IE/Edge legacy */
+    }
+    .app::-webkit-scrollbar {
+      display: none;                    /* Chrome / Safari / WebKit */
+      width: 0;
+      height: 0;
+    }
+    @media (min-width: 871px) {
+      .app { padding: 32px 48px calc(110px + env(safe-area-inset-bottom)); }
+    }
+
+    /* ── Hero ────────────────────────────────────────────────── */
+    .hero { padding: 16px 4px 22px; position: relative; }
+    .hero h1 {
+      font-family: var(--serif);
+      font-weight: 400;
+      font-size: clamp(34px, 7vw, 52px);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      color: var(--cream);
+      margin: 0 0 12px 0;
+      /* Heel subtiele warme tekstgloed — alsof het lamplicht de letters raakt */
+      text-shadow: 0 1px 30px rgba(224, 164, 88, 0.10);
+    }
+    .hero p {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+      margin: 0;
+    }
+    /* Accent: warm amber voor tekstuele nadruk in de hero-subtitel. */
+    .accent { color: var(--peach); }
+
+    /* ── Section titles ──────────────────────────────────────── */
+    /* Beide titels zijn nu Fraunces-serif (zelfde familie), alleen verschil
+       in grootte voor hierarchy. Consistent vertical rhythm. */
+    .section-title {
+      font-family: var(--serif);
+      font-weight: 400;
+      font-size: 22px;
+      letter-spacing: -0.015em;
+      color: var(--cream);
+      margin: 34px 4px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    /* Warm gloeiend streepje vóór elke sectietitel — als een gloeiend
+       kooltje dat de sectie 'aansteekt'. */
+    .section-title::before {
+      content: '';
+      width: 18px;
+      height: 3px;
+      border-radius: 2px;
+      background: linear-gradient(90deg, var(--amber), var(--terra));
+      box-shadow: 0 0 10px var(--glow-amber);
+      flex-shrink: 0;
+    }
+    .subsection-title {
+      font-family: var(--serif);
+      font-weight: 400;
+      font-size: 15px;
+      letter-spacing: -0.01em;
+      color: var(--cream-dim);
+      margin: 24px 4px 8px;
+    }
+
+    /* ── Card ────────────────────────────────────────────────── */
+    /* Statisch design: alleen border-color subtiel veranderen op hover.
+       Geen scale/transform animaties — minder visuele ruis. */
+    /* Warme kaart: zachte verticale gradient (lamplicht valt van boven),
+       fijne lichtrand bovenaan (inset), en een diepe warme slagschaduw die
+       de kaart laat 'zweven' boven de espresso-achtergrond. */
+    .card {
+      position: relative;
+      background:
+        linear-gradient(180deg, var(--surface-glow) 0%, var(--surface) 38%, #2A221C 100%);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 18px 18px 16px;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 238, 214, 0.05),
+        0 14px 34px -16px rgba(0, 0, 0, 0.7);
+      transition: border-color 220ms ease, box-shadow 220ms ease, transform 220ms ease;
+    }
+    .card:hover {
+      border-color: var(--border-hover);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 238, 214, 0.07),
+        0 18px 40px -16px rgba(0, 0, 0, 0.75),
+        0 0 0 1px rgba(224, 164, 88, 0.04);
+    }
+    /* Kleine, kortere active-feedback alleen voor klikbare tiles */
+    .card[data-toggle]:active,
+    .card[data-mp-toggle]:active { transform: scale(0.985); }
+
+    /* ── Grid ────────────────────────────────────────────────── */
+    .grid { display: grid; gap: 10px; }
+    .grid-2 { grid-template-columns: 1fr 1fr; }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    @media (max-width: 1100px) {
+      .grid-3 { grid-template-columns: repeat(2, 1fr); }
+      .grid-4 { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    /* ── Stat ────────────────────────────────────────────────── */
+    /* Hierarchy: figure > delta > label. Label is klein/subtiel, figure
+       is de hoofd-info, delta is supporting. Coral alleen voor expliciete
+       status-deltas (`.delta.accent`). */
+    .stat .label {
+      font-size: 10px; font-weight: 500;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--claude-muted-2);
+      margin-bottom: 12px;
+    }
+    .stat .figure {
+      font-family: var(--serif);
+      font-weight: 400;
+      font-size: 32px;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;     /* uitgelijnde cijfers */
+    }
+    .stat .figure.small { font-size: 22px; }
+    .stat .unit {
+      font-size: 12px;
+      color: var(--claude-muted);
+      margin-left: 4px;
+    }
+    .stat .delta {
+      font-size: 11px;
+      color: var(--claude-cream-dim);
+      margin-top: 8px;
+    }
+    .stat .delta.muted { color: var(--muted-2); }
+    .stat .delta.cream { color: var(--cream-dim); }
+    .stat .delta.accent { color: var(--amber); }   /* opt-in voor status */
+    .stat .figure { color: var(--cream); }
+
+    /* ── Person ──────────────────────────────────────────────── */
+    .person {
+      background: var(--claude-surface);
+      border: 1px solid var(--claude-border);
+      border-radius: 16px;
+      padding: 18px 12px;
+      text-align: center;
+      cursor: pointer;
+    }
+    .person .avatar {
+      width: 58px; height: 58px;
+      border-radius: 50%;
+      margin: 0 auto 12px;
+      display: grid; place-items: center;
+      font-family: var(--serif);
+      font-size: 22px;
+      color: var(--cream);
+      box-shadow:
+        0 0 0 1px rgba(255,238,214,0.10),
+        0 8px 20px -8px rgba(0,0,0,0.6),
+        inset 0 1px 0 rgba(255,255,255,0.15);
+    }
+    .person .name { font-family: var(--serif); font-size: 16px; color: var(--cream); }
+    .person .state { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+    /* ── Tile (lamp) ─────────────────────────────────────────── */
+    .tile {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px;
+      cursor: pointer;
+    }
+    .tile .icon-circle {
+      width: 38px; height: 38px;
+      border-radius: 12px;
+      background: var(--surface-2);
+      display: grid; place-items: center;
+      font-size: 16px;
+      color: var(--muted);
+      transition: background 240ms, color 240ms, box-shadow 240ms;
+    }
+    /* Lamp aan = warm gloeiend kooltje: amber icoon + zachte gloed eromheen */
+    .tile.on .icon-circle {
+      background: radial-gradient(circle at 50% 40%, rgba(224,164,88,0.30), rgba(201,102,62,0.14));
+      color: var(--amber-soft);
+      box-shadow: 0 0 16px var(--glow-amber), inset 0 0 8px rgba(224,164,88,0.18);
+    }
+    .tile .info { flex: 1; min-width: 0; overflow: hidden; }
+    .tile .info .name {
+      font-size: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .tile .info .state { font-size: 11px; color: var(--claude-muted); }
+    .switch {
+      width: 32px; height: 18px;
+      background: var(--claude-surface-3);
+      border-radius: 999px;
+      position: relative;
+      flex-shrink: 0;
+      transition: background 200ms;
+    }
+    .switch::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 14px; height: 14px;
+      background: var(--claude-muted);
+      border-radius: 50%;
+      transition: all 200ms;
+    }
+    .tile.on .switch {
+      background: linear-gradient(90deg, var(--terra-deep), var(--terra));
+      box-shadow: 0 0 10px var(--glow-terra);
+    }
+    .tile.on .switch::after {
+      left: 16px;
+      background: var(--amber-soft);
+      box-shadow: 0 0 6px rgba(235,192,126,0.6);
+    }
+
+    /* ── Pill button ─────────────────────────────────────────── */
+    .pills {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    @media (max-width: 480px) {
+      .pills { gap: 8px; }
+      .pill { padding: 16px 4px; }
+      .pill .pill-label { font-size: 13px; }
+    }
+    .pill {
+      padding: 18px 6px;
+      border-radius: 14px;
+      text-align: center;
+      cursor: pointer;
+      border: 1px solid;
+      transition: all 200ms ease;
+    }
+    .pill:active { transform: scale(0.97); }
+    .pill .pill-icon { font-size: 22px; display: block; margin-bottom: 4px; }
+    .pill .pill-label { font-family: var(--serif); font-size: 14px; }
+    .pill.primary {
+      background: linear-gradient(160deg, var(--terra) 0%, var(--terra-deep) 100%);
+      border-color: var(--terra);
+      color: var(--cream);
+      box-shadow: 0 0 18px var(--glow-terra), inset 0 1px 0 rgba(255,238,214,0.12);
+    }
+    .pill.primary:hover {
+      background: linear-gradient(160deg, var(--amber) 0%, var(--terra) 100%);
+      box-shadow: 0 0 26px var(--glow-amber), inset 0 1px 0 rgba(255,238,214,0.16);
+    }
+    .pill.secondary {
+      background: var(--surface);
+      border-color: var(--border-hover);
+    }
+    .pill.secondary .pill-icon { color: var(--amber-soft); }
+    .pill.secondary:hover { border-color: rgba(224,164,88,0.4); box-shadow: 0 0 16px rgba(224,164,88,0.10); }
+    .pill.ghost {
+      background: transparent;
+      border-color: var(--border-hover);
+    }
+    .pill.ghost .pill-icon { color: var(--muted); }
+    .pill.ghost .pill-label { color: var(--cream-dim); }
+
+    /* ── Alert ───────────────────────────────────────────────── */
+    .alert {
+      background: linear-gradient(135deg, rgba(224,164,88,0.20), rgba(201,102,62,0.06));
+      border: 1px solid rgba(224,164,88,0.45);
+      border-radius: 18px;
+      padding: 16px 20px;
+      margin-bottom: 14px;
+      box-shadow: 0 0 24px rgba(224,164,88,0.10), inset 0 1px 0 rgba(255,238,214,0.06);
+    }
+    .alert h2 {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 400;
+      margin-bottom: 4px;
+    }
+    .alert p { color: var(--claude-cream-dim); font-size: 13px; }
+
+    /* ── Gauge ───────────────────────────────────────────────── */
+    /* ── Line chart labels (HTML overlay zodat ze niet rekken met
+       preserveAspectRatio="none" op de SVG) ─────────────────── */
+    .chart-wrap { width: 100%; }
+    .chart-label {
+      position: absolute;
+      left: 6px;
+      font-size: 11px;
+      color: var(--claude-muted);
+      font-family: var(--sans);
+      font-variant-numeric: tabular-nums;
+      pointer-events: none;
+    }
+    .chart-max { top: 6px; }
+    .chart-min { bottom: 4px; }
+
+    .gauge { padding: 24px; text-align: center; }
+    .gauge svg { width: 100%; max-width: 320px; height: auto; display: block; margin: 0 auto; }
+    .gauge .gauge-value { font-family: var(--serif); font-size: 32px; margin-top: 8px; }
+    .gauge .gauge-label { font-size: 11px; color: var(--claude-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
+
+    /* ── Time picker ─────────────────────────────────────────── */
+    .timer { padding: 4px 4px; }
+    .timer .row {
+      display: flex; align-items: center;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--claude-border);
+    }
+    .timer .row:last-child { border-bottom: none; }
+    .timer .row .name { flex: 1; font-size: 14px; }
+    .timer input[type="time"] {
+      background: var(--surface-2);
+      border: 1px solid var(--border-hover);
+      border-radius: 10px;
+      padding: 7px 11px;
+      color: var(--cream);
+      font-family: var(--sans);
+      font-size: 13px;
+      color-scheme: dark;   /* donkere native time-picker i.p.v. wit op mobiel */
+      transition: border-color 200ms, box-shadow 200ms;
+    }
+    .timer input[type="time"]:focus {
+      outline: none;
+      border-color: rgba(224,164,88,0.5);
+      box-shadow: 0 0 0 3px rgba(224,164,88,0.12);
+    }
+
+    /* ── Bottom nav ──────────────────────────────────────────── */
+    /* Werkt mits body NIET scrollt (overflow: hidden op body, .app scrollt
+       intern). Dan plakt de fixed tabbar betrouwbaar aan de viewport-bottom.
+       Mobile: vol-breed gepind aan onderkant. Desktop: floating pill. */
+    .tabbar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      min-height: 60px;
+      background: linear-gradient(180deg, rgba(35,27,21,0.82), rgba(23,17,13,0.94));
+      backdrop-filter: blur(22px) saturate(1.1);
+      -webkit-backdrop-filter: blur(22px) saturate(1.1);
+      border-top: 1px solid rgba(224,164,88,0.10);
+      padding: 6px 4px;
+      padding-bottom: max(8px, env(safe-area-inset-bottom));
+      display: flex;
+      justify-content: space-around;
+      align-items: stretch;
+      z-index: 9999;
+      isolation: isolate;
+    }
+    @media (min-width: 768px) {
+      .tabbar {
+        bottom: 16px;
+        left: 16px;
+        right: 16px;
+        margin: 0 auto;
+        max-width: 600px;
+        border: 1px solid rgba(224,164,88,0.14);
+        border-radius: 24px;
+        padding: 6px 4px;
+        box-shadow: 0 18px 50px -18px rgba(0,0,0,0.8), 0 0 30px -10px var(--glow-amber);
+      }
+    }
+    /* Houd Leaflet onder de fixed nav. Defensieve override: ALLE leaflet
+       sub-panes naar z-index 0, anders glippen marker-icons / popups erdoor. */
+    .leaflet-container,
+    .leaflet-pane,
+    .leaflet-tile-pane,
+    .leaflet-overlay-pane,
+    .leaflet-shadow-pane,
+    .leaflet-marker-pane,
+    .leaflet-tooltip-pane,
+    .leaflet-popup-pane,
+    .leaflet-marker-icon,
+    .leaflet-control-container,
+    .leaflet-top,
+    .leaflet-bottom,
+    .leaflet-control { z-index: 0 !important; }
+    /* Expliciete button-reset i.p.v. `all: unset` — laatste was onbetrouwbaar
+       op Android WebView en Android Chrome (resette display naar inline en
+       gaf zero-height buttons). Reset alleen wat we niet willen. */
+    .tabbar button {
+      appearance: none;
+      -webkit-appearance: none;
+      background: transparent;
+      border: 0;
+      margin: 0;
+      flex: 1 1 0;
+      min-width: 0;
+      min-height: 48px;        /* a11y touch target + visibility-garantie */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 8px 4px;
+      cursor: pointer;
+      color: var(--muted);
+      font-family: inherit;
+      font-size: inherit;
+      line-height: 1;
+      transition: color 180ms, text-shadow 180ms;
+    }
+    .tabbar button:active { transform: scale(0.95); }
+    .tabbar button .tab-icon {
+      display: block;
+      font-size: 22px;
+      line-height: 1;
+    }
+    .tabbar button .tab-label {
+      display: block;
+      font-size: 10px;
+      font-weight: 500;
+      line-height: 1.2;
+    }
+    /* Actieve tab gloeit amber — als de knop waar je nu 'staat' is verlicht */
+    .tabbar button.active {
+      color: var(--amber-soft);
+      text-shadow: 0 0 14px var(--glow-amber);
+    }
+    .tabbar button.active .tab-icon { filter: drop-shadow(0 0 8px var(--glow-amber)); }
+
+    /* ── Forecast strip ──────────────────────────────────────── */
+    .forecast {
+      display: flex; gap: 8px;
+      overflow-x: auto;
+      padding: 12px 4px;
+      scrollbar-width: none;
+    }
+    .forecast::-webkit-scrollbar { display: none; }
+    .forecast .day {
+      flex-shrink: 0;
+      min-width: 70px;
+      text-align: center;
+      padding: 8px 6px;
+    }
+    .forecast .day .dow { font-size: 10px; color: var(--claude-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .forecast .day .ico { font-size: 22px; margin: 6px 0; }
+    .forecast .day .hi { font-family: var(--serif); font-size: 14px; }
+    .forecast .day .lo { font-size: 11px; color: var(--claude-muted); }
+
+    /* ── Thermostat ──────────────────────────────────────────── */
+    .thermostat { padding: 22px; text-align: center; }
+    .thermostat .ring {
+      width: 150px; height: 150px;
+      border-radius: 50%;
+      margin: 0 auto 12px;
+      display: grid; place-items: center;
+      position: relative;
+    }
+    .thermostat .ring::before {
+      content: '';
+      position: absolute; inset: 12px;
+      background: var(--claude-surface);
+      border-radius: 50%;
+    }
+    .thermostat .temp {
+      position: relative;
+      font-family: var(--serif);
+      font-size: 32px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 16px;
+      color: var(--claude-muted);
+    }
+
+    /* ── Media player ────────────────────────────────────────── */
+    .media-card {
+      background: var(--claude-surface);
+      border: 1px solid var(--claude-border);
+      border-radius: 20px;
+      padding: 24px;
+      display: grid;
+      gap: 20px;
+    }
+    @media (min-width: 720px) {
+      .media-card { grid-template-columns: 280px 1fr; align-items: center; }
+    }
+    .album-art {
+      width: 100%;
+      aspect-ratio: 1;
+      max-width: 280px;
+      margin: 0 auto;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--claude-surface-2), var(--claude-surface-3));
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.3);
+    }
+    .album-art img { width: 100%; height: 100%; object-fit: cover; }
+    .album-art .empty-art { font-size: 48px; color: var(--claude-muted-2, #6B6661); }
+    .media-info .now { font-size: 11px; color: var(--claude-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .media-info .title { font-family: var(--serif); font-size: 28px; font-weight: 400; line-height: 1.2; margin: 4px 0 6px; letter-spacing: -0.01em; }
+    .media-info .artist { font-size: 14px; color: var(--claude-cream-dim); }
+    .media-info .album { font-size: 12px; color: var(--claude-muted); margin-top: 2px; }
+
+    .progress-bar {
+      margin: 16px 0 8px;
+      height: 4px;
+      background: var(--claude-surface-3);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-bar > div {
+      height: 100%;
+      background: var(--claude-primary);
+      transition: width 1s linear;
+    }
+    .progress-times {
+      display: flex; justify-content: space-between;
+      font-size: 11px; color: var(--claude-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .media-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 12px;
+    }
+    .media-controls button {
+      all: unset;
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      display: grid; place-items: center;
+      cursor: pointer;
+      color: var(--claude-cream);
+      transition: background 200ms, transform 150ms;
+    }
+    .media-controls button:hover { background: var(--claude-surface-2); }
+    .media-controls button:active { transform: scale(0.92); }
+    .media-controls button.play {
+      width: 56px; height: 56px;
+      background: var(--claude-primary);
+      color: var(--claude-cream);
+    }
+    .media-controls button.play:hover { background: var(--claude-primary-soft); }
+    .media-controls button.muted { color: var(--claude-muted); }
+    .media-controls svg { width: 22px; height: 22px; fill: currentColor; }
+    .media-controls button.play svg { width: 26px; height: 26px; }
+
+    .volume {
+      margin-top: 16px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .volume input[type="range"] {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 4px;
+      background: var(--claude-surface-3);
+      border-radius: 2px;
+      outline: none;
+    }
+    .volume input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--claude-primary);
+      cursor: pointer;
+    }
+    .volume input[type="range"]::-moz-range-thumb {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--claude-primary);
+      cursor: pointer;
+      border: none;
+    }
+    .volume .vol-label { font-size: 11px; color: var(--claude-muted); min-width: 32px; text-align: right; font-variant-numeric: tabular-nums; }
+    .speaker-list { display: grid; gap: 10px; margin-top: 8px; }
+
+    /* ── Family map ──────────────────────────────────────────── */
+    #claude-map {
+      height: 320px;
+      width: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      background: var(--claude-surface);
+      position: relative;
+      z-index: 0;
+      isolation: isolate;       /* Leaflet stacking blijft binnen deze container */
+      contain: layout paint;
+    }
+    .leaflet-container {
+      background: var(--claude-bg-deep) !important;
+      font-family: var(--sans);
+    }
+    .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+      background: var(--claude-surface) !important;
+      color: var(--claude-cream) !important;
+      border: 1px solid var(--claude-border);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .leaflet-popup-content { font-family: var(--sans); font-size: 13px; margin: 10px 14px; }
+    .leaflet-control-zoom a {
+      background: var(--claude-surface) !important;
+      color: var(--claude-cream) !important;
+      border: 1px solid var(--claude-border) !important;
+    }
+    .leaflet-control-zoom a:hover { background: var(--claude-surface-2) !important; }
+    .leaflet-control-attribution {
+      background: rgba(31,30,28,0.7) !important;
+      color: var(--claude-muted) !important;
+      font-size: 10px;
+    }
+    .claude-map-pin { background: transparent !important; border: none !important; }
+
+    .view { display: none; }
+    .view.active { display: block; }
+
+    .small { font-size: 11px; }
+  </style>
+</head>
+<body>
+
+<div id="root">
+  <!-- Login screen rendered here initially, then replaced by app -->
+</div>
+
+<script>
+'use strict';
+
+// ════════════════════════════════════════════════════════════════════════
+// HA WebSocket Client
+// ════════════════════════════════════════════════════════════════════════
+class HAClient {
+  // getToken: either a string (static long-lived token) or an async fn
+  // returning a fresh access token (used when piggy-backing on HA's session).
+  constructor(url, getToken) {
+    this.url = url.replace(/\/$/, '');
+    this._getToken = typeof getToken === 'function'
+      ? getToken
+      : () => Promise.resolve(getToken);
+    this.states = {};
+    this.id = 0;
+    this.pending = new Map();
+    this.listeners = new Set();
+    this.ready = false;
+  }
+
+  async _token() {
+    const t = await this._getToken();
+    if (!t) throw new Error('Geen toegangstoken beschikbaar');
+    return t;
+  }
+
+  connect() {
+    return new Promise((resolve, reject) => {
+      const wsUrl = this.url.replace(/^http/, 'ws') + '/api/websocket';
+      this.ws = new WebSocket(wsUrl);
+      this._authResolve = resolve;
+      this._authReject = reject;
+      this.ws.onopen = () => {};
+      this.ws.onmessage = (e) => this._onMessage(JSON.parse(e.data));
+      this.ws.onclose = () => {
+        if (this.ready) {
+          // Try reconnect
+          setTimeout(() => this.connect().then(() => this.notify()).catch(()=>{}), 2000);
+        } else {
+          reject(new Error('Connection closed'));
+        }
+      };
+      this.ws.onerror = () => reject(new Error('Connection error'));
+    });
+  }
+
+  _onMessage(msg) {
+    if (msg.type === 'auth_required') {
+      this._token().then(t => this._send({ type: 'auth', access_token: t }))
+                   .catch(e => this._authReject(e));
+    } else if (msg.type === 'auth_ok') {
+      this.ready = true;
+      this._send({ id: ++this.id, type: 'get_states' });
+      this._send({ id: ++this.id, type: 'subscribe_events', event_type: 'state_changed' });
+      this._authResolve();
+    } else if (msg.type === 'auth_invalid') {
+      this._authReject(new Error('Token ongeldig'));
+    } else if (msg.type === 'result') {
+      if (Array.isArray(msg.result) && msg.result.length && msg.result[0].entity_id) {
+        for (const s of msg.result) this.states[s.entity_id] = s;
+        this.notify();
+      }
+      const cb = this.pending.get(msg.id);
+      if (cb) { cb(msg); this.pending.delete(msg.id); }
+    } else if (msg.type === 'event' && msg.event && msg.event.event_type === 'state_changed') {
+      const ns = msg.event.data.new_state;
+      if (ns) {
+        this.states[ns.entity_id] = ns;
+        this.notify();
+      }
+    }
+  }
+
+  _send(msg) {
+    if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify(msg));
+  }
+
+  call(domain, service, data) {
+    this._send({ id: ++this.id, type: 'call_service', domain, service, service_data: data });
+  }
+
+  async fetchHistory(entityId, hours = 24) {
+    const since = new Date(Date.now() - hours * 3600 * 1000).toISOString();
+    const url = `${this.url}/api/history/period/${since}?filter_entity_id=${entityId}&minimal_response&no_attributes`;
+    try {
+      const token = await this._token();
+      const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return (data && data[0]) ? data[0] : [];
+    } catch (e) { return []; }
+  }
+
+  state(eid) { return this.states[eid] ? this.states[eid].state : ''; }
+  attr(eid, a) { return this.states[eid] && this.states[eid].attributes ? this.states[eid].attributes[a] : ''; }
+  isOn(eid) { return this.state(eid) === 'on'; }
+  userName() { return this._userName || ''; }
+  entityIds(prefix) {
+    return Object.keys(this.states).filter(id => !prefix || id.startsWith(prefix));
+  }
+
+  on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
+  notify() { for (const fn of this.listeners) fn(); }
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// Parent-HA client — als de webapp in een iframe binnen Home Assistant draait
+// (Lovelace iframe-card op /local/dashboard/) lenen we gewoon de al
+// geauthenticeerde verbinding van de HA-frontend. Werkt in de browser én in
+// de HA Companion-app (zelfde origin → window.parent is toegankelijk). Geen
+// login, geen tokens.
+// ════════════════════════════════════════════════════════════════════════
+class ParentHassClient {
+  constructor(haEl) {
+    this._haEl = haEl;
+    this.listeners = new Set();
+    this.ready = false;
+    this._unsub = null;
+    this.url = location.protocol + '//' + location.host;
+  }
+
+  // Zoek een <home-assistant> element met een geldige hass in een parent-window.
+  // Geeft null bij geen iframe / cross-origin / HA nog niet geladen.
+  static find() {
+    let w = window;
+    for (let i = 0; i < 8; i++) {
+      if (!w.parent || w.parent === w) break;
+      w = w.parent;
+      let el;
+      try { el = w.document && w.document.querySelector('home-assistant'); }
+      catch (e) { return null; }   // cross-origin → niet bruikbaar
+      if (el && el.hass && el.hass.states && el.hass.connection) return new ParentHassClient(el);
+    }
+    return null;
+  }
+
+  get hass() { return this._haEl.hass; }
+
+  async connect() {
+    // De HA-frontend houdt hass.states al up-to-date; we hoeven alleen te
+    // weten wanneer er iets verandert om opnieuw te renderen.
+    try {
+      this._unsub = await this.hass.connection.subscribeEvents(() => this.notify(), 'state_changed');
+    } catch (e) {
+      this._poll = setInterval(() => this.notify(), 5000);
+    }
+    this.ready = true;
+    return this;
+  }
+
+  call(domain, service, data) {
+    try { this.hass.callService(domain, service, data); } catch (e) {}
+  }
+
+  async fetchHistory(entityId, hours = 24) {
+    const since = new Date(Date.now() - hours * 3600 * 1000).toISOString();
+    try {
+      const data = await this.hass.callApi('GET',
+        `history/period/${since}?filter_entity_id=${entityId}&minimal_response&no_attributes`);
+      return (data && data[0]) ? data[0] : [];
+    } catch (e) { return []; }
+  }
+
+  _st(eid) { const s = this.hass && this.hass.states; return s ? s[eid] : undefined; }
+  state(eid) { const s = this._st(eid); return s ? s.state : ''; }
+  attr(eid, a) { const s = this._st(eid); return s && s.attributes ? s.attributes[a] : ''; }
+  isOn(eid) { return this.state(eid) === 'on'; }
+  userName() { return (this.hass && this.hass.user && this.hass.user.name) || ''; }
+  entityIds(prefix) {
+    const s = this.hass && this.hass.states; if (!s) return [];
+    return Object.keys(s).filter(id => !prefix || id.startsWith(prefix));
+  }
+
+  on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
+  notify() { for (const fn of this.listeners) fn(); }
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// Home Assistant login (OAuth2 IndieAuth flow, dezelfde als de HA-frontend)
+//
+// De webapp draait vanaf /local/dashboard/ — dezelfde origin als HA. We
+// hergebruiken de bestaande sessie (`hassTokens` in localStorage); is die er
+// niet, dan sturen we de gebruiker naar HA's eigen inlogpagina (/auth/authorize)
+// en wisselen de teruggegeven `code` in voor tokens. Geen aparte token-invoer.
+// ════════════════════════════════════════════════════════════════════════
+const HA_URL = location.protocol + '//' + location.host;          // HA serveert /local/
+const HA_CLIENT_ID = HA_URL + '/';                                // IndieAuth client_id
+const HA_REDIRECT_URI = HA_URL + location.pathname;               // terug naar deze pagina
+
+function readHassTokens() {
+  try { return JSON.parse(window.localStorage.getItem('hassTokens') || 'null'); }
+  catch (e) { return null; }
+}
+function writeHassTokens(tok) {
+  try { window.localStorage.setItem('hassTokens', JSON.stringify(tok)); } catch (e) {}
+}
+function hassBaseUrl(tok) {
+  return (tok && tok.hassUrl) || HA_URL;
+}
+
+// Stuur door naar HA's inlogpagina.
+function beginHaLogin() {
+  const url = HA_URL + '/auth/authorize'
+    + '?response_type=code'
+    + '&client_id=' + encodeURIComponent(HA_CLIENT_ID)
+    + '&redirect_uri=' + encodeURIComponent(HA_REDIRECT_URI);
+  location.replace(url);
+}
+
+// Wissel de ?code= uit de redirect in voor access/refresh tokens.
+// Geeft true terug als er een code verwerkt is.
+async function completeHaLogin() {
+  const params = new URLSearchParams(location.search);
+  const code = params.get('code');
+  if (!code) return false;
+  // URL opschonen zodat de code niet blijft staan / niet opnieuw gebruikt wordt.
+  history.replaceState(null, '', HA_REDIRECT_URI + location.hash);
+  const res = await fetch(HA_URL + '/auth/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'authorization_code',
+      code,
+      client_id: HA_CLIENT_ID,
+    }),
+  });
+  if (!res.ok) throw new Error('Inloggen bij Home Assistant mislukt (' + res.status + ')');
+  const data = await res.json();
+  writeHassTokens({
+    access_token: data.access_token,
+    token_type: data.token_type || 'Bearer',
+    refresh_token: data.refresh_token,
+    expires_in: data.expires_in,
+    expires: Date.now() + data.expires_in * 1000,
+    hassUrl: HA_URL,
+    clientId: HA_CLIENT_ID,
+  });
+  return true;
+}
+
+async function refreshHassToken(tok) {
+  if (!tok || !tok.refresh_token) return null;
+  const res = await fetch(hassBaseUrl(tok) + '/auth/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: tok.refresh_token,
+      client_id: tok.clientId || HA_CLIENT_ID,
+    }),
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  const updated = Object.assign({}, tok, {
+    access_token: data.access_token,
+    expires_in: data.expires_in,
+    expires: Date.now() + data.expires_in * 1000,
+  });
+  writeHassTokens(updated);
+  return updated;
+}
+
+// Geeft een geldig access token; ververst zonodig via de refresh_token.
+// Throwt 'no-ha-session' als er geen (bruikbare) sessie is.
+async function getHassAccessToken() {
+  let tok = readHassTokens();
+  if (!tok || !tok.access_token) throw new Error('no-ha-session');
+  if (!tok.expires || Date.now() >= tok.expires - 30000) {
+    const refreshed = await refreshHassToken(tok);
+    if (!refreshed) throw new Error('no-ha-session');
+    tok = refreshed;
+  }
+  return tok.access_token;
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// Helpers
+// ════════════════════════════════════════════════════════════════════════
+function el(html) {
+  const t = document.createElement('template');
+  t.innerHTML = html.trim();
+  return t.content.firstChild;
+}
+function getGreeting(name) {
+  const h = new Date().getHours();
+  const part = h < 6 ? 'Goedenacht' : h < 12 ? 'Goedemorgen' : h < 18 ? 'Goedemiddag' : 'Goedenavond';
+  return `${part}, ${name}.`;
+}
+// Voornaam van de ingelogde HA-gebruiker (valt terug op 'Chris').
+function firstName(client) {
+  const full = (client && client.userName && client.userName()) || '';
+  const first = full.trim().split(/\s+/)[0];
+  return first || 'Chris';
+}
+
+// Dynamische lijst van alle person.* entiteiten, met naam/initialen/kleur.
+const PERSON_PALETTE = [
+  ['#C96342', '#A84F32'], ['#7BA7C9', '#4A6E8A'], ['#7FB069', '#4A7B4A'],
+  ['#E8B86E', '#B98B3E'], ['#B98AC9', '#7B5A8A'], ['#C9897B', '#8A5A4A'],
+];
+function personList(client) {
+  if (!client || !client.entityIds) return [];
+  return client.entityIds('person.').sort().map((eid, i) => {
+    const friendly = (client.attr(eid, 'friendly_name') || eid.slice('person.'.length).replace(/_/g, ' ')).trim();
+    const parts = friendly.split(/\s+/).filter(Boolean);
+    const first = parts[0] || friendly || eid;
+    let initials = ((parts[0] || '')[0] || '') + ((parts[1] || '')[0] || '');
+    if (!initials) initials = first.slice(0, 2);
+    return {
+      eid,
+      name: first,
+      friendly: friendly || first,
+      initials: initials.toUpperCase(),
+      g: PERSON_PALETTE[i % PERSON_PALETTE.length],
+    };
+  });
+}
+function getDateLabel() {
+  return new Date().toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+function weatherIcon(cond) {
+  const map = {
+    'sunny': '☀', 'clear-night': '🌙', 'partlycloudy': '⛅', 'cloudy': '☁',
+    'rainy': '🌧', 'pouring': '⛈', 'snowy': '❄', 'fog': '🌫', 'windy': '💨',
+    'lightning': '⚡', 'lightning-rainy': '⛈',
+  };
+  return map[cond] || '◐';
+}
+function weatherLabel(cond) {
+  const map = {
+    'sunny': 'zonnig',
+    'clear-night': 'helder',
+    'partlycloudy': 'half bewolkt',
+    'cloudy': 'bewolkt',
+    'rainy': 'regen',
+    'pouring': 'stortregen',
+    'snowy': 'sneeuw',
+    'snowy-rainy': 'natte sneeuw',
+    'fog': 'mist',
+    'windy': 'winderig',
+    'windy-variant': 'winderig',
+    'hail': 'hagel',
+    'lightning': 'onweer',
+    'lightning-rainy': 'onweer & regen',
+    'exceptional': 'extreem weer',
+  };
+  return map[cond] || cond || '—';
+}
+function compassDir(deg) {
+  if (deg == null || isNaN(deg)) return '';
+  const dirs = ['N', 'NO', 'O', 'ZO', 'Z', 'ZW', 'W', 'NW'];
+  return dirs[Math.round((deg % 360) / 45) % 8];
+}
+function timeOfDay(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+}
+// HTML-escape voor veilige string-interpolatie in template literals.
+// Gebruik voor ELKE waarde die uit Home Assistant komt (state, attribuut)
+// en in een innerHTML/template terechtkomt. Voorkomt XSS via een gecompromitteerde
+// integratie die <script> in friendly_name / media_title zou injecteren.
+const _ESC_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, m => _ESC_MAP[m]);
+}
+
+function formatNumber(n, decimals = 0) {
+  if (n === '' || n === undefined || n === null) return '—';
+  const num = parseFloat(n);
+  if (isNaN(num)) return '—';   // never return raw HA string (XSS hardening)
+  return num.toLocaleString('nl-NL', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+function formatTime(seconds) {
+  const s = Math.max(0, Math.floor(seconds || 0));
+  const m = Math.floor(s / 60);
+  const ss = s % 60;
+  return `${m}:${ss.toString().padStart(2, '0')}`;
+}
+
+// SVG line chart — points are {t: Date, v: number}
+// Tekstlabels worden buiten de SVG gerenderd (HTML overlay) zodat ze niet
+// mee-rekken met preserveAspectRatio="none" op het pad.
+function lineChart(points, width = 600, height = 140, color = '#E0A458') {
+  if (!points || points.length < 2) {
+    return `<div style="height:${height}px; display:grid; place-items:center; color:var(--claude-muted); font-size:12px;">Geen historische data</div>`;
+  }
+  const minT = points[0].t.getTime();
+  const maxT = points[points.length - 1].t.getTime();
+  const tRange = Math.max(1, maxT - minT);
+  const values = points.map(p => p.v);
+  const minV = Math.min(...values, 0);
+  const maxV = Math.max(...values);
+  const vRange = Math.max(1, maxV - minV);
+  const padTop = 12, padBottom = 12;
+  const innerH = height - padTop - padBottom;
+  const xy = points.map(p => {
+    const x = ((p.t.getTime() - minT) / tRange) * width;
+    const y = padTop + innerH - ((p.v - minV) / vRange) * innerH;
+    return [x, y];
+  });
+  const linePath = xy.map(([x, y], i) => `${i ? 'L' : 'M'} ${x.toFixed(1)} ${y.toFixed(1)}`).join(' ');
+  const fillPath = linePath + ` L ${width} ${height - padBottom} L 0 ${height - padBottom} Z`;
+  const id = 'g' + Math.random().toString(36).slice(2, 8);
+  return `
+    <div class="chart-wrap" style="position:relative; height:${height}px;">
+      <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" style="width:100%; height:100%; display:block;">
+        <defs>
+          <linearGradient id="${id}" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="${color}" stop-opacity="0.4"/>
+            <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="${fillPath}" fill="url(#${id})" />
+        <path d="${linePath}" stroke="${color}" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+      </svg>
+      <span class="chart-label chart-max">${esc(formatNumber(maxV, 0))}</span>
+      <span class="chart-label chart-min">${esc(formatNumber(minV, 0))}</span>
+    </div>
+  `;
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// App
+// ════════════════════════════════════════════════════════════════════════
+class App {
+  constructor() {
+    this.root = document.getElementById('root');
+    this.activeView = location.hash.replace('#', '') || 'start';
+    this.client = null;
+    this._history = {};      // cached history per entity
+    this._historyFetching = new Set();
+    window.addEventListener('hashchange', () => {
+      this.activeView = location.hash.replace('#', '') || 'start';
+      this.render();
+    });
+    this.init();
+  }
+
+  async _ensureHistory(entityId, hours = 24) {
+    const key = `${entityId}|${hours}`;
+    if (this._history[key] || this._historyFetching.has(key)) return;
+    this._historyFetching.add(key);
+    const raw = await this.client.fetchHistory(entityId, hours);
+    const points = raw.map(s => ({ t: new Date(s.last_changed || s.last_updated), v: parseFloat(s.state) }))
+                       .filter(p => !isNaN(p.v) && !isNaN(p.t.getTime()));
+    this._history[key] = points;
+    this._historyFetching.delete(key);
+    if (this.activeView === 'zon') this.render();
+  }
+
+  async init() {
+    // 1. Draaien we in een iframe binnen de (ingelogde) HA-frontend? Leen die
+    //    verbinding — geen login nodig. Werkt in browser én Companion-app.
+    let parent = ParentHassClient.find();
+    if (window.top !== window.self) {
+      for (let i = 0; i < 16 && !parent; i++) {
+        await new Promise(r => setTimeout(r, 250));   // HA-frontend nog aan het laden
+        parent = ParentHassClient.find();
+      }
+    }
+    if (parent) {
+      try {
+        await parent.connect();
+        this.client = parent;
+        this.client.on(() => this.scheduleRender());
+        this.render();
+        return;
+      } catch (e) { /* val terug op de methodes hieronder */ }
+    }
+
+    // 2. Terug van HA's inlogpagina met ?code=? Wissel in voor tokens.
+    try {
+      if (await completeHaLogin()) return this.init();
+    } catch (e) {
+      this.renderAuthError(e && e.message ? e.message : String(e));
+      return;
+    }
+
+    // 3. Bestaande HA-sessie in localStorage (browser, zelfde origin)?
+    const tok = readHassTokens();
+    if (tok && tok.access_token) {
+      try {
+        this.client = new HAClient(hassBaseUrl(tok), () => getHassAccessToken());
+        await this.client.connect();
+        this.client.on(() => this.scheduleRender());
+        this.render();
+        return;
+      } catch (e) {
+        if (!(e && /no-ha-session|ongeldig|invalid/i.test(e.message || ''))) {
+          this.renderAuthError(e && e.message ? e.message : String(e));
+          return;
+        }
+        // sessie verlopen → door naar stap 4
+      }
+    }
+
+    // 4. Echte browser-tab (geen iframe) → naar HA's eigen inlogpagina.
+    if (window.top === window.self) { beginHaLogin(); return; }
+
+    // 5. In een iframe maar geen toegang tot de HA-sessie.
+    this.renderAuthError('Kan geen verbinding maken met Home Assistant. Herlaad de pagina of open het dashboard opnieuw vanuit Home Assistant.');
+  }
+
+  renderAuthError(message) {
+    this.root.innerHTML = `
+      <div class="login">
+        <div class="login-box">
+          <h1>Thuis</h1>
+          <p>${esc(message)}</p>
+          <button id="retry">Opnieuw proberen</button>
+        </div>
+      </div>
+    `;
+    this.root.querySelector('#retry').addEventListener('click', () => this.init());
+  }
+
+  navigate(view) {
+    this.activeView = view;
+    location.hash = view;
+    this._skipScrollRestore = true;     // bij view-switch wél naar boven scrollen
+    this.render();
+    const app = this.root.querySelector('.app');
+    if (app) app.scrollTop = 0;
+  }
+
+  callService(domain, service, data) {
+    if (this.client) this.client.call(domain, service, data);
+  }
+
+  // Coalesceert snelle state-updates tot 1 render per frame (~60fps).
+  // Voorkomt dat we tijdens scrollen 10x per seconde de hele DOM
+  // herbouwen, wat de glitch veroorzaakte.
+  scheduleRender() {
+    if (this._renderScheduled) return;
+    this._renderScheduled = true;
+    requestAnimationFrame(() => {
+      this._renderScheduled = false;
+      this.render();
+    });
+  }
+
+  render() {
+    if (!this.client || !this.client.ready) return;
+    const c = this.client;
+
+    const views = {
+      start: () => this.renderStart(c),
+      zon: () => this.renderZon(c),
+      media: () => this.renderMedia(c),
+      lampen: () => this.renderLampen(c),
+      afval: () => this.renderAfval(c),
+      weer: () => this.renderWeer(c),
+      benzine: () => this.renderBenzine(c),
+    };
+
+    // Bewaar scroll-positie + actief input-veld voor de innerHTML replace,
+    // anders springt de gebruiker bij elke state-update terug naar boven
+    // en verliest 'ie focus op de huidige input. Bij view-switch wordt
+    // _skipScrollRestore gezet zodat we wel naar boven gaan.
+    const skipScroll = this._skipScrollRestore === true;
+    this._skipScrollRestore = false;
+    const prevApp = this.root.querySelector('.app');
+    const prevScrollTop = (!skipScroll && prevApp) ? prevApp.scrollTop : 0;
+    const activeEl = document.activeElement;
+    const activeKey = activeEl && activeEl !== document.body
+      ? (activeEl.dataset.time || activeEl.id || null)
+      : null;
+    const activeSelStart = activeEl && activeEl.selectionStart;
+    const activeSelEnd = activeEl && activeEl.selectionEnd;
+
+    // Stash de levende Leaflet-map-DOM voor de innerHTML-replace zodat we
+    // 'm na de render kunnen herplaatsen — voorkomt flikkering en
+    // onnodige Leaflet-herinitialisatie bij elke state-update.
+    let mapStash = null;
+    if (this._mapInstance) {
+      const live = this.root.querySelector('#claude-map');
+      if (live && this._mapInstance.getContainer && this._mapInstance.getContainer() === live) {
+        mapStash = live;
+      }
+    }
+
+    const viewHtml = (views[this.activeView] || views.start)();
+
+    this.root.innerHTML = `
+      <div class="app">
+        ${viewHtml}
+      </div>
+      <nav class="tabbar">
+        ${this.renderNav()}
+      </nav>
+    `;
+
+    // Herstel scroll-positie van de nieuwe .app — direct én na de paint
+    // (sommige browsers resetten scrollTop ná innerHTML als het content nog
+    // moet renderen).
+    const newApp = this.root.querySelector('.app');
+    if (newApp && prevScrollTop) {
+      newApp.scrollTop = prevScrollTop;
+      requestAnimationFrame(() => { newApp.scrollTop = prevScrollTop; });
+    }
+
+    // Herstel focus + cursor-positie op input dat actief was.
+    if (activeKey) {
+      const restore = this.root.querySelector(
+        activeKey.startsWith('#') ? activeKey : `[data-time="${activeKey}"], #${activeKey}`
+      );
+      if (restore && typeof restore.focus === 'function') {
+        restore.focus();
+        if (activeSelStart != null && typeof restore.setSelectionRange === 'function') {
+          try { restore.setSelectionRange(activeSelStart, activeSelEnd); } catch (_) {}
+        }
+      }
+    }
+
+    // Herplaats de gestashde map als we nog op start staan en er een placeholder is.
+    if (mapStash && this.activeView === 'start') {
+      const slot = this.root.querySelector('#claude-map');
+      if (slot) {
+        slot.replaceWith(mapStash);
+        // Geef Leaflet een tick om de container-grootte opnieuw te meten.
+        setTimeout(() => {
+          if (this._mapInstance) this._mapInstance.invalidateSize();
+        }, 0);
+      }
+    }
+
+    this.attachInteractions();
+  }
+
+  renderNav() {
+    const items = [
+      { path: 'start', label: 'Start', icon: '⌂' },
+      { path: 'zon', label: 'Zon', icon: '☀' },
+      { path: 'lampen', label: 'Lampen', icon: '◐' },
+      { path: 'afval', label: 'Afval', icon: '♺' },
+      { path: 'weer', label: 'Weer', icon: '☁' },
+      { path: 'benzine', label: 'Benzine', icon: '⛽' },
+    ];
+    return items.map(it => `
+      <button class="${this.activeView === it.path ? 'active' : ''}" data-nav="${it.path}">
+        <span class="tab-icon">${it.icon}</span>
+        <span class="tab-label">${it.label}</span>
+      </button>
+    `).join('');
+  }
+
+  attachInteractions() {
+    this.root.querySelectorAll('[data-nav]').forEach(btn => {
+      btn.addEventListener('click', () => this.navigate(btn.dataset.nav));
+    });
+    this.root.querySelectorAll('[data-toggle]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const eid = btn.dataset.toggle;
+        const domain = eid.split('.')[0];
+        this.callService(domain, 'toggle', { entity_id: eid });
+      });
+    });
+    this.root.querySelectorAll('[data-script]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!confirm(btn.dataset.confirm || 'Uitvoeren?')) return;
+        this.callService('script', btn.dataset.script.replace(/^script\./, ''), {});
+      });
+    });
+    this.root.querySelectorAll('[data-time]').forEach(input => {
+      input.addEventListener('change', () => {
+        const eid = input.dataset.time;
+        this.callService('input_datetime', 'set_datetime', { entity_id: eid, time: input.value });
+      });
+    });
+
+    // Media player controls
+    this.root.querySelectorAll('[data-mp-toggle]').forEach(btn => {
+      btn.addEventListener('click', () => this.callService('media_player', 'media_play_pause', { entity_id: btn.dataset.mpToggle }));
+    });
+    this.root.querySelectorAll('[data-mp-next]').forEach(btn => {
+      btn.addEventListener('click', () => this.callService('media_player', 'media_next_track', { entity_id: btn.dataset.mpNext }));
+    });
+    this.root.querySelectorAll('[data-mp-prev]').forEach(btn => {
+      btn.addEventListener('click', () => this.callService('media_player', 'media_previous_track', { entity_id: btn.dataset.mpPrev }));
+    });
+    this.root.querySelectorAll('[data-mp-shuffle]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const eid = btn.dataset.mpShuffle;
+        const cur = this.client.attr(eid, 'shuffle');
+        this.callService('media_player', 'shuffle_set', { entity_id: eid, shuffle: !cur });
+      });
+    });
+    this.root.querySelectorAll('[data-mp-mute]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const eid = btn.dataset.mpMute;
+        const cur = this.client.attr(eid, 'is_volume_muted');
+        this.callService('media_player', 'volume_mute', { entity_id: eid, is_volume_muted: !cur });
+      });
+    });
+    this.root.querySelectorAll('[data-mp-volume]').forEach(input => {
+      input.addEventListener('change', () => {
+        const eid = input.dataset.mpVolume;
+        this.callService('media_player', 'volume_set', { entity_id: eid, volume_level: parseFloat(input.value) / 100 });
+      });
+    });
+
+    // Map (Leaflet) — init only when on start view
+    if (this.activeView === 'start') {
+      this._initMap();
+    }
+  }
+
+  _initMap() {
+    const mapEl = this.root.querySelector('#claude-map');
+    if (!mapEl || typeof L === 'undefined') return;
+
+    // Skip als we al een levende instance hebben op precies deze container.
+    // Render() herplaatst de gestashde map-DOM, dus dezelfde mapEl-referentie
+    // overleeft cross-render. Bij view-wissel/orphan: opruimen en re-init.
+    if (this._mapInstance && this._mapInstance.getContainer) {
+      const container = this._mapInstance.getContainer();
+      if (container === mapEl && container.isConnected) {
+        this._mapInstance.invalidateSize();
+        return;
+      }
+      // Orphaned instance: vrijgeven voor we een nieuwe maken.
+      try { this._mapInstance.remove(); } catch (_) {}
+      this._mapInstance = null;
+    }
+
+    const points = personList(this.client).map(p => {
+      const lat = parseFloat(this.client.attr(p.eid, 'latitude'));
+      const lon = parseFloat(this.client.attr(p.eid, 'longitude'));
+      if (isNaN(lat) || isNaN(lon)) return null;
+      return { ...p, color: p.g[0], lat, lon };
+    }).filter(Boolean);
+
+    if (!points.length) {
+      mapEl.innerHTML = '<div style="height:100%; display:grid; place-items:center; color:var(--claude-muted); font-size:13px;">Geen GPS-locaties beschikbaar voor de personen.<br><span style="font-size:11px;">Check de HA Companion app op hun telefoons.</span></div>';
+      return;
+    }
+
+    const map = L.map(mapEl, { zoomControl: false, attributionControl: false }).setView(
+      [points[0].lat, points[0].lon], 11
+    );
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19, subdomains: 'abcd',
+    }).addTo(map);
+    L.control.attribution({ position: 'bottomright', prefix: false })
+      .addAttribution('© OSM, © CARTO').addTo(map);
+    L.control.zoom({ position: 'topright' }).addTo(map);
+
+    const bounds = [];
+    points.forEach(p => {
+      const html = `<div style="width:34px; height:34px; border-radius:50%; background: linear-gradient(135deg, ${p.color}, rgba(0,0,0,0.4)); display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-size:14px; color:#F0E6D8; box-shadow:0 4px 14px rgba(0,0,0,0.5), 0 0 10px rgba(224,164,88,0.25); border: 2px solid #1E1712;">${p.initials}</div>`;
+      const icon = L.divIcon({ html, className: 'claude-map-pin', iconSize: [34, 34], iconAnchor: [17, 17] });
+      L.marker([p.lat, p.lon], { icon }).addTo(map).bindPopup(`<b>${esc(p.friendly)}</b>`);
+      bounds.push([p.lat, p.lon]);
+    });
+    if (bounds.length > 1) map.fitBounds(bounds, { padding: [40, 40] });
+    this._mapInstance = map;
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // VIEW: Start
+  // ──────────────────────────────────────────────────────────────────
+  renderStart(c) {
+    const persons = personList(c);
+    const switches = ['switch.woonkamerlamp', 'switch.overkappinglamp', 'switch.opritlamp', 'switch.spotjes_overkapping'];
+    const lampOn = switches.filter(e => c.isOn(e)).length;
+
+    return `
+      <div class="view active">
+        <div class="hero">
+          <h1>${getGreeting(firstName(c))}</h1>
+          <p>${getDateLabel()} · <span class="accent">${esc(weatherLabel(c.state('weather.forecast_home'))) || 'helder'}</span> · ${formatNumber(c.attr('weather.forecast_home', 'temperature'), 0)}°C</p>
+        </div>
+
+        ${persons.length ? `<div class="grid grid-3">
+          ${persons.map(p => `
+            <div class="card person">
+              <div class="avatar" style="background: linear-gradient(135deg, ${p.g[0]}, ${p.g[1]});">${esc(p.initials)}</div>
+              <div class="name">${esc(p.name)}</div>
+              <div class="state">${this._personStateLabel(c.state(p.eid))}</div>
+            </div>
+          `).join('')}
+        </div>` : ''}
+
+        <h2 class="section-title">Vandaag</h2>
+        <div class="grid grid-4">
+          <div class="card stat">
+            <div class="label">Zon</div>
+            <div><span class="figure">${formatNumber(c.state('sensor.sma_dagopbrengst'), 0)}</span><span class="unit">kWh</span></div>
+            <div class="delta">${formatNumber(c.state('sensor.zonnepanelen_vermogen'), 0)} W nu</div>
+          </div>
+          <div class="card stat">
+            <div class="label">Buiten</div>
+            <div><span class="figure">${formatNumber(c.attr('weather.forecast_home', 'temperature'), 0)}</span><span class="unit">°C</span></div>
+            <div class="delta">${esc(weatherLabel(c.state('weather.forecast_home'))) || '—'}</div>
+          </div>
+          <div class="card stat">
+            <div class="label">Volgend afval</div>
+            <div><span class="figure small">PMD</span></div>
+            <div class="delta cream">${esc(c.state('sensor.pmd')) || '—'}</div>
+          </div>
+          <div class="card stat">
+            <div class="label">Lampen</div>
+            <div><span class="figure">${lampOn}</span><span class="unit">/${switches.length} aan</span></div>
+            <div class="delta muted">${switches.length} schakelaars</div>
+          </div>
+        </div>
+
+        <h2 class="section-title">Verlichting</h2>
+        <div class="grid grid-4">
+          ${switches.map(eid => this._lampTile(c, eid)).join('')}
+        </div>
+
+        <h2 class="section-title">Familie</h2>
+        <div id="claude-map"></div>
+      </div>
+    `;
+  }
+
+  _personStateLabel(s) {
+    if (s === 'home') return 'Thuis';
+    if (s === 'not_home') return 'Onderweg';
+    return esc(s) || '—';
+  }
+
+  _lampTile(c, eid) {
+    const on = c.isOn(eid);
+    const name = c.attr(eid, 'friendly_name') || eid.split('.')[1];
+    return `
+      <div class="card tile ${on ? 'on' : ''}" data-toggle="${esc(eid)}">
+        <div class="icon-circle">${on ? '◐' : '○'}</div>
+        <div class="info">
+          <div class="name">${esc(name)}</div>
+          <div class="state">${on ? 'Aan' : 'Uit'}</div>
+        </div>
+        <div class="switch"></div>
+      </div>
+    `;
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // VIEW: Zonnepanelen
+  // ──────────────────────────────────────────────────────────────────
+  renderZon(c) {
+    const power = parseFloat(c.state('sensor.zonnepanelen_vermogen')) || 0;
+    const max = 6000;
+    const progress = Math.min(1, Math.max(0, power / max));
+    // Half-circle from 180° to 0° (left to right, top half).
+    // Compute end-point on the arc using proper trigonometry.
+    const theta = (180 - progress * 180) * Math.PI / 180;
+    const endX = 100 + 80 * Math.cos(theta);
+    const endY = 110 - 80 * Math.sin(theta);
+    // Half-cirkel arc is altijd ≤ 180°, dus large-arc-flag is altijd 0.
+    // Hierdoor tekent de browser het korte pad over de bovenkant i.p.v.
+    // het lange pad onderlangs (wat de tweedelige glitch veroorzaakte).
+    const largeArc = 0;
+    const needleX = endX;
+    const needleY = endY;
+
+    return `
+      <div class="view active">
+        <div class="hero">
+          <h1>Zonnepanelen</h1>
+          <p>Status <span class="accent">${esc(c.state('sensor.zonnepanelen_status')) || '—'}</span> · limiet <span class="accent">${esc(c.state('sensor.zonnepanelen_limiet_percentage')) || '—'}%</span></p>
+        </div>
+
+        <div class="grid grid-4">
+          <div class="card stat">
+            <div class="label">Nu</div>
+            <div><span class="figure">${formatNumber(power, 0)}</span><span class="unit">W</span></div>
+          </div>
+          <div class="card stat">
+            <div class="label">Vandaag</div>
+            <div><span class="figure">${formatNumber(c.state('sensor.sma_dagopbrengst'), 0)}</span><span class="unit">kWh</span></div>
+          </div>
+          <div class="card stat">
+            <div class="label">Totaal</div>
+            <div><span class="figure">${formatNumber(c.state('sensor.sma_totale_opbrengst'), 0)}</span><span class="unit">kWh</span></div>
+          </div>
+          <div class="card stat">
+            <div class="label">Limiet</div>
+            <div><span class="figure">${esc(c.state('sensor.zonnepanelen_limiet_percentage')) || '—'}</span><span class="unit">%</span></div>
+          </div>
+        </div>
+
+        <div class="subsection-title">Vermogen</div>
+        <div class="card gauge">
+          <svg viewBox="0 0 200 130">
+            <defs>
+              <linearGradient id="gaugeWarm" x1="0" x2="1" y1="0" y2="0">
+                <stop offset="0%" stop-color="#C9663E" />
+                <stop offset="100%" stop-color="#E0A458" />
+              </linearGradient>
+            </defs>
+            <path d="M 20 110 A 80 80 0 0 1 180 110" stroke="#463A30" stroke-width="14" fill="none" stroke-linecap="round" />
+            ${progress > 0.005 ? `<path d="M 20 110 A 80 80 0 ${largeArc} 1 ${endX.toFixed(2)} ${endY.toFixed(2)}" stroke="url(#gaugeWarm)" stroke-width="14" fill="none" stroke-linecap="round" />` : ''}
+            <line x1="100" y1="110" x2="${needleX.toFixed(2)}" y2="${needleY.toFixed(2)}" stroke="#F0E6D8" stroke-width="2" stroke-linecap="round" />
+            <circle cx="100" cy="110" r="5" fill="#F0E6D8" />
+          </svg>
+          <div class="gauge-value">${formatNumber(power, 0)} W</div>
+          <div class="gauge-label">van 6 000 W</div>
+        </div>
+
+        <div class="subsection-title">Verloop laatste 24 uur</div>
+        <div class="card" style="padding: 12px;">
+          ${(() => {
+            this._ensureHistory('sensor.zonnepanelen_vermogen', 24);
+            const points = this._history['sensor.zonnepanelen_vermogen|24'];
+            return points ? lineChart(points, 600, 160, '#E0A458') : '<div style="height:160px; display:grid; place-items:center; color:var(--muted); font-size:12px;">Laden…</div>';
+          })()}
+        </div>
+
+        <h2 class="section-title">Limiet</h2>
+        <div class="pills">
+          <div class="pill primary" data-script="script.zonnepanelen_aanzetten" data-confirm="Op 100% zetten?">
+            <span class="pill-icon">☀</span><span class="pill-label">100%</span>
+          </div>
+          <div class="pill secondary" data-script="script.zonnepanelen_50_procent" data-confirm="Op 50% zetten?">
+            <span class="pill-icon">◐</span><span class="pill-label">50%</span>
+          </div>
+          <div class="pill secondary" data-script="script.zonnepanelen_25_procent" data-confirm="Op 25% zetten?">
+            <span class="pill-icon">◔</span><span class="pill-label">25%</span>
+          </div>
+          <div class="pill ghost" data-script="script.zonnepanelen_uitschakelen" data-confirm="Volledig uit?">
+            <span class="pill-icon">⊘</span><span class="pill-label">Uit</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // VIEW: Media (Spotify + speakers)
+  // ──────────────────────────────────────────────────────────────────
+  renderMedia(c) {
+    // Find first available media_player entity, prefer Spotify
+    const allMedia = Object.keys(c.states).filter(eid => eid.startsWith('media_player.'));
+    const spotify = allMedia.find(eid => eid.includes('spotify')) || allMedia.find(eid => c.attr(eid, 'app_name') === 'Spotify') || allMedia[0];
+
+    if (!spotify) {
+      return `
+        <div class="view active">
+          <div class="hero"><h1>Media</h1><p>Geen media-player gevonden in Home Assistant.</p></div>
+        </div>
+      `;
+    }
+
+    const state = c.state(spotify);
+    const playing = state === 'playing';
+    const title = c.attr(spotify, 'media_title') || '—';
+    const artist = c.attr(spotify, 'media_artist') || '';
+    const album = c.attr(spotify, 'media_album_name') || '';
+    const art = c.attr(spotify, 'entity_picture');
+    // Veilige URL-validatie: alleen http(s)-prefix of relatief pad accepteren,
+    // anders kan een kwaadaardige integratie javascript:/data:-URLs injecteren.
+    let artUrl = '';
+    if (art) {
+      const candidate = art.startsWith('http') ? art : this.client.url + art;
+      if (/^https?:\/\//i.test(candidate)) artUrl = candidate;
+    }
+    const position = parseFloat(c.attr(spotify, 'media_position')) || 0;
+    const duration = parseFloat(c.attr(spotify, 'media_duration')) || 0;
+    const progressPct = duration > 0 ? Math.min(100, (position / duration) * 100) : 0;
+    const volume = c.attr(spotify, 'volume_level');
+    const volumePct = volume !== undefined && volume !== '' ? Math.round(volume * 100) : 50;
+    const shuffle = c.attr(spotify, 'shuffle');
+    const muted = c.attr(spotify, 'is_volume_muted');
+
+    // Other media players (speakers) — alleen deze 4 tonen, gededupliceerd op friendly_name
+    const allowedSpeakers = ['Logeerkamer', 'Boven', 'Keuken', 'Woonkamer-TV'];
+    const seen = new Set();
+    const others = allMedia
+      .filter(eid => eid !== spotify)
+      .filter(eid => c.state(eid) !== 'unavailable')
+      .filter(eid => {
+        const name = c.attr(eid, 'friendly_name') || '';
+        if (!allowedSpeakers.includes(name)) return false;
+        if (seen.has(name)) return false;
+        seen.add(name);
+        return true;
+      });
+
+    return `
+      <div class="view active">
+        <div class="hero">
+          <h1>Media</h1>
+          <p>${state === 'playing' ? 'Speelt nu' : state === 'paused' ? 'Gepauzeerd' : 'Inactief'} · ${esc(spotify.replace('media_player.', ''))}</p>
+        </div>
+
+        <div class="media-card">
+          <div class="album-art">
+            ${artUrl ? `<img src="${esc(artUrl)}" alt="album art" />` : '<span class="empty-art">♫</span>'}
+          </div>
+          <div class="media-info">
+            <div class="now">${state === 'playing' ? 'Speelt nu' : state === 'paused' ? 'Gepauzeerd' : 'Inactief'}</div>
+            <div class="title">${esc(title)}</div>
+            ${artist ? `<div class="artist">${esc(artist)}</div>` : ''}
+            ${album ? `<div class="album">${esc(album)}</div>` : ''}
+
+            ${duration > 0 ? `
+              <div class="progress-bar"><div style="width: ${progressPct}%"></div></div>
+              <div class="progress-times">
+                <span>${formatTime(position)}</span>
+                <span>${formatTime(duration)}</span>
+              </div>
+            ` : '<div class="progress-bar"><div style="width:0%"></div></div>'}
+
+            <div class="media-controls">
+              <button data-mp-shuffle="${esc(spotify)}" class="${shuffle ? '' : 'muted'}" title="Shuffle">
+                <svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+              </button>
+              <button data-mp-prev="${esc(spotify)}" title="Vorige">
+                <svg viewBox="0 0 24 24"><path d="M19 20L9 12l10-8v16zM5 19V5h2v14H5z"/></svg>
+              </button>
+              <button class="play" data-mp-toggle="${esc(spotify)}" title="${playing ? 'Pauze' : 'Afspelen'}">
+                ${playing
+                  ? '<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>'
+                  : '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'}
+              </button>
+              <button data-mp-next="${esc(spotify)}" title="Volgende">
+                <svg viewBox="0 0 24 24"><path d="M5 4l10 8-10 8V4zm12 1h2v14h-2z"/></svg>
+              </button>
+              <button data-mp-mute="${esc(spotify)}" class="${muted ? '' : 'muted'}" title="Mute">
+                <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.06A4.5 4.5 0 0 0 16.5 12z"/></svg>
+              </button>
+            </div>
+
+            <div class="volume">
+              <span class="vol-label">Vol</span>
+              <input type="range" min="0" max="100" value="${volumePct}" data-mp-volume="${esc(spotify)}" />
+              <span class="vol-label">${volumePct}%</span>
+            </div>
+          </div>
+        </div>
+
+        ${others.length ? `
+          <div class="subsection-title">Andere speakers</div>
+          <div class="speaker-list">
+            ${others.map(eid => {
+              const s = c.state(eid);
+              const playing = s === 'playing';
+              const name = c.attr(eid, 'friendly_name') || eid.replace('media_player.', '');
+              const t = c.attr(eid, 'media_title');
+              return `
+                <div class="card tile ${playing ? 'on' : ''}" data-mp-toggle="${esc(eid)}">
+                  <div class="icon-circle">♫</div>
+                  <div class="info">
+                    <div class="name">${esc(name)}</div>
+                    <div class="state">${esc(t || (s === 'off' ? 'Uit' : s === 'idle' ? 'Stand-by' : s))}</div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // VIEW: Lampen
+  // ──────────────────────────────────────────────────────────────────
+  renderLampen(c) {
+    const switches = ['switch.woonkamerlamp', 'switch.overkappinglamp', 'switch.opritlamp', 'switch.spotjes_overkapping'];
+    return `
+      <div class="view active">
+        <div class="hero">
+          <h1>Verlichting & schema's</h1>
+          <p>Schakel handmatig of laat ze op tijd draaien.</p>
+        </div>
+
+        <div class="subsection-title">Lampen</div>
+        <div class="grid">
+          ${switches.map(eid => this._lampTile(c, eid)).join('')}
+        </div>
+
+        <div class="subsection-title">Woonkamer schema</div>
+        <div class="card timer">
+          ${this._timerRow(c, 'input_datetime.woonkamerlamp_on_time', 'Aan om')}
+          ${this._timerRow(c, 'input_datetime.woonkamerlamp_off_time', 'Uit om')}
+        </div>
+
+        <div class="subsection-title">Buitenlampen schema</div>
+        <div class="card timer">
+          ${this._timerRow(c, 'input_datetime.buitenlampen_on_time', 'Aan om')}
+          ${this._timerRow(c, 'input_datetime.buitenlampen_off_time', 'Uit om')}
+        </div>
+      </div>
+    `;
+  }
+
+  _timerRow(c, eid, label) {
+    const t = c.state(eid) || '00:00:00';
+    // Forceer HH:MM-shape; voorkom dat een gecompromitteerde input_datetime
+    // arbitraire content terugkrijgt naar HTML.
+    const safeHhmm = /^\d{2}:\d{2}/.test(t) ? t.substring(0, 5) : '00:00';
+    return `
+      <div class="row">
+        <span class="name">${esc(label)}</span>
+        <input type="time" value="${safeHhmm}" data-time="${esc(eid)}" />
+      </div>
+    `;
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // VIEW: Afval
+  // ──────────────────────────────────────────────────────────────────
+  renderAfval(c) {
+    const items = [
+      { eid: 'sensor.pmd', label: 'PMD', desc: 'Plastic, metaal & drinkpakken' },
+      { eid: 'sensor.restafval', label: 'Restafval', desc: 'Niet recyclebaar' },
+      { eid: 'sensor.papier', label: 'Papier', desc: 'Karton & papier' },
+    ];
+    const tomorrowItems = items.filter(i => c.state(i.eid) === 'Morgen');
+
+    return `
+      <div class="view active">
+        <div class="hero">
+          <h1>Afvalkalender</h1>
+          <p>Volgende ophaaldagen volgens de gemeentekalender.</p>
+        </div>
+
+        ${tomorrowItems.length ? `
+          <div class="alert">
+            <h2>✱ Morgen buitenzetten</h2>
+            <p>${tomorrowItems.map(i => i.label).join(' · ')}</p>
+          </div>
+        ` : ''}
+
+        <div class="grid grid-3">
+          ${items.map(i => `
+            <div class="card stat">
+              <div class="label">${i.label}</div>
+              <div><span class="figure small">${esc(c.state(i.eid)) || '—'}</span></div>
+              <div class="delta">${i.desc}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // VIEW: Weer
+  // ──────────────────────────────────────────────────────────────────
+  renderWeer(c) {
+    const forecast = c.attr('weather.forecast_home', 'forecast') || [];
+    const days = forecast.slice(0, 5).map(f => {
+      const d = new Date(f.datetime);
+      const dow = ['Zon','Maa','Din','Woe','Don','Vrij','Zat'][d.getDay()];
+      return `
+        <div class="day">
+          <div class="dow">${dow}</div>
+          <div class="ico">${weatherIcon(f.condition)}</div>
+          <div class="hi">${Math.round(f.temperature)}°</div>
+          <div class="lo">${Math.round(f.templow || f.temperature - 5)}°</div>
+        </div>
+      `;
+    }).join('');
+
+    const target = c.attr('climate.woonkamer', 'temperature') || 22;
+    const current = c.attr('climate.woonkamer', 'current_temperature') || 21;
+    const ratio = Math.min(1, Math.max(0, (current - 10) / 20));
+
+    // Extra weersgegevens uit weather.forecast_home attributen
+    const humidity = c.attr('weather.forecast_home', 'humidity');
+    const windSpeed = c.attr('weather.forecast_home', 'wind_speed');
+    const windBearing = c.attr('weather.forecast_home', 'wind_bearing');
+    const pressure = c.attr('weather.forecast_home', 'pressure');
+    const visibility = c.attr('weather.forecast_home', 'visibility');
+
+    // Zon op / onder uit sun.sun
+    const sunrise = c.attr('sun.sun', 'next_rising');
+    const sunset = c.attr('sun.sun', 'next_setting');
+
+    // Eerstvolgende neerslag-kans uit forecast (eerste entry met precipitation_probability)
+    const nextPrecip = forecast.find(f => f.precipitation_probability != null);
+
+    return `
+      <div class="view active">
+        <div class="hero">
+          <h1>Weer & klimaat</h1>
+          <p>Het is nu <span class="accent">${formatNumber(c.attr('weather.forecast_home', 'temperature'), 0)}°C</span> · ${esc(weatherLabel(c.state('weather.forecast_home'))) || '—'}. Binnen op ${formatNumber(current, 0)}°C.</p>
+        </div>
+
+        <div class="subsection-title">Buiten nu</div>
+        <div class="grid grid-4">
+          <div class="card stat">
+            <div class="label">Vochtigheid</div>
+            <div><span class="figure">${formatNumber(humidity, 0)}</span><span class="unit">%</span></div>
+            <div class="delta">Relatieve luchtvochtigheid</div>
+          </div>
+          <div class="card stat">
+            <div class="label">Wind</div>
+            <div><span class="figure">${formatNumber(windSpeed, 0)}</span><span class="unit">km/u</span></div>
+            <div class="delta">${compassDir(windBearing) || '—'}${windBearing != null && !isNaN(windBearing) ? ' · ' + Math.round(windBearing) + '°' : ''}</div>
+          </div>
+          <div class="card stat">
+            <div class="label">Luchtdruk</div>
+            <div><span class="figure">${formatNumber(pressure, 0)}</span><span class="unit">hPa</span></div>
+            <div class="delta">${pressure ? (pressure >= 1013 ? 'Hoge druk' : 'Lage druk') : '—'}</div>
+          </div>
+          <div class="card stat">
+            <div class="label">Zicht</div>
+            <div><span class="figure">${formatNumber(visibility, 0)}</span><span class="unit">km</span></div>
+            <div class="delta">${visibility ? (visibility >= 10 ? 'Helder' : visibility >= 4 ? 'Matig' : 'Beperkt') : '—'}</div>
+          </div>
+        </div>
+
+        ${(sunrise || sunset || nextPrecip) ? `
+          <div class="subsection-title">Zon &amp; neerslag</div>
+          <div class="grid grid-3">
+            <div class="card stat">
+              <div class="label">Zon op</div>
+              <div><span class="figure small">${esc(timeOfDay(sunrise))}</span></div>
+              <div class="delta">Vandaag of morgen</div>
+            </div>
+            <div class="card stat">
+              <div class="label">Zon onder</div>
+              <div><span class="figure small">${esc(timeOfDay(sunset))}</span></div>
+              <div class="delta">Vandaag of morgen</div>
+            </div>
+            <div class="card stat">
+              <div class="label">Neerslag-kans</div>
+              <div><span class="figure">${nextPrecip ? formatNumber(nextPrecip.precipitation_probability, 0) : '—'}</span><span class="unit">%</span></div>
+              <div class="delta">Verwacht vandaag</div>
+            </div>
+          </div>
+        ` : ''}
+
+        <div class="subsection-title">Thermostaat</div>
+        <div class="card thermostat">
+          <div class="ring" style="background: conic-gradient(var(--claude-primary) 0% ${ratio * 100}%, var(--claude-surface-3) ${ratio * 100}% 100%);">
+            <div class="temp">${formatNumber(current, 0)}°</div>
+          </div>
+          <div style="font-family: var(--serif); font-size: 16px;">Woonkamer</div>
+          <div style="color: var(--claude-muted); font-size: 12px; margin-top: 4px;">Doel ${formatNumber(target, 0)}° · ${esc(c.state('climate.woonkamer')) || '—'}</div>
+        </div>
+
+        ${days ? `
+          <div class="subsection-title">5-daagse</div>
+          <div class="card">
+            <div class="forecast">${days}</div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // VIEW: Benzine
+  // ──────────────────────────────────────────────────────────────────
+  renderBenzine(c) {
+    return `
+      <div class="view active">
+        <div class="hero">
+          <h1>Brandstof</h1>
+          <p>Euro 95 (E10) bij <span class="accent">DE</span> en <span class="accent">BE</span> grenstankstations.</p>
+        </div>
+
+        <h2 class="section-title">⚐ Duitsland</h2>
+        <div class="grid grid-2">
+          <div class="card stat">
+            <div class="label">OIL · Steyler 157</div>
+            <div><span class="figure">${formatNumber(c.state('sensor.oil_steyler_strasse_157_euro_95_loodvrij_e10'), 3)}</span><span class="unit">€/L</span></div>
+            <div class="delta">Euro 95 · E10</div>
+          </div>
+          <div class="card stat">
+            <div class="label">Shell · Steyler 179</div>
+            <div><span class="figure">${formatNumber(c.state('sensor.shell_steyler_str_179_euro_95_loodvrij_e10'), 3)}</span><span class="unit">€/L</span></div>
+            <div class="delta">Euro 95 · E10</div>
+          </div>
+        </div>
+
+        <h2 class="section-title">⚑ België</h2>
+        <div class="grid grid-3">
+          <div class="card stat">
+            <div class="label">Postcode 3640</div>
+            <div><span class="figure">${formatNumber(c.state('sensor.carbu_com_super95_3640_price'), 3)}</span><span class="unit">€/L</span></div>
+            <div class="delta">Goedkoopste in postcode</div>
+          </div>
+          <div class="card stat">
+            <div class="label">5 km</div>
+            <div><span class="figure">${formatNumber(c.state('sensor.carbu_com_super95_3640_5km'), 3)}</span><span class="unit">€/L</span></div>
+            <div class="delta">Beste in 5 km</div>
+          </div>
+          <div class="card stat">
+            <div class="label">10 km</div>
+            <div><span class="figure">${formatNumber(c.state('sensor.carbu_com_super95_3640_10km'), 3)}</span><span class="unit">€/L</span></div>
+            <div class="delta">Beste in 10 km</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+const app = new App();
+window.app = app;
+</script>
+</body>
+</html>
