@@ -347,6 +347,129 @@
     }
     /* Accent: warm amber voor tekstuele nadruk in de hero-subtitel. */
     .accent { color: var(--peach); }
+    .hero .mood {
+      color: var(--cream-dim);
+      font-size: 15px;
+      font-style: italic;
+      margin: 0 0 6px 0;
+    }
+    .hero .hero-sub { color: var(--muted); font-size: 13px; margin: 0; }
+
+    /* ── Kaarsvlammetje naast de begroeting ──────────────────────
+       Klein gloeiend vlammetje dat zachtjes flikkert. */
+    .flame {
+      display: inline-block;
+      width: 16px; height: 22px;
+      position: relative;
+      vertical-align: baseline;
+      margin-left: 6px;
+    }
+    .flame i {
+      position: absolute;
+      left: 50%; bottom: 0;
+      width: 13px; height: 18px;
+      transform: translateX(-50%);
+      background: radial-gradient(circle at 50% 75%, #FFE7A8 0%, var(--amber) 38%, var(--terra) 72%, rgba(201,102,62,0) 100%);
+      border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%;
+      box-shadow: 0 0 14px var(--glow-amber), 0 0 28px rgba(224,164,88,0.35);
+      transform-origin: 50% 100%;
+      animation: flicker 2.4s ease-in-out infinite;
+    }
+    @keyframes flicker {
+      0%,100% { transform: translateX(-50%) scaleY(1)    scaleX(1)    rotate(-1deg); opacity: 0.95; }
+      25%     { transform: translateX(-52%) scaleY(1.08) scaleX(0.96) rotate(1.5deg); opacity: 1; }
+      50%     { transform: translateX(-48%) scaleY(0.94) scaleX(1.04) rotate(-1.5deg); opacity: 0.9; }
+      75%     { transform: translateX(-51%) scaleY(1.05) scaleX(0.98) rotate(1deg); opacity: 1; }
+    }
+    @media (prefers-reduced-motion: reduce) { .flame i { animation: none; } }
+
+    /* ── Sfeer-kaart ─────────────────────────────────────────────
+       Drie warme statussen naast elkaar: binnen-temp, zon, media/lampen. */
+    .sfeer {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 16px 10px;
+    }
+    .sfeer-item {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+      padding: 4px 8px;
+    }
+    .sfeer-ico {
+      font-size: 26px;
+      filter: drop-shadow(0 0 10px var(--glow-amber));
+      flex-shrink: 0;
+    }
+    .sfeer-txt { min-width: 0; }
+    .sfeer-big {
+      font-family: var(--serif);
+      font-size: 24px;
+      line-height: 1.05;
+      color: var(--cream);
+      letter-spacing: -0.01em;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sfeer-big.now { font-size: 16px; }
+    .sfeer-unit { font-size: 13px; color: var(--muted); margin-left: 1px; }
+    .sfeer-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sfeer-sep { width: 1px; align-self: stretch; background: var(--border); margin: 4px 0; }
+    @media (max-width: 560px) {
+      .sfeer { flex-direction: column; align-items: stretch; gap: 0; padding: 6px 8px; }
+      .sfeer-item { padding: 12px 8px; }
+      .sfeer-sep { width: auto; height: 1px; margin: 0; }
+    }
+
+    /* ── Sfeer-sneltoetsen ───────────────────────────────────────
+       Eén-klik scenes om lampen aan/uit te zetten. */
+    .scene-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .scene {
+      appearance: none; -webkit-appearance: none;
+      border: 1px solid var(--border-hover);
+      background: rgba(46,38,32,0.6);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 14px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      color: var(--cream);
+      font-family: var(--sans);
+      transition: transform 150ms, box-shadow 200ms, border-color 200ms, background 200ms;
+    }
+    .scene:active { transform: scale(0.96); }
+    .scene.flash { box-shadow: 0 0 0 2px var(--amber), 0 0 26px var(--glow-amber); }
+    .scene-ico { font-size: 22px; line-height: 1; }
+    .scene-label { font-family: var(--serif); font-size: 14px; }
+    .scene-warm {
+      border-color: rgba(224,164,88,0.35);
+      background: linear-gradient(160deg, rgba(224,164,88,0.16), rgba(201,102,62,0.06));
+    }
+    .scene-warm:hover { box-shadow: 0 0 22px var(--glow-amber); border-color: rgba(224,164,88,0.5); }
+    .scene-all:hover { border-color: var(--border-hover); box-shadow: 0 0 16px rgba(224,164,88,0.10); }
+    .scene-off { color: var(--cream-dim); }
+    .scene-off:hover { border-color: var(--border-hover); }
 
     /* ── Section titles ──────────────────────────────────────── */
     /* Beide titels zijn nu Fraunces-serif (zelfde familie), alleen verschil
@@ -1283,6 +1406,43 @@ function personList(client) {
 function getDateLabel() {
   return new Date().toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
 }
+// Gezellige sfeer-zin onder de begroeting, op basis van tijd + zon-stand.
+// Gebruikt sun.sun (above_horizon / below_horizon) als die er is.
+function cozyMood(client) {
+  const h = new Date().getHours();
+  const dark = (client.state && client.state('sun.sun')) === 'below_horizon';
+  if (h < 6)  return 'De nacht is stil — slaap zacht.';
+  if (h < 12) return dark ? 'Nog even schemerig buiten — blijf lekker warm.' : 'Een nieuwe dag — geniet van het ochtendlicht.';
+  if (h < 18) return dark ? 'Grijze middag — tijd voor een kaarsje.' : 'Fijne middag thuis.';
+  if (h < 23) return dark ? 'De avond valt — tijd voor wat lamplicht.' : 'Een zachte avond gewenst.';
+  return 'Laat het rustig worden — welterusten straks.';
+}
+// Comfort-omschrijving voor de binnentemperatuur.
+function comfortLabel(t) {
+  const n = parseFloat(t);
+  if (isNaN(n)) return '';
+  if (n < 18)  return 'een tikje fris';
+  if (n < 20)  return 'aangenaam';
+  if (n <= 22) return 'behaaglijk';
+  if (n <= 24) return 'lekker warm';
+  return 'warm';
+}
+// Eerstvolgende media-player die speelt (voor de sfeer-strip). Gebruikt
+// entityIds zodat het werkt met zowel HAClient als ParentHassClient.
+function nowPlaying(client) {
+  const ids = (client.entityIds && client.entityIds('media_player.')) || [];
+  for (const eid of ids) {
+    if (client.state(eid) === 'playing') {
+      return {
+        eid,
+        title: client.attr(eid, 'media_title') || '',
+        artist: client.attr(eid, 'media_artist') || '',
+        where: client.attr(eid, 'friendly_name') || eid.replace('media_player.', ''),
+      };
+    }
+  }
+  return null;
+}
 function weatherIcon(cond) {
   const map = {
     'sunny': '☀', 'clear-night': '🌙', 'partlycloudy': '⛅', 'cloudy': '☁',
@@ -1500,6 +1660,14 @@ class App {
   // Voorkomt dat we tijdens scrollen 10x per seconde de hele DOM
   // herbouwen, wat de glitch veroorzaakte.
   scheduleRender() {
+    // Niet her-renderen terwijl een tijdkiezer actief is — een innerHTML-replace
+    // sluit anders de open native time-picker. Onthoud dat er een update wachtte
+    // en voer die uit zodra het veld de focus verliest (zie attachInteractions).
+    const active = document.activeElement;
+    if (active && active.type === 'time') {
+      this._renderPending = true;
+      return;
+    }
     if (this._renderScheduled) return;
     this._renderScheduled = true;
     requestAnimationFrame(() => {
@@ -1630,10 +1798,30 @@ class App {
         this.callService('script', btn.dataset.script.replace(/^script\./, ''), {});
       });
     });
+    // Sfeer-sneltoetsen: zet een groepje switches in één klik aan (data-on)
+    // of uit (data-off). Comma-gescheiden entity-ids.
+    this.root.querySelectorAll('[data-on],[data-off]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const on = (btn.dataset.on || '').split(',').filter(Boolean);
+        const off = (btn.dataset.off || '').split(',').filter(Boolean);
+        on.forEach(eid => this.callService(eid.split('.')[0], 'turn_on', { entity_id: eid }));
+        off.forEach(eid => this.callService(eid.split('.')[0], 'turn_off', { entity_id: eid }));
+        btn.classList.add('flash');
+        setTimeout(() => btn.classList.remove('flash'), 320);
+      });
+    });
     this.root.querySelectorAll('[data-time]').forEach(input => {
       input.addEventListener('change', () => {
         const eid = input.dataset.time;
         this.callService('input_datetime', 'set_datetime', { entity_id: eid, time: input.value });
+      });
+      // Als er tijdens het bewerken een render werd uitgesteld, voer die nu uit
+      // zodra het veld de focus verliest (picker is dan dicht).
+      input.addEventListener('blur', () => {
+        if (this._renderPending) {
+          this._renderPending = false;
+          this.scheduleRender();
+        }
       });
     });
 
@@ -1730,14 +1918,24 @@ class App {
   // ──────────────────────────────────────────────────────────────────
   renderStart(c) {
     const persons = personList(c);
-    const switches = ['switch.woonkamerlamp', 'switch.overkappinglamp', 'switch.opritlamp', 'switch.spotjes_overkapping'];
+    const switches = ['switch.woonkamerlamp', 'switch.tuinlampen', 'switch.opritlamp', 'switch.spotjes_overkapping'];
     const lampOn = switches.filter(e => c.isOn(e)).length;
+
+    // Sfeer-gegevens uit echte HA-entiteiten
+    const binnen = c.attr('climate.woonkamer', 'current_temperature');
+    const comfort = comfortLabel(binnen);
+    const sunset = c.attr('sun.sun', 'next_setting');
+    const sunrise = c.attr('sun.sun', 'next_rising');
+    const dark = c.state('sun.sun') === 'below_horizon';
+    const np = nowPlaying(c);
+    const allOff = lampOn === 0;
 
     return `
       <div class="view active">
         <div class="hero">
-          <h1>${getGreeting(firstName(c))}</h1>
-          <p>${getDateLabel()} · <span class="accent">${esc(weatherLabel(c.state('weather.forecast_home'))) || 'helder'}</span> · ${formatNumber(c.attr('weather.forecast_home', 'temperature'), 0)}°C</p>
+          <h1>${getGreeting(firstName(c))} <span class="flame" aria-hidden="true"><i></i></span></h1>
+          <p class="mood">${cozyMood(c)}</p>
+          <p class="hero-sub">${getDateLabel()} · <span class="accent">${esc(weatherLabel(c.state('weather.forecast_home'))) || 'helder'}</span> · ${formatNumber(c.attr('weather.forecast_home', 'temperature'), 0)}°C buiten</p>
         </div>
 
         ${persons.length ? `<div class="grid grid-3">
@@ -1749,6 +1947,36 @@ class App {
             </div>
           `).join('')}
         </div>` : ''}
+
+        <h2 class="section-title">Sfeer nu</h2>
+        <div class="card sfeer">
+          <div class="sfeer-item">
+            <div class="sfeer-ico">🛋️</div>
+            <div class="sfeer-txt">
+              <div class="sfeer-big">${formatNumber(binnen, 0)}<span class="sfeer-unit">°</span></div>
+              <div class="sfeer-sub">binnen${comfort ? ' · ' + comfort : ''}</div>
+            </div>
+          </div>
+          <div class="sfeer-sep"></div>
+          <div class="sfeer-item">
+            <div class="sfeer-ico">${dark ? '🌙' : '🌇'}</div>
+            <div class="sfeer-txt">
+              <div class="sfeer-big">${esc(timeOfDay(dark ? sunrise : sunset))}</div>
+              <div class="sfeer-sub">${dark ? 'zon op' : 'zon onder'}</div>
+            </div>
+          </div>
+          <div class="sfeer-sep"></div>
+          <div class="sfeer-item">
+            <div class="sfeer-ico">${np ? '🎵' : '🕯️'}</div>
+            <div class="sfeer-txt">
+              ${np
+                ? `<div class="sfeer-big now">${esc(np.title || 'Speelt')}</div>
+                   <div class="sfeer-sub">${esc(np.artist ? np.artist + ' · ' : '')}${esc(np.where)}</div>`
+                : `<div class="sfeer-big">${lampOn}<span class="sfeer-unit">/${switches.length}</span></div>
+                   <div class="sfeer-sub">lampjes aan</div>`}
+            </div>
+          </div>
+        </div>
 
         <h2 class="section-title">Vandaag</h2>
         <div class="grid grid-4">
@@ -1775,6 +2003,17 @@ class App {
         </div>
 
         <h2 class="section-title">Verlichting</h2>
+        <div class="scene-row">
+          <button class="scene scene-warm" data-on="switch.woonkamerlamp,switch.spotjes_overkapping">
+            <span class="scene-ico">🔥</span><span class="scene-label">Avondlicht</span>
+          </button>
+          <button class="scene scene-all" data-on="${switches.join(',')}">
+            <span class="scene-ico">💡</span><span class="scene-label">Alles aan</span>
+          </button>
+          <button class="scene scene-off" data-off="${switches.join(',')}">
+            <span class="scene-ico">🌙</span><span class="scene-label">Alles uit</span>
+          </button>
+        </div>
         <div class="grid grid-4">
           ${switches.map(eid => this._lampTile(c, eid)).join('')}
         </div>
@@ -2029,7 +2268,7 @@ class App {
   // VIEW: Lampen
   // ──────────────────────────────────────────────────────────────────
   renderLampen(c) {
-    const switches = ['switch.woonkamerlamp', 'switch.overkappinglamp', 'switch.opritlamp', 'switch.spotjes_overkapping'];
+    const switches = ['switch.woonkamerlamp', 'switch.tuinlampen', 'switch.opritlamp', 'switch.spotjes_overkapping'];
     return `
       <div class="view active">
         <div class="hero">
