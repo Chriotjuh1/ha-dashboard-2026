@@ -128,7 +128,7 @@
       position: absolute;
       border-radius: 50%;
       filter: blur(58px);
-      opacity: 0.5;
+      opacity: 0.22;
       mix-blend-mode: screen;          /* licht telt op tegen de espresso */
       will-change: transform, opacity;
     }
@@ -175,28 +175,28 @@
       animation: drift6 28s ease-in-out infinite alternate;
     }
     @keyframes drift1 {
-      from { transform: translate(0, 0) scale(1); opacity: 0.45; }
-      to   { transform: translate(-40px, 50px) scale(1.12); opacity: 0.62; }
+      from { transform: translate(0, 0) scale(1); opacity: 0.18; }
+      to   { transform: translate(-40px, 50px) scale(1.12); opacity: 0.28; }
     }
     @keyframes drift2 {
-      from { transform: translate(0, 0) scale(1); opacity: 0.4; }
-      to   { transform: translate(60px, 40px) scale(1.1); opacity: 0.55; }
+      from { transform: translate(0, 0) scale(1); opacity: 0.16; }
+      to   { transform: translate(60px, 40px) scale(1.1); opacity: 0.24; }
     }
     @keyframes drift3 {
-      from { transform: translate(0, 0) scale(0.95); opacity: 0.35; }
-      to   { transform: translate(-30px, -40px) scale(1.1); opacity: 0.5; }
+      from { transform: translate(0, 0) scale(0.95); opacity: 0.13; }
+      to   { transform: translate(-30px, -40px) scale(1.1); opacity: 0.2; }
     }
     @keyframes drift4 {
-      from { transform: translate(0, 0) scale(1); opacity: 0.4; }
-      to   { transform: translate(50px, -50px) scale(1.08); opacity: 0.55; }
+      from { transform: translate(0, 0) scale(1); opacity: 0.16; }
+      to   { transform: translate(50px, -50px) scale(1.08); opacity: 0.24; }
     }
     @keyframes drift5 {
-      from { transform: translate(0, 0) scale(0.9); opacity: 0.3; }
-      to   { transform: translate(40px, -30px) scale(1.15); opacity: 0.5; }
+      from { transform: translate(0, 0) scale(0.9); opacity: 0.12; }
+      to   { transform: translate(40px, -30px) scale(1.15); opacity: 0.2; }
     }
     @keyframes drift6 {
-      from { transform: translate(0, 0) scale(1); opacity: 0.35; }
-      to   { transform: translate(-50px, -30px) scale(1.1); opacity: 0.5; }
+      from { transform: translate(0, 0) scale(1); opacity: 0.14; }
+      to   { transform: translate(-50px, -30px) scale(1.1); opacity: 0.2; }
     }
     /* Respecteer 'reduce motion': bollen blijven staan, gloed blijft. */
     @media (prefers-reduced-motion: reduce) {
