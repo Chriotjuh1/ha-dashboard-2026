@@ -19,7 +19,7 @@ views:
     panel: true
     cards:
       - type: iframe
-        url: /local/dashboard-warm/index.html?v=3
+        url: /local/dashboard-warm/index.html?v=4
         aspect_ratio: '0'
         card_mod:
           style: |
