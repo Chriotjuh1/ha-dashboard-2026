@@ -128,20 +128,20 @@
        langzaam twinkelt. Positie/kleur/grootte/timing via inline --vars. */
     .bulb {
       position: absolute;
-      width: var(--s, 7px);
-      height: var(--s, 7px);
+      width: var(--s, 22px);
+      height: var(--s, 22px);
       border-radius: 50%;
-      background: radial-gradient(circle, var(--c, #E0A458) 0%, rgba(0,0,0,0) 72%);
-      box-shadow: 0 0 7px 1px var(--c, #E0A458);
-      filter: blur(0.5px);
+      background: radial-gradient(circle, var(--c, #C9663E) 0%, rgba(0,0,0,0) 70%);
+      box-shadow: 0 0 26px 8px var(--c, #C9663E);
+      filter: blur(7px);
       mix-blend-mode: screen;
-      opacity: 0.6;
+      opacity: 0.55;
       will-change: opacity, transform;
       animation: twinkle var(--d, 5s) ease-in-out infinite;
     }
     @keyframes twinkle {
-      0%, 100% { opacity: 0.28; transform: scale(0.8); }
-      50%      { opacity: 0.8;  transform: scale(1.12); }
+      0%, 100% { opacity: 0.3; transform: scale(0.82); }
+      50%      { opacity: 0.7; transform: scale(1.15); }
     }
     /* Respecteer 'reduce motion': lampjes blijven staan, blijven gloeien. */
     @media (prefers-reduced-motion: reduce) {
@@ -990,26 +990,26 @@
      als een sliert sfeerlampjes achter de content. Sibling van #root zodat
      ze de innerHTML-re-renders overleven. aria-hidden want puur decoratief. -->
 <div class="ambient" aria-hidden="true">
-  <span class="bulb" style="left:7%;top:14%;--c:#E0A458;--s:8px;--d:4.2s;animation-delay:.0s"></span>
-  <span class="bulb" style="left:16%;top:34%;--c:#EBC07E;--s:6px;--d:5.1s;animation-delay:1.3s"></span>
-  <span class="bulb" style="left:23%;top:9%;--c:#C9663E;--s:7px;--d:4.6s;animation-delay:.7s"></span>
-  <span class="bulb" style="left:31%;top:52%;--c:#E8B894;--s:5px;--d:5.8s;animation-delay:2.1s"></span>
-  <span class="bulb" style="left:39%;top:22%;--c:#E0A458;--s:9px;--d:4.0s;animation-delay:.4s"></span>
-  <span class="bulb" style="left:47%;top:6%;--c:#EBC07E;--s:6px;--d:5.4s;animation-delay:1.8s"></span>
-  <span class="bulb" style="left:54%;top:44%;--c:#D9885C;--s:7px;--d:4.8s;animation-delay:.9s"></span>
-  <span class="bulb" style="left:62%;top:16%;--c:#E0A458;--s:8px;--d:5.2s;animation-delay:2.4s"></span>
-  <span class="bulb" style="left:69%;top:38%;--c:#E8B894;--s:5px;--d:4.4s;animation-delay:.2s"></span>
-  <span class="bulb" style="left:76%;top:10%;--c:#C9663E;--s:7px;--d:5.6s;animation-delay:1.1s"></span>
-  <span class="bulb" style="left:83%;top:30%;--c:#EBC07E;--s:6px;--d:4.9s;animation-delay:2.7s"></span>
-  <span class="bulb" style="left:90%;top:18%;--c:#E0A458;--s:8px;--d:4.3s;animation-delay:.6s"></span>
-  <span class="bulb" style="left:12%;top:62%;--c:#E8B894;--s:6px;--d:5.5s;animation-delay:1.6s"></span>
-  <span class="bulb" style="left:28%;top:78%;--c:#E0A458;--s:7px;--d:4.7s;animation-delay:.3s"></span>
-  <span class="bulb" style="left:44%;top:70%;--c:#EBC07E;--s:5px;--d:5.3s;animation-delay:2.0s"></span>
-  <span class="bulb" style="left:58%;top:84%;--c:#D9885C;--s:7px;--d:4.5s;animation-delay:1.0s"></span>
-  <span class="bulb" style="left:72%;top:64%;--c:#E0A458;--s:6px;--d:5.7s;animation-delay:2.3s"></span>
-  <span class="bulb" style="left:86%;top:76%;--c:#E8B894;--s:8px;--d:4.1s;animation-delay:.5s"></span>
-  <span class="bulb" style="left:95%;top:50%;--c:#EBC07E;--s:6px;--d:5.0s;animation-delay:1.4s"></span>
-  <span class="bulb" style="left:4%;top:46%;--c:#E0A458;--s:7px;--d:4.6s;animation-delay:2.6s"></span>
+  <span class="bulb" style="left:7%;top:14%;--c:#C9663E;--s:26px;--d:6.2s;animation-delay:.0s"></span>
+  <span class="bulb" style="left:16%;top:34%;--c:#B85A30;--s:20px;--d:7.1s;animation-delay:1.3s"></span>
+  <span class="bulb" style="left:23%;top:9%;--c:#A84F32;--s:24px;--d:6.6s;animation-delay:.7s"></span>
+  <span class="bulb" style="left:31%;top:52%;--c:#CC6E33;--s:18px;--d:7.8s;animation-delay:2.1s"></span>
+  <span class="bulb" style="left:39%;top:22%;--c:#C9663E;--s:30px;--d:6.0s;animation-delay:.4s"></span>
+  <span class="bulb" style="left:47%;top:6%;--c:#B85A30;--s:22px;--d:7.4s;animation-delay:1.8s"></span>
+  <span class="bulb" style="left:54%;top:44%;--c:#A84F32;--s:24px;--d:6.8s;animation-delay:.9s"></span>
+  <span class="bulb" style="left:62%;top:16%;--c:#C9663E;--s:26px;--d:7.2s;animation-delay:2.4s"></span>
+  <span class="bulb" style="left:69%;top:38%;--c:#CC6E33;--s:18px;--d:6.4s;animation-delay:.2s"></span>
+  <span class="bulb" style="left:76%;top:10%;--c:#A84F32;--s:24px;--d:7.6s;animation-delay:1.1s"></span>
+  <span class="bulb" style="left:83%;top:30%;--c:#B85A30;--s:20px;--d:6.9s;animation-delay:2.7s"></span>
+  <span class="bulb" style="left:90%;top:18%;--c:#C9663E;--s:28px;--d:6.3s;animation-delay:.6s"></span>
+  <span class="bulb" style="left:12%;top:62%;--c:#CC6E33;--s:20px;--d:7.5s;animation-delay:1.6s"></span>
+  <span class="bulb" style="left:28%;top:78%;--c:#C9663E;--s:24px;--d:6.7s;animation-delay:.3s"></span>
+  <span class="bulb" style="left:44%;top:70%;--c:#B85A30;--s:18px;--d:7.3s;animation-delay:2.0s"></span>
+  <span class="bulb" style="left:58%;top:84%;--c:#A84F32;--s:24px;--d:6.5s;animation-delay:1.0s"></span>
+  <span class="bulb" style="left:72%;top:64%;--c:#C9663E;--s:22px;--d:7.7s;animation-delay:2.3s"></span>
+  <span class="bulb" style="left:86%;top:76%;--c:#CC6E33;--s:28px;--d:6.1s;animation-delay:.5s"></span>
+  <span class="bulb" style="left:95%;top:50%;--c:#B85A30;--s:20px;--d:7.0s;animation-delay:1.4s"></span>
+  <span class="bulb" style="left:4%;top:46%;--c:#C9663E;--s:24px;--d:6.6s;animation-delay:2.6s"></span>
 </div>
 
 <div id="root">
