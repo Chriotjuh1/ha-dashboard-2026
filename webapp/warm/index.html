@@ -11,7 +11,7 @@
   <title>Haard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..600&family=Inter:wght@300..600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <!-- Leaflet 1.9.4 with SRI integrity hashes (supply-chain protection) -->
   <link rel="stylesheet"
         href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -78,8 +78,11 @@
       --claude-danger: var(--danger);
       --claude-info: var(--info);
 
-      --serif: 'Fraunces', Georgia, serif;
-      --sans: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      /* Eén modern, clean lettertype voor alles (Outfit). De var-naam
+         --serif blijft bestaan zodat alle bestaande 'font-family: var(--serif)'
+         regels gewoon Outfit pakken; koppen krijgen een zwaarder gewicht. */
+      --serif: 'Outfit', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      --sans: 'Outfit', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -355,6 +358,25 @@
     }
     .hero .hero-sub { color: var(--muted); font-size: 13px; margin: 0; }
 
+    /* ── Kop-gewichten voor Outfit ───────────────────────────────
+       Outfit op 400 oogt te licht voor grote koppen; semibold geeft
+       de stevige, moderne uitstraling. Overschrijft de font-weight:400
+       die nog op diverse heading-regels staat. */
+    .hero h1,
+    .section-title,
+    .login h1,
+    .alert h2,
+    .stat .figure,
+    .gauge .gauge-value,
+    .thermostat .temp,
+    .media-info .title { font-weight: 600 !important; letter-spacing: -0.02em; }
+    .subsection-title,
+    .person .name,
+    .sfeer-big,
+    .scene-label,
+    .pill .pill-label,
+    .forecast .day .hi { font-weight: 500 !important; }
+
     /* ── Kaarsvlammetje naast de begroeting ──────────────────────
        Klein gloeiend vlammetje dat zachtjes flikkert. */
     .flame {
@@ -472,7 +494,7 @@
     .scene-off:hover { border-color: var(--border-hover); }
 
     /* ── Section titles ──────────────────────────────────────── */
-    /* Beide titels zijn nu Fraunces-serif (zelfde familie), alleen verschil
+    /* Beide titels zijn nu hetzelfde lettertype (Outfit), alleen verschil
        in grootte voor hierarchy. Consistent vertical rhythm. */
     .section-title {
       font-family: var(--serif);
@@ -1904,7 +1926,7 @@ class App {
 
     const bounds = [];
     points.forEach(p => {
-      const html = `<div style="width:34px; height:34px; border-radius:50%; background: linear-gradient(135deg, ${p.color}, rgba(0,0,0,0.4)); display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-size:14px; color:#F0E6D8; box-shadow:0 4px 14px rgba(0,0,0,0.5), 0 0 10px rgba(224,164,88,0.25); border: 2px solid #1E1712;">${p.initials}</div>`;
+      const html = `<div style="width:34px; height:34px; border-radius:50%; background: linear-gradient(135deg, ${p.color}, rgba(0,0,0,0.4)); display:flex; align-items:center; justify-content:center; font-family:'Outfit',sans-serif; font-weight:600; font-size:14px; color:#F0E6D8; box-shadow:0 4px 14px rgba(0,0,0,0.5), 0 0 10px rgba(224,164,88,0.25); border: 2px solid #1E1712;">${p.initials}</div>`;
       const icon = L.divIcon({ html, className: 'claude-map-pin', iconSize: [34, 34], iconAnchor: [17, 17] });
       L.marker([p.lat, p.lon], { icon }).addTo(map).bindPopup(`<b>${esc(p.friendly)}</b>`);
       bounds.push([p.lat, p.lon]);
