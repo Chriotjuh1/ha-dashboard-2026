@@ -8,7 +8,7 @@ frontend:
   extra_module_url:
     # ?v= forceert dat de browser/Companion-app de nieuwe versie ophaalt
     # i.p.v. de gecachte. Bump het nummer wanneer je claude-fonts.js update.
-    - /local/claude-fonts.js?v=15
+    - /local/claude-fonts.js?v=16
 
 notify:
   - name: gezin_joosten

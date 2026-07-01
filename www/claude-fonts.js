@@ -49,6 +49,8 @@
   const SURFACE_3 = '#46443F';
   const CREAM = '#F0EEE6';
   const MUTED = '#A8A29E';
+  const MUTED_2 = '#7A7570';
+  const SUCCESS = '#7FB069';
   const BORDER_HOVER = 'rgba(240,238,230,0.18)';
 
   // ── Per-component CSS bundles ──────────────────────────────────────────────
@@ -619,8 +621,23 @@
     .icon,ha-svg-icon{color:${MUTED}!important}
   `;
 
+  // Assumed-state toggle (apparaten met assumed_state, o.a. Xiaomi/Tuya
+  // switches) tonen twee bliksem-knoppen (aan/uit). De theme-variabelen
+  // hiervoor worden soms na het laden door coral overschreven; door 'm hier
+  // in de shadow root te forceren (patcher draait als laatste) winnen we:
+  // aan = groen, uit = gedimd grijs.
+  const ENTITY_TOGGLE_CSS = `
+    :host {
+      --ha-icon-button-active-color: ${SUCCESS} !important;
+      --ha-icon-button-inactive-color: ${MUTED_2} !important;
+    }
+    ha-icon-button { color: ${MUTED_2} !important; }
+    ha-icon-button.state-active { color: ${SUCCESS} !important; }
+  `;
+
   // Tag → CSS bundle (voor de <style>-injectie in de shadow root)
   const STYLES = {
+    'ha-entity-toggle': ENTITY_TOGGLE_CSS,
     'ha-select': SELECT_CSS,
     'mwc-select': SELECT_CSS,
     'ha-md-select': SELECT_CSS,
