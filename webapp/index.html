@@ -617,6 +617,47 @@
       color: var(--claude-primary-soft);
     }
 
+    /* ── Ventilator-instellingen ─────────────────────────────── */
+    .fan-settings { padding: 8px 10px 10px; }
+    .settings-head {
+      font-family: var(--serif);
+      font-size: 15px;
+      color: var(--claude-cream-dim);
+      padding: 6px 6px 10px;
+    }
+    .set-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px;
+      padding: 12px 6px;
+      border-top: 1px solid var(--claude-border);
+    }
+    .set-label { font-size: 14px; flex-shrink: 0; }
+    .set-ctrl { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .set-chips { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+    /* Losse switch (buiten een tile) — eigen aan-staat */
+    .switch.on { background: var(--claude-primary-deep); }
+    .switch.on::after { left: 16px; background: var(--claude-primary-soft); }
+    /* Stepper voor number-entiteiten (timer etc.) */
+    .stepper { display: flex; align-items: center; gap: 10px; }
+    .stepper button {
+      appearance: none; -webkit-appearance: none;
+      width: 32px; height: 32px;
+      border-radius: 10px;
+      border: 1px solid var(--claude-border-hover);
+      background: var(--claude-surface-2);
+      color: var(--claude-cream);
+      font-size: 18px; line-height: 1;
+      cursor: pointer;
+      display: grid; place-items: center;
+      transition: background 160ms, transform 120ms;
+    }
+    .stepper button:hover { background: var(--claude-surface-3); }
+    .stepper button:active { transform: scale(0.92); }
+    .stepper-val {
+      min-width: 62px; text-align: center;
+      font-size: 14px; font-variant-numeric: tabular-nums;
+    }
+
     .empty-state {
       text-align: center;
       padding: 48px 16px;
@@ -1490,6 +1531,23 @@ class App {
     this.root.querySelectorAll('[data-fan-preset]').forEach(btn => {
       btn.addEventListener('click', () => this.callService('fan', 'set_preset_mode', { entity_id: btn.dataset.fanPreset, preset_mode: btn.dataset.presetMode }));
     });
+    // Number-stepper (o.a. ventilator-timer / delay-off)
+    this.root.querySelectorAll('[data-num]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const eid = btn.dataset.num;
+        const delta = parseFloat(btn.dataset.numDelta) || 0;
+        const cur = parseFloat(this.client.state(eid)) || 0;
+        let min = parseFloat(this.client.attr(eid, 'min')); if (isNaN(min)) min = -Infinity;
+        let max = parseFloat(this.client.attr(eid, 'max')); if (isNaN(max)) max = Infinity;
+        let v = Math.min(max, Math.max(min, cur + delta));
+        v = parseFloat(v.toFixed(2));
+        this.callService('number', 'set_value', { entity_id: eid, value: v });
+      });
+    });
+    // Select-opties (o.a. ventilator-stand / hoek / modus)
+    this.root.querySelectorAll('[data-select]').forEach(btn => {
+      btn.addEventListener('click', () => this.callService('select', 'select_option', { entity_id: btn.dataset.select, option: btn.dataset.option }));
+    });
 
     // Media player controls
     this.root.querySelectorAll('[data-mp-toggle]').forEach(btn => {
@@ -2056,7 +2114,7 @@ class App {
         ${(() => {
           const fans = c.entityIds('fan.');
           return fans.length
-            ? `<div class="subsection-title">Ventilator</div>${fans.map(eid => this._fanCard(c, eid)).join('')}`
+            ? `<div class="subsection-title">Ventilator</div>${fans.map(eid => this._fanCard(c, eid) + this._fanSettings(c, eid)).join('')}`
             : '';
         })()}
 
@@ -2105,6 +2163,63 @@ class App {
         ` : ''}
       </div>
     `;
+  }
+
+  // Instellingen-kaart voor de ventilator. Pikt automatisch alle entiteiten
+  // op die bij hetzelfde apparaat horen (Xiaomi Home maakt losse select/
+  // number/switch/light entiteiten voor stand, timer, buzzer, child lock, LED)
+  // op basis van gedeelde entity-id of friendly_name. Rendert per type de
+  // juiste bediening: select → keuze-chips, number → stepper, switch/light → toggle.
+  _fanSettings(c, fanEid) {
+    const base = fanEid.slice(fanEid.indexOf('.') + 1);         // "ventilator"
+    const fanName = (c.attr(fanEid, 'friendly_name') || '').trim();
+    const fanNameLc = fanName.toLowerCase();
+    // Alleen stand (select) en timer (number) tonen. Buzzer/child lock/LED
+    // (switch/light) laten we bewust weg — die horen niet in dit sfeer-dashboard.
+    const domains = ['select', 'number'];
+    const rel = [];
+    domains.forEach(d => {
+      c.entityIds(d + '.').forEach(id => {
+        const local = id.slice(d.length + 1);
+        const fn = (c.attr(id, 'friendly_name') || '').trim();
+        const byId = local === base || local.startsWith(base + '_');
+        const byName = fanNameLc.length > 3 && fn.toLowerCase().startsWith(fanNameLc + ' ');
+        if (byId || byName) rel.push({ id, d, fn });
+      });
+    });
+    if (!rel.length) return '';
+
+    const rows = rel.map(({ id, d, fn }) => {
+      let label = fn || id.slice(d.length + 1).replace(/_/g, ' ');
+      if (fanName && label.toLowerCase().startsWith(fanNameLc + ' ')) label = label.slice(fanName.length).trim();
+      label = label ? label.charAt(0).toUpperCase() + label.slice(1) : id;
+
+      let ctrl = '';
+      if (d === 'switch' || d === 'light') {
+        const on = c.state(id) === 'on';
+        ctrl = `<div class="switch ${on ? 'on' : ''}" data-toggle="${esc(id)}"></div>`;
+      } else if (d === 'number') {
+        const val = c.state(id);
+        const unit = c.attr(id, 'unit_of_measurement') || '';
+        const step = parseFloat(c.attr(id, 'step')) || 1;
+        const dec = Number.isInteger(step) ? 0 : 1;
+        ctrl = `
+          <div class="stepper">
+            <button data-num="${esc(id)}" data-num-delta="${-step}" aria-label="min">−</button>
+            <span class="stepper-val">${esc(formatNumber(val, dec))}${unit ? ' ' + esc(unit) : ''}</span>
+            <button data-num="${esc(id)}" data-num-delta="${step}" aria-label="plus">+</button>
+          </div>`;
+      } else if (d === 'select') {
+        const opts = c.attr(id, 'options') || [];
+        const cur = c.state(id);
+        ctrl = `<div class="set-chips">${opts.map(o =>
+          `<button class="chip ${o === cur ? 'active' : ''}" data-select="${esc(id)}" data-option="${esc(o)}">${esc(o)}</button>`
+        ).join('')}</div>`;
+      }
+      return `<div class="set-row"><div class="set-label">${esc(label)}</div><div class="set-ctrl">${ctrl}</div></div>`;
+    }).join('');
+
+    return `<div class="card fan-settings"><div class="settings-head">Instellingen</div>${rows}</div>`;
   }
 
   // ──────────────────────────────────────────────────────────────────
