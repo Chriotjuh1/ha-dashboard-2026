@@ -95,8 +95,8 @@ claude_dark:
   # Assumed-state toggle: apparaten met assumed_state (o.a. Xiaomi-switches)
   # tonen twee bliksem-knoppen (aan / uit) i.p.v. één schuif. Zonder deze
   # override kleuren ze allebei koraal en zie je niet welke stand actief is.
-  # Actieve knop koraal, inactieve duidelijk gedimd.
-  ha-icon-button-active-color: "var(--claude-primary)"
+  # Aan = groen, uit = gedimd grijs → in één oogopslag duidelijk.
+  ha-icon-button-active-color: "var(--claude-success)"
   ha-icon-button-inactive-color: "var(--claude-muted-2)"
 
   mdc-theme-primary: "var(--claude-primary)"
