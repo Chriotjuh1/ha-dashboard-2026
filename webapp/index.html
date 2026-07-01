@@ -1536,10 +1536,13 @@ class App {
       btn.addEventListener('click', () => {
         const eid = btn.dataset.num;
         const delta = parseFloat(btn.dataset.numDelta) || 0;
-        const cur = parseFloat(this.client.state(eid)) || 0;
-        let min = parseFloat(this.client.attr(eid, 'min')); if (isNaN(min)) min = -Infinity;
+        const raw = parseFloat(this.client.state(eid));           // kan NaN zijn (— / unknown)
+        let min = parseFloat(this.client.attr(eid, 'min')); if (isNaN(min)) min = 0;
         let max = parseFloat(this.client.attr(eid, 'max')); if (isNaN(max)) max = Infinity;
-        let v = Math.min(max, Math.max(min, cur + delta));
+        const step = Math.abs(parseFloat(this.client.attr(eid, 'step')) || Math.abs(delta) || 1);
+        const cur = isNaN(raw) ? min : raw;                       // geen waarde → start bij min
+        let v = Math.round((cur + delta) / step) * step;          // netjes op de stap snappen
+        v = Math.min(max, Math.max(min, v));
         v = parseFloat(v.toFixed(2));
         this.callService('number', 'set_value', { entity_id: eid, value: v });
       });
