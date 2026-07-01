@@ -923,6 +923,8 @@ class HAClient {
   entityIds(prefix) {
     return Object.keys(this.states).filter(id => !prefix || id.startsWith(prefix));
   }
+  // Geen toegang tot de entity/device-registry via de websocket-only client.
+  deviceEntities() { return null; }
 
   on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
   notify() { for (const fn of this.listeners) fn(); }
@@ -994,6 +996,16 @@ class ParentHassClient {
   entityIds(prefix) {
     const s = this.hass && this.hass.states; if (!s) return [];
     return Object.keys(s).filter(id => !prefix || id.startsWith(prefix));
+  }
+  // Entity_ids die op hetzelfde HA-apparaat zitten als `eid` (via de
+  // frontend entity-registry). Zo koppelen we timer/stand aan de fan, ook
+  // als hun entity-namen anders zijn (Xiaomi Home: ..._s_2_fan vs ..._delay_time_p_9_2).
+  deviceEntities(eid) {
+    const h = this.hass;
+    if (!h || !h.entities) return null;
+    const ent = h.entities[eid];
+    if (!ent || !ent.device_id) return null;
+    return Object.keys(h.entities).filter(id => h.entities[id].device_id === ent.device_id);
   }
 
   on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
@@ -2220,9 +2232,13 @@ class App {
       'natural wind': 'Natuurlijke wind',
       'straight wind': 'Rechte wind',
       'sleep mode': 'Slaapstand',
+      'sleeping mode': 'Slaapstand',
+      'direct mode': 'Direct',
+      'delay time': 'Timer (uit over)',
     };
     if (exact[t]) return exact[t];
     const partial = [
+      ['delay', 'Timer (uit over)'],
       ['countdown', 'Timer (uit over)'],
       ['angle', 'Draaihoek'],
       ['oscillat', 'Oscilleren'],
@@ -2254,15 +2270,27 @@ class App {
     // (switch/light) laten we bewust weg — die horen niet in dit sfeer-dashboard.
     const domains = ['select', 'number'];
     const rel = [];
-    domains.forEach(d => {
-      c.entityIds(d + '.').forEach(id => {
-        const local = id.slice(d.length + 1);
-        const fn = (c.attr(id, 'friendly_name') || '').trim();
-        const byId = local === base || local.startsWith(base + '_');
-        const byName = fanNameLc.length > 3 && fn.toLowerCase().startsWith(fanNameLc + ' ');
-        if (byId || byName) rel.push({ id, d, fn });
+    // 1e keuze: entiteiten op hetzelfde HA-apparaat (betrouwbaarst, werkt ook
+    // als de namen niet delen — bv. Xiaomi Home ..._s_2_fan vs ..._delay_time_p_9_2).
+    const devIds = c.deviceEntities && c.deviceEntities(fanEid);
+    if (devIds && devIds.length) {
+      devIds.forEach(id => {
+        const d = id.split('.')[0];
+        if (!domains.includes(d)) return;
+        rel.push({ id, d, fn: (c.attr(id, 'friendly_name') || '').trim() });
       });
-    });
+    } else {
+      // Fallback: koppel op gedeelde entity-id / friendly_name-prefix.
+      domains.forEach(d => {
+        c.entityIds(d + '.').forEach(id => {
+          const local = id.slice(d.length + 1);
+          const fn = (c.attr(id, 'friendly_name') || '').trim();
+          const byId = local === base || local.startsWith(base + '_');
+          const byName = fanNameLc.length > 3 && fn.toLowerCase().startsWith(fanNameLc + ' ');
+          if (byId || byName) rel.push({ id, d, fn });
+        });
+      });
+    }
     if (!rel.length) return '';
 
     const rows = rel.map(({ id, d, fn }) => {
