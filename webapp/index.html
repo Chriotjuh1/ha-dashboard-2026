@@ -659,6 +659,25 @@
       min-width: 62px; text-align: center;
       font-size: 14px; font-variant-numeric: tabular-nums;
     }
+    .stepper-input {
+      width: 56px;
+      text-align: center;
+      background: var(--claude-surface-2);
+      border: 1px solid var(--claude-border-hover);
+      border-radius: 8px;
+      padding: 6px 4px;
+      color: var(--claude-cream);
+      font-family: var(--sans);
+      font-size: 14px;
+      font-variant-numeric: tabular-nums;
+      outline: none;
+      color-scheme: dark;
+      -moz-appearance: textfield;
+    }
+    .stepper-input::-webkit-outer-spin-button,
+    .stepper-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .stepper-input:focus { border-color: var(--claude-primary-soft); box-shadow: 0 0 0 3px rgba(217,119,87,0.14); }
+    .stepper-unit { font-size: 12px; color: var(--claude-muted); min-width: 26px; }
 
     .empty-state {
       text-align: center;
@@ -1376,7 +1395,7 @@ class App {
     // sluit anders de open native time-picker. Onthoud dat er een update wachtte
     // en voer die uit zodra het veld de focus verliest (zie attachInteractions).
     const active = document.activeElement;
-    if (active && active.type === 'time') {
+    if (active && active.tagName === 'INPUT' && (active.type === 'time' || active.type === 'number')) {
       this._renderPending = true;
       return;
     }
@@ -1562,6 +1581,22 @@ class App {
         v = Math.min(max, Math.max(min, v));
         v = parseFloat(v.toFixed(2));
         this.callService('number', 'set_value', { entity_id: eid, value: v });
+      });
+    });
+    // Getypte number-waarde (o.a. timer-minuten direct invoeren)
+    this.root.querySelectorAll('[data-num-set]').forEach(input => {
+      input.addEventListener('change', () => {
+        const eid = input.dataset.numSet;
+        let v = parseFloat(input.value);
+        if (isNaN(v)) return;
+        let min = parseFloat(this.client.attr(eid, 'min')); if (isNaN(min)) min = 0;
+        let max = parseFloat(this.client.attr(eid, 'max')); if (isNaN(max)) max = Infinity;
+        v = Math.min(max, Math.max(min, v));
+        this.callService('number', 'set_value', { entity_id: eid, value: v });
+      });
+      // Uitgestelde render uitvoeren zodra het veld de focus verliest.
+      input.addEventListener('blur', () => {
+        if (this._renderPending) { this._renderPending = false; this.scheduleRender(); }
       });
     });
     // Select-opties (o.a. ventilator-stand / hoek / modus)
@@ -2132,10 +2167,12 @@ class App {
         </div>
 
         ${(() => {
-          // Sla niet-bereikbare fans over (bv. de vastlopende core xiaomi_miio-
-          // entiteit die 'unavailable' wordt), zodat de werkende cloud-entiteit
-          // getoond wordt. Zijn ze allemaal onbereikbaar? Toon dan toch alles.
-          let fans = c.entityIds('fan.');
+          // Oude/dubbele core xiaomi_miio-fan uitsluiten (die crasht en is nu
+          // vervangen door de Xiaomi Home cloud-entiteit). Verwijder 'm het
+          // liefst ook in HA zelf.
+          const EXCLUDE = new Set(['fan.woonkamer_ventilator']);
+          // Sla verder niet-bereikbare fans over, toon de werkende cloud-fan.
+          let fans = c.entityIds('fan.').filter(id => !EXCLUDE.has(id));
           const usable = fans.filter(eid => c.state(eid) !== 'unavailable');
           if (usable.length) fans = usable;
           return fans.length
@@ -2157,7 +2194,8 @@ class App {
   // e.d.): aan/uit, snelheid (percentage), oscilleren en preset-standen.
   _fanCard(c, eid) {
     const on = c.state(eid) === 'on';
-    const name = c.attr(eid, 'friendly_name') || 'Ventilator';
+    // Vaste, nette naam i.p.v. de lange Xiaomi-naam ("Mi Smart Standing Fan 2 Lite fan").
+    const name = 'Ventilator';
     const pct = Math.round(parseFloat(c.attr(eid, 'percentage')) || 0);
     const osc = !!c.attr(eid, 'oscillating');
     const presets = c.attr(eid, 'preset_modes') || [];
@@ -2305,16 +2343,19 @@ class App {
       } else if (d === 'number') {
         const unit = c.attr(id, 'unit_of_measurement') || '';
         const step = parseFloat(c.attr(id, 'step')) || 1;
-        const dec = Number.isInteger(step) ? 0 : 1;
+        const min = c.attr(id, 'min');
+        const max = c.attr(id, 'max');
         const valNum = parseFloat(c.state(id));
-        // Geen waarde of 0 → toon "uit" i.p.v. "— min" (netter voor een timer).
-        const display = (isNaN(valNum) || valNum === 0)
-          ? 'uit'
-          : `${esc(formatNumber(valNum, dec))}${unit ? ' ' + esc(unit) : ''}`;
+        const shown = isNaN(valNum) ? '' : valNum;  // leeg = geen timer (placeholder "uit")
         ctrl = `
           <div class="stepper">
             <button data-num="${esc(id)}" data-num-delta="${-step}" aria-label="min">−</button>
-            <span class="stepper-val">${display}</span>
+            <input class="stepper-input" type="number" inputmode="numeric"
+                   ${min !== '' && min != null ? `min="${esc(min)}"` : ''}
+                   ${max !== '' && max != null ? `max="${esc(max)}"` : ''}
+                   step="${esc(step)}" value="${esc(shown)}" placeholder="uit"
+                   data-num-set="${esc(id)}" />
+            ${unit ? `<span class="stepper-unit">${esc(unit)}</span>` : ''}
             <button data-num="${esc(id)}" data-num-delta="${step}" aria-label="plus">+</button>
           </div>`;
       } else if (d === 'select') {
