@@ -2158,11 +2158,53 @@ class App {
           </div>
           <div class="fan-chips">
             <button class="chip ${osc ? 'active' : ''}" data-fan-osc="${esc(eid)}">⟲ Oscilleren</button>
-            ${presets.map(p => `<button class="chip ${p === curPreset ? 'active' : ''}" data-fan-preset="${esc(eid)}" data-preset-mode="${esc(p)}">${esc(p)}</button>`).join('')}
+            ${presets.map(p => `<button class="chip ${p === curPreset ? 'active' : ''}" data-fan-preset="${esc(eid)}" data-preset-mode="${esc(p)}">${esc(this._nl(p))}</button>`).join('')}
           </div>
         ` : ''}
       </div>
     `;
+  }
+
+  // Vertaalt Engelse Xiaomi-benamingen (entity-namen, standen, presets)
+  // naar het Nederlands. Valt terug op de originele tekst (met hoofdletter).
+  _nl(text) {
+    if (!text) return text;
+    const t = String(text).toLowerCase().trim();
+    const exact = {
+      'delay off countdown': 'Timer (uit over)',
+      'delay off': 'Timer (uit over)',
+      'off delay': 'Timer (uit over)',
+      'oscillation angle': 'Draaihoek',
+      'swing angle': 'Draaihoek',
+      'oscillate angle': 'Draaihoek',
+      'fan level': 'Snelheid',
+      'fan speed': 'Snelheid',
+      'fan mode': 'Modus',
+      'child lock': 'Kinderslot',
+      'indicator light': 'Lampje',
+      'nature mode': 'Natuurlijke wind',
+      'natural wind': 'Natuurlijke wind',
+      'straight wind': 'Rechte wind',
+      'sleep mode': 'Slaapstand',
+    };
+    if (exact[t]) return exact[t];
+    const partial = [
+      ['countdown', 'Timer (uit over)'],
+      ['angle', 'Draaihoek'],
+      ['oscillat', 'Oscilleren'],
+      ['swing', 'Oscilleren'],
+      ['speed', 'Snelheid'],
+      ['level', 'Snelheid'],
+      ['buzzer', 'Zoemer'],
+      ['child lock', 'Kinderslot'],
+      ['nature', 'Natuurlijk'],
+      ['straight', 'Recht'],
+      ['normal', 'Normaal'],
+      ['sleep', 'Slaapstand'],
+      ['mode', 'Modus'],
+    ];
+    for (const [k, v] of partial) { if (t.includes(k)) return v; }
+    return text.charAt(0).toUpperCase() + text.slice(1);
   }
 
   // Instellingen-kaart voor de ventilator. Pikt automatisch alle entiteiten
@@ -2192,7 +2234,7 @@ class App {
     const rows = rel.map(({ id, d, fn }) => {
       let label = fn || id.slice(d.length + 1).replace(/_/g, ' ');
       if (fanName && label.toLowerCase().startsWith(fanNameLc + ' ')) label = label.slice(fanName.length).trim();
-      label = label ? label.charAt(0).toUpperCase() + label.slice(1) : id;
+      label = this._nl(label || id);
 
       let ctrl = '';
       if (d === 'switch' || d === 'light') {
@@ -2213,7 +2255,7 @@ class App {
         const opts = c.attr(id, 'options') || [];
         const cur = c.state(id);
         ctrl = `<div class="set-chips">${opts.map(o =>
-          `<button class="chip ${o === cur ? 'active' : ''}" data-select="${esc(id)}" data-option="${esc(o)}">${esc(o)}</button>`
+          `<button class="chip ${o === cur ? 'active' : ''}" data-select="${esc(id)}" data-option="${esc(o)}">${esc(this._nl(o))}</button>`
         ).join('')}</div>`;
       }
       return `<div class="set-row"><div class="set-label">${esc(label)}</div><div class="set-ctrl">${ctrl}</div></div>`;
