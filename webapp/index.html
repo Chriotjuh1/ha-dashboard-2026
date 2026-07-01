@@ -572,6 +572,51 @@
       font-size: 32px;
     }
 
+    /* ── Ventilator ──────────────────────────────────────────── */
+    .fan { display: grid; gap: 14px; }
+    .fan-head { display: flex; align-items: center; gap: 14px; }
+    .fan-icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      background: var(--claude-surface-2);
+      display: grid; place-items: center;
+      color: var(--claude-muted);
+      flex-shrink: 0;
+      transition: background 200ms, color 200ms, box-shadow 200ms;
+    }
+    .fan.on .fan-icon {
+      background: rgba(201, 99, 66, 0.18);
+      color: var(--claude-primary-soft);
+    }
+    .fan.on .fan-icon svg { animation: fanspin 1.4s linear infinite; }
+    @keyframes fanspin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .fan.on .fan-icon svg { animation: none; } }
+    .fan-meta { flex: 1; min-width: 0; }
+    .fan-name { font-size: 15px; }
+    .fan-state { font-size: 11px; color: var(--claude-muted); margin-top: 2px; }
+    .fan.on .switch { background: var(--claude-primary-deep); }
+    .fan.on .switch::after { left: 16px; background: var(--claude-primary-soft); }
+    .fan-speed { margin: 0; }
+    .fan-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      appearance: none; -webkit-appearance: none;
+      border: 1px solid var(--claude-border-hover);
+      background: var(--claude-surface-2);
+      color: var(--claude-cream-dim);
+      border-radius: 999px;
+      padding: 7px 14px;
+      font-family: var(--sans);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 180ms ease;
+    }
+    .chip:active { transform: scale(0.96); }
+    .chip.active {
+      background: rgba(201, 99, 66, 0.18);
+      border-color: var(--claude-primary);
+      color: var(--claude-primary-soft);
+    }
+
     .empty-state {
       text-align: center;
       padding: 48px 16px;
@@ -1272,6 +1317,14 @@ class App {
   // Voorkomt dat we tijdens scrollen 10x per seconde de hele DOM
   // herbouwen, wat de glitch veroorzaakte.
   scheduleRender() {
+    // Niet her-renderen terwijl een tijdkiezer actief is — een innerHTML-replace
+    // sluit anders de open native time-picker. Onthoud dat er een update wachtte
+    // en voer die uit zodra het veld de focus verliest (zie attachInteractions).
+    const active = document.activeElement;
+    if (active && active.type === 'time') {
+      this._renderPending = true;
+      return;
+    }
     if (this._renderScheduled) return;
     this._renderScheduled = true;
     requestAnimationFrame(() => {
@@ -1375,7 +1428,10 @@ class App {
       { path: 'lampen', label: 'Lampen', icon: '◐' },
       { path: 'afval', label: 'Afval', icon: '♺' },
       { path: 'weer', label: 'Weer', icon: '☁' },
-      { path: 'benzine', label: 'Benzine', icon: '⛽' },
+      // Benzine: inline SVG i.p.v. de ⛽-emoji. Die emoji rendert altijd in
+      // kleur (rood/oranje) en leek zo een tweede 'actieve' knop. Een SVG met
+      // fill:currentColor volgt netjes de muted/active kleur van de tab.
+      { path: 'benzine', label: 'Benzine', icon: '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" style="display:block"><path d="M18,10A1,1 0 0,1 17,9A1,1 0 0,1 18,8A1,1 0 0,1 19,9A1,1 0 0,1 18,10M12,10H6V5H12M19.77,7.23L19.78,7.22L16.06,3.5L15,4.56L17.11,6.67C16.17,7 15.5,7.93 15.5,9A2.5,2.5 0 0,0 18,11.5C18.36,11.5 18.69,11.42 19,11.29V18.5A1,1 0 0,1 18,19.5A1,1 0 0,1 17,18.5V14C17,12.89 16.1,12 15,12H14V5C14,3.89 13.1,3 12,3H6C4.89,3 4,3.89 4,5V21H14V13.5H15.5V18.5A2.5,2.5 0 0,0 18,21A2.5,2.5 0 0,0 20.5,18.5V9C20.5,8.31 20.22,7.68 19.77,7.23Z"/></svg>' },
     ];
     return items.map(it => `
       <button class="${this.activeView === it.path ? 'active' : ''}" data-nav="${it.path}">
@@ -1407,6 +1463,32 @@ class App {
         const eid = input.dataset.time;
         this.callService('input_datetime', 'set_datetime', { entity_id: eid, time: input.value });
       });
+      // Als er tijdens het bewerken een render werd uitgesteld, voer die nu uit
+      // zodra het veld de focus verliest (picker is dan dicht).
+      input.addEventListener('blur', () => {
+        if (this._renderPending) {
+          this._renderPending = false;
+          this.scheduleRender();
+        }
+      });
+    });
+
+    // Ventilator (fan.*) — Xiaomi Home e.d.
+    this.root.querySelectorAll('[data-fan-toggle]').forEach(btn => {
+      btn.addEventListener('click', () => this.callService('fan', 'toggle', { entity_id: btn.dataset.fanToggle }));
+    });
+    this.root.querySelectorAll('[data-fan-pct]').forEach(input => {
+      input.addEventListener('change', () => this.callService('fan', 'set_percentage', { entity_id: input.dataset.fanPct, percentage: parseInt(input.value, 10) }));
+    });
+    this.root.querySelectorAll('[data-fan-osc]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const eid = btn.dataset.fanOsc;
+        const cur = !!this.client.attr(eid, 'oscillating');
+        this.callService('fan', 'oscillate', { entity_id: eid, oscillating: !cur });
+      });
+    });
+    this.root.querySelectorAll('[data-fan-preset]').forEach(btn => {
+      btn.addEventListener('click', () => this.callService('fan', 'set_preset_mode', { entity_id: btn.dataset.fanPreset, preset_mode: btn.dataset.presetMode }));
     });
 
     // Media player controls
@@ -1502,7 +1584,7 @@ class App {
   // ──────────────────────────────────────────────────────────────────
   renderStart(c) {
     const persons = personList(c);
-    const switches = ['switch.woonkamerlamp', 'switch.overkappinglamp', 'switch.opritlamp', 'switch.spotjes_overkapping'];
+    const switches = ['switch.woonkamerlamp', 'switch.tuinlampen', 'switch.opritlamp', 'switch.spotjes_overkapping'];
     const lampOn = switches.filter(e => c.isOn(e)).length;
 
     return `
@@ -1795,7 +1877,7 @@ class App {
   // VIEW: Lampen
   // ──────────────────────────────────────────────────────────────────
   renderLampen(c) {
-    const switches = ['switch.woonkamerlamp', 'switch.overkappinglamp', 'switch.opritlamp', 'switch.spotjes_overkapping'];
+    const switches = ['switch.woonkamerlamp', 'switch.tuinlampen', 'switch.opritlamp', 'switch.spotjes_overkapping'];
     return `
       <div class="view active">
         <div class="hero">
@@ -1971,10 +2053,54 @@ class App {
           <div style="color: var(--claude-muted); font-size: 12px; margin-top: 4px;">Doel ${formatNumber(target, 0)}° · ${esc(c.state('climate.woonkamer')) || '—'}</div>
         </div>
 
+        ${(() => {
+          const fans = c.entityIds('fan.');
+          return fans.length
+            ? `<div class="subsection-title">Ventilator</div>${fans.map(eid => this._fanCard(c, eid)).join('')}`
+            : '';
+        })()}
+
         ${days ? `
           <div class="subsection-title">5-daagse</div>
           <div class="card">
             <div class="forecast">${days}</div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  // Ventilator-kaart (fan.*). Werkt met elke HA-fan (Xiaomi dmaker.fan.1c
+  // e.d.): aan/uit, snelheid (percentage), oscilleren en preset-standen.
+  _fanCard(c, eid) {
+    const on = c.state(eid) === 'on';
+    const name = c.attr(eid, 'friendly_name') || 'Ventilator';
+    const pct = Math.round(parseFloat(c.attr(eid, 'percentage')) || 0);
+    const osc = !!c.attr(eid, 'oscillating');
+    const presets = c.attr(eid, 'preset_modes') || [];
+    const curPreset = c.attr(eid, 'preset_mode');
+    // Sneller draaien bij hoger vermogen (visuele feedback).
+    const spin = on ? Math.max(0.5, 2.4 - (pct / 100) * 1.9).toFixed(2) : 0;
+    const fanSvg = `<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"${on ? ` style="animation-duration:${spin}s"` : ''}><path d="M12,11A1,1 0 0,0 11,12A1,1 0 0,0 12,13A1,1 0 0,0 13,12A1,1 0 0,0 12,11M12.5,2C17,2 17.11,5.57 14.75,6.75C13.76,7.24 13.32,8.29 13.13,9.22C13.61,9.42 14.03,9.73 14.35,10.13C18.05,8.13 22.03,8.92 22.03,12.5C22.03,17 18.46,17.1 17.28,14.74C16.78,13.75 15.72,13.31 14.8,13.12C14.6,13.6 14.29,14.02 13.89,14.34C15.89,18.04 15.1,22.02 11.5,22.02C7,22.02 6.92,18.45 9.28,17.27C10.27,16.77 10.71,15.71 10.9,14.79C10.42,14.59 10,14.28 9.68,13.88C5.98,15.88 2,15.09 2,11.5C2,7 5.57,6.92 6.75,9.28C7.24,10.27 8.29,10.71 9.22,10.9C9.42,10.42 9.73,10 10.13,9.68C8.13,5.98 8.92,2 12.5,2Z"/></svg>`;
+    return `
+      <div class="card fan ${on ? 'on' : ''}">
+        <div class="fan-head">
+          <div class="fan-icon">${fanSvg}</div>
+          <div class="fan-meta">
+            <div class="fan-name">${esc(name)}</div>
+            <div class="fan-state">${on ? (pct ? pct + '%' : 'Aan') : 'Uit'}${on && osc ? ' · oscilleert' : ''}</div>
+          </div>
+          <div class="switch" data-fan-toggle="${esc(eid)}"></div>
+        </div>
+        ${on ? `
+          <div class="volume fan-speed">
+            <span class="vol-label">Snelheid</span>
+            <input type="range" min="0" max="100" value="${pct}" data-fan-pct="${esc(eid)}" />
+            <span class="vol-label">${pct}%</span>
+          </div>
+          <div class="fan-chips">
+            <button class="chip ${osc ? 'active' : ''}" data-fan-osc="${esc(eid)}">⟲ Oscilleren</button>
+            ${presets.map(p => `<button class="chip ${p === curPreset ? 'active' : ''}" data-fan-preset="${esc(eid)}" data-preset-mode="${esc(p)}">${esc(p)}</button>`).join('')}
           </div>
         ` : ''}
       </div>
