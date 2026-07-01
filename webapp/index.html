@@ -2244,14 +2244,18 @@ class App {
         const on = c.state(id) === 'on';
         ctrl = `<div class="switch ${on ? 'on' : ''}" data-toggle="${esc(id)}"></div>`;
       } else if (d === 'number') {
-        const val = c.state(id);
         const unit = c.attr(id, 'unit_of_measurement') || '';
         const step = parseFloat(c.attr(id, 'step')) || 1;
         const dec = Number.isInteger(step) ? 0 : 1;
+        const valNum = parseFloat(c.state(id));
+        // Geen waarde of 0 → toon "uit" i.p.v. "— min" (netter voor een timer).
+        const display = (isNaN(valNum) || valNum === 0)
+          ? 'uit'
+          : `${esc(formatNumber(valNum, dec))}${unit ? ' ' + esc(unit) : ''}`;
         ctrl = `
           <div class="stepper">
             <button data-num="${esc(id)}" data-num-delta="${-step}" aria-label="min">−</button>
-            <span class="stepper-val">${esc(formatNumber(val, dec))}${unit ? ' ' + esc(unit) : ''}</span>
+            <span class="stepper-val">${display}</span>
             <button data-num="${esc(id)}" data-num-delta="${step}" aria-label="plus">+</button>
           </div>`;
       } else if (d === 'select') {

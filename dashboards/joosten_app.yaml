@@ -18,7 +18,7 @@ views:
     panel: true
     cards:
       - type: iframe
-        url: /local/dashboard/index.html?v=38
+        url: /local/dashboard/index.html?v=39
         aspect_ratio: '0'
         card_mod:
           style: |
