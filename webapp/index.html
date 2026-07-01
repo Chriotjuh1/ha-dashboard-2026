@@ -2120,7 +2120,12 @@ class App {
         </div>
 
         ${(() => {
-          const fans = c.entityIds('fan.');
+          // Sla niet-bereikbare fans over (bv. de vastlopende core xiaomi_miio-
+          // entiteit die 'unavailable' wordt), zodat de werkende cloud-entiteit
+          // getoond wordt. Zijn ze allemaal onbereikbaar? Toon dan toch alles.
+          let fans = c.entityIds('fan.');
+          const usable = fans.filter(eid => c.state(eid) !== 'unavailable');
+          if (usable.length) fans = usable;
           return fans.length
             ? `<div class="subsection-title">Ventilator</div>${fans.map(eid => this._fanCard(c, eid) + this._fanSettings(c, eid)).join('')}`
             : '';
