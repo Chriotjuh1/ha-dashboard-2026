@@ -598,6 +598,8 @@
     .fan.on .switch::after { left: 16px; background: var(--claude-primary-soft); }
     .fan-speed { margin: 0; }
     .fan-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .fan-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .fan-rowlabel { font-size: 13px; color: var(--claude-muted); }
     .chip {
       appearance: none; -webkit-appearance: none;
       border: 1px solid var(--claude-border-hover);
@@ -1521,6 +1523,9 @@ class App {
     this.root.querySelectorAll('[data-fan-pct]').forEach(input => {
       input.addEventListener('change', () => this.callService('fan', 'set_percentage', { entity_id: input.dataset.fanPct, percentage: parseInt(input.value, 10) }));
     });
+    this.root.querySelectorAll('[data-fan-speed]').forEach(btn => {
+      btn.addEventListener('click', () => this.callService('fan', 'set_percentage', { entity_id: btn.dataset.fanSpeed, percentage: parseInt(btn.dataset.pct, 10) }));
+    });
     this.root.querySelectorAll('[data-fan-osc]').forEach(btn => {
       btn.addEventListener('click', () => {
         const eid = btn.dataset.fanOsc;
@@ -2143,6 +2148,31 @@ class App {
     // Sneller draaien bij hoger vermogen (visuele feedback).
     const spin = on ? Math.max(0.5, 2.4 - (pct / 100) * 1.9).toFixed(2) : 0;
     const fanSvg = `<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"${on ? ` style="animation-duration:${spin}s"` : ''}><path d="M12,11A1,1 0 0,0 11,12A1,1 0 0,0 12,13A1,1 0 0,0 13,12A1,1 0 0,0 12,11M12.5,2C17,2 17.11,5.57 14.75,6.75C13.76,7.24 13.32,8.29 13.13,9.22C13.61,9.42 14.03,9.73 14.35,10.13C18.05,8.13 22.03,8.92 22.03,12.5C22.03,17 18.46,17.1 17.28,14.74C16.78,13.75 15.72,13.31 14.8,13.12C14.6,13.6 14.29,14.02 13.89,14.34C15.89,18.04 15.1,22.02 11.5,22.02C7,22.02 6.92,18.45 9.28,17.27C10.27,16.77 10.71,15.71 10.9,14.79C10.42,14.59 10,14.28 9.68,13.88C5.98,15.88 2,15.09 2,11.5C2,7 5.57,6.92 6.75,9.28C7.24,10.27 8.29,10.71 9.22,10.9C9.42,10.42 9.73,10 10.13,9.68C8.13,5.98 8.92,2 12.5,2Z"/></svg>`;
+
+    // Snelheid: bij een fan met discrete standen (percentage_step, bijv. 33.3
+    // = 3 standen) tonen we knoppen i.p.v. een doorlopende slider — die mappen
+    // exact op de standen die het apparaat accepteert. Anders: gewone slider.
+    const pStep = parseFloat(c.attr(eid, 'percentage_step')) || 0;
+    const levels = (pStep > 0 && pStep < 100) ? Math.round(100 / pStep) : 0;
+    let speedHtml;
+    if (levels >= 2 && levels <= 6) {
+      const names3 = ['Laag', 'Midden', 'Hoog'];
+      const curLvl = pct <= 0 ? 0 : Math.min(levels, Math.round(pct / (100 / levels)));
+      const btns = Array.from({ length: levels }, (_, i) => {
+        const lvl = i + 1;
+        const val = Math.round((lvl / levels) * 100);
+        const label = (levels === 3) ? names3[i] : (levels === 2 ? (i === 0 ? 'Laag' : 'Hoog') : val + '%');
+        return `<button class="chip ${lvl === curLvl ? 'active' : ''}" data-fan-speed="${esc(eid)}" data-pct="${val}">${label}</button>`;
+      }).join('');
+      speedHtml = `<div class="fan-row"><span class="fan-rowlabel">Snelheid</span><div class="set-chips">${btns}</div></div>`;
+    } else {
+      speedHtml = `<div class="volume fan-speed">
+            <span class="vol-label">Snelheid</span>
+            <input type="range" min="0" max="100" value="${pct}" data-fan-pct="${esc(eid)}" />
+            <span class="vol-label">${pct}%</span>
+          </div>`;
+    }
+
     return `
       <div class="card fan ${on ? 'on' : ''}">
         <div class="fan-head">
@@ -2154,11 +2184,7 @@ class App {
           <div class="switch" data-fan-toggle="${esc(eid)}"></div>
         </div>
         ${on ? `
-          <div class="volume fan-speed">
-            <span class="vol-label">Snelheid</span>
-            <input type="range" min="0" max="100" value="${pct}" data-fan-pct="${esc(eid)}" />
-            <span class="vol-label">${pct}%</span>
-          </div>
+          ${speedHtml}
           <div class="fan-chips">
             <button class="chip ${osc ? 'active' : ''}" data-fan-osc="${esc(eid)}">⟲ Oscilleren</button>
             ${presets.map(p => `<button class="chip ${p === curPreset ? 'active' : ''}" data-fan-preset="${esc(eid)}" data-preset-mode="${esc(p)}">${esc(this._nl(p))}</button>`).join('')}
