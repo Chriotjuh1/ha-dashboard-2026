@@ -678,6 +678,25 @@
     .stepper-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     .stepper-input:focus { border-color: var(--claude-primary-soft); box-shadow: 0 0 0 3px rgba(217,119,87,0.14); }
     .stepper-unit { font-size: 12px; color: var(--claude-muted); min-width: 26px; }
+    /* Keuzelijst voor instellingen met veel opties (bv. timer 1h..12h) */
+    .set-select {
+      appearance: none; -webkit-appearance: none;
+      background: var(--claude-surface-2);
+      border: 1px solid var(--claude-border-hover);
+      border-radius: 10px;
+      padding: 8px 30px 8px 12px;
+      color: var(--claude-cream);
+      font-family: var(--sans);
+      font-size: 13px;
+      cursor: pointer;
+      outline: none;
+      color-scheme: dark;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%23A8A29E'><path d='M7 10l5 5 5-5z'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+    }
+    .set-select:focus { border-color: var(--claude-primary-soft); box-shadow: 0 0 0 3px rgba(217,119,87,0.14); }
+    .set-select option { background: var(--claude-surface-2); color: var(--claude-cream); }
 
     .empty-state {
       text-align: center;
@@ -1603,6 +1622,10 @@ class App {
     this.root.querySelectorAll('[data-select]').forEach(btn => {
       btn.addEventListener('click', () => this.callService('select', 'select_option', { entity_id: btn.dataset.select, option: btn.dataset.option }));
     });
+    // Keuzelijst-variant (veel opties, bv. de timer van de luchtreiniger)
+    this.root.querySelectorAll('[data-select-menu]').forEach(sel => {
+      sel.addEventListener('change', () => this.callService('select', 'select_option', { entity_id: sel.dataset.selectMenu, option: sel.value }));
+    });
 
     // Media player controls
     this.root.querySelectorAll('[data-mp-toggle]').forEach(btn => {
@@ -2176,7 +2199,7 @@ class App {
           const usable = fans.filter(eid => c.state(eid) !== 'unavailable');
           if (usable.length) fans = usable;
           return fans.length
-            ? `<div class="subsection-title">Ventilator</div>${fans.map(eid => this._fanCard(c, eid) + this._fanSettings(c, eid)).join('')}`
+            ? `<div class="subsection-title">Ventilatie</div>${fans.map(eid => this._fanCard(c, eid) + this._fanSettings(c, eid)).join('')}`
             : '';
         })()}
 
@@ -2196,9 +2219,19 @@ class App {
     const on = c.state(eid) === 'on';
     // Nette naam op basis van het apparaat: luchtreiniger vs ventilator.
     const fnLc = (c.attr(eid, 'friendly_name') || '').toLowerCase();
-    const name = (fnLc.includes('purifier') || fnLc.includes('luchtreiniger'))
-      ? 'Luchtreiniger'
-      : 'Ventilator';
+    const isPurifier = fnLc.includes('purifier') || fnLc.includes('luchtreiniger');
+    const name = isPurifier ? 'Luchtreiniger' : 'Ventilator';
+    // Luchtkwaliteit (PM2.5) van dezelfde luchtreiniger, als die er is.
+    let airQuality = '';
+    if (isPurifier) {
+      const devIds = (c.deviceEntities && c.deviceEntities(eid)) || [];
+      const pmId = devIds.find(id => id.startsWith('sensor.') && /pm2/i.test(id));
+      const pm = pmId ? parseFloat(c.state(pmId)) : NaN;
+      if (!isNaN(pm)) {
+        const label = pm <= 12 ? 'goed' : pm <= 35 ? 'matig' : 'slecht';
+        airQuality = `PM2.5 ${Math.round(pm)} µg/m³ · ${label}`;
+      }
+    }
     const pct = Math.round(parseFloat(c.attr(eid, 'percentage')) || 0);
     const osc = !!c.attr(eid, 'oscillating');
     const presets = c.attr(eid, 'preset_modes') || [];
@@ -2237,7 +2270,7 @@ class App {
           <div class="fan-icon">${fanSvg}</div>
           <div class="fan-meta">
             <div class="fan-name">${esc(name)}</div>
-            <div class="fan-state">${on ? (pct ? pct + '%' : 'Aan') : 'Uit'}${on && osc ? ' · oscilleert' : ''}</div>
+            <div class="fan-state">${on ? (pct ? pct + '%' : 'Aan') : 'Uit'}${on && osc ? ' · oscilleert' : ''}${on && airQuality ? ' · ' + esc(airQuality) : ''}</div>
           </div>
           <div class="switch" data-fan-toggle="${esc(eid)}"></div>
         </div>
@@ -2276,6 +2309,14 @@ class App {
       'sleeping mode': 'Slaapstand',
       'direct mode': 'Direct',
       'delay time': 'Timer (uit over)',
+      // Philips luchtreiniger (AC0951) preset-standen + timer
+      'auto': 'Automatisch',
+      'turbo': 'Turbo',
+      'medium': 'Gemiddeld',
+      'sleep': 'Slaapstand',
+      'off': 'Uit',
+      'allergen': 'Allergenen',
+      'bacteria': 'Bacteriën',
     };
     if (exact[t]) return exact[t];
     const partial = [
@@ -2370,9 +2411,17 @@ class App {
       } else if (d === 'select') {
         const opts = c.attr(id, 'options') || [];
         const cur = c.state(id);
-        ctrl = `<div class="set-chips">${opts.map(o =>
-          `<button class="chip ${o === cur ? 'active' : ''}" data-select="${esc(id)}" data-option="${esc(o)}">${esc(this._nl(o))}</button>`
-        ).join('')}</div>`;
+        // Weinig opties → knoppen. Veel opties (bv. de Philips-timer met
+        // Off + 1h..12h) → keuzelijst, anders krijg je een muur van knoppen.
+        if (opts.length > 5) {
+          ctrl = `<select class="set-select" data-select-menu="${esc(id)}">${opts.map(o =>
+            `<option value="${esc(o)}" ${o === cur ? 'selected' : ''}>${esc(this._nl(o))}</option>`
+          ).join('')}</select>`;
+        } else {
+          ctrl = `<div class="set-chips">${opts.map(o =>
+            `<button class="chip ${o === cur ? 'active' : ''}" data-select="${esc(id)}" data-option="${esc(o)}">${esc(this._nl(o))}</button>`
+          ).join('')}</div>`;
+        }
       }
       return `<div class="set-row"><div class="set-label">${esc(label)}</div><div class="set-ctrl">${ctrl}</div></div>`;
     }).join('');
