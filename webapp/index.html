@@ -2194,8 +2194,11 @@ class App {
   // e.d.): aan/uit, snelheid (percentage), oscilleren en preset-standen.
   _fanCard(c, eid) {
     const on = c.state(eid) === 'on';
-    // Vaste, nette naam i.p.v. de lange Xiaomi-naam ("Mi Smart Standing Fan 2 Lite fan").
-    const name = 'Ventilator';
+    // Nette naam op basis van het apparaat: luchtreiniger vs ventilator.
+    const fnLc = (c.attr(eid, 'friendly_name') || '').toLowerCase();
+    const name = (fnLc.includes('purifier') || fnLc.includes('luchtreiniger'))
+      ? 'Luchtreiniger'
+      : 'Ventilator';
     const pct = Math.round(parseFloat(c.attr(eid, 'percentage')) || 0);
     const osc = !!c.attr(eid, 'oscillating');
     const presets = c.attr(eid, 'preset_modes') || [];
@@ -2307,7 +2310,7 @@ class App {
     // Alleen stand (select) en timer (number) tonen. Buzzer/child lock/LED
     // (switch/light) laten we bewust weg — die horen niet in dit sfeer-dashboard.
     const domains = ['select', 'number'];
-    const rel = [];
+    let rel = [];
     // 1e keuze: entiteiten op hetzelfde HA-apparaat (betrouwbaarst, werkt ook
     // als de namen niet delen — bv. Xiaomi Home ..._s_2_fan vs ..._delay_time_p_9_2).
     const devIds = c.deviceEntities && c.deviceEntities(fanEid);
@@ -2329,6 +2332,12 @@ class App {
         });
       });
     }
+    // Beperk tot relevante instellingen: alleen de timer/uitschakel-teller.
+    // Apparaten als een luchtreiniger hebben tientallen number/select-
+    // entiteiten (helderheid, luchtvochtigheid, filterteller, …) — die willen
+    // we hier niet allemaal tonen. Snelheid/standen zitten al op de kaart zelf.
+    const KEEP = /(delay|timer|countdown|uitschakel)/i;
+    rel = rel.filter(({ id, fn }) => KEEP.test(id) || KEEP.test(fn));
     if (!rel.length) return '';
 
     const rows = rel.map(({ id, d, fn }) => {
