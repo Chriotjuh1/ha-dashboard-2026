@@ -1194,6 +1194,23 @@ const HA_URL = location.protocol + '//' + location.host;          // HA serveert
 const HA_CLIENT_ID = HA_URL + '/';                                // IndieAuth client_id
 const HA_REDIRECT_URI = HA_URL + location.pathname;               // terug naar deze pagina
 
+// ════════════════════════════════════════════════════════════════════════
+// Stroomprijs — welke sensoren gebruiken we?
+//
+// Leeg laten = automatisch zoeken op naam (werkt met Frank Energie,
+// EnergyZero, Nord Pool, ENTSO-e enz.). Vul je een entity-id in, dan wordt
+// die hard gebruikt en is er geen twijfel meer over welke prijs je ziet.
+//
+//   ALL_IN  = wat je daadwerkelijk betaalt, incl. energiebelasting en btw.
+//             Dit is het getal dat groot in beeld komt.
+//   MARKET  = kale inkoopprijs. Alleen gebruikt om te bepalen of
+//             terugleveren geld kost — de all-in prijs wordt door de
+//             energiebelasting vrijwel nooit negatief, dus daarop testen
+//             zou het zonnepanelen-advies nooit laten afgaan.
+// ════════════════════════════════════════════════════════════════════════
+const PRICE_SENSOR_ALL_IN = '';   // bv. 'sensor.current_electricity_price_all_in'
+const PRICE_SENSOR_MARKET = '';   // bv. 'sensor.current_electricity_market_price'
+
 function readHassTokens() {
   try { return JSON.parse(window.localStorage.getItem('hassTokens') || 'null'); }
   catch (e) { return null; }
@@ -1964,33 +1981,41 @@ class App {
   // Zoekt de dynamische stroomprijs-sensoren op naam, zodat dit werkt met
   // EnergyZero, Nord Pool, Frank Energie, ENTSO-e enz. zonder vaste ids.
   _priceInfo(c) {
+    const num = id => { const v = parseFloat(c.state(id)); return isNaN(v) ? null : v; };
     const ids = (c.entityIds && c.entityIds('sensor.')) || [];
     const elec = ids.filter(id =>
       /energyzero|energiezero|nordpool|nord_pool|epex|frank|entsoe|stroomprijs|electricity_price|energy_price|marktprijs|market_price|zonneplan/i.test(id)
       && !/gas|water|tank/i.test(id));
-    if (!elec.length) return null;
+    // Handmatig vastgezette sensoren (zie bovenin) winnen altijd van de
+    // automatische naamherkenning.
+    const pinnedAllIn = PRICE_SENSOR_ALL_IN && num(PRICE_SENSOR_ALL_IN) !== null ? PRICE_SENSOR_ALL_IN : null;
+    const pinnedMarket = PRICE_SENSOR_MARKET && num(PRICE_SENSOR_MARKET) !== null ? PRICE_SENSOR_MARKET : null;
+    if (!elec.length && !pinnedAllIn && !pinnedMarket) return null;
 
-    const num = id => { const v = parseFloat(c.state(id)); return isNaN(v) ? null : v; };
     // Dagsamenvattingen (laagste/hoogste/gemiddelde) en tijdstip-sensoren zijn
     // nooit "de prijs nu" — Frank Energie levert die namelijk ook aan.
     const isSummary = id =>
       /time|tijd|_max_|_min_|average|gemiddeld|lowest|highest|laagste|hoogste|next|hours|tomorrow|morgen/i.test(id);
-    // Huidige prijs: Frank Energie's all-in prijs krijgt voorrang — dat is wat
-    // je daadwerkelijk betaalt, inclusief belasting en opslag. Daarna een
-    // expliciete "current hour"-sensor, dan de eerste bruikbare prijs-sensor.
-    const curId = elec.find(id => /current[_ ]?electricity.*all[_ ]?in/i.test(id) && num(id) !== null)
-      || elec.find(id => /current[_ ]?(hour|electricity)|huidige/i.test(id) && !isSummary(id) && num(id) !== null)
-      || elec.find(id => /price|prijs/i.test(id) && !isSummary(id) && num(id) !== null)
+    // Grote getal = de all-in prijs: wat je daadwerkelijk betaalt, inclusief
+    // energiebelasting en btw. Vandaar dat een sensor met "all in" in de naam
+    // voorrang krijgt, en een kale marktprijs juist als laatste komt.
+    const isMarketId = id => /market[_ ]?price|marktprijs|marketprice/i.test(id) && !/all[_ ]?in/i.test(id);
+    const curId = pinnedAllIn
+      || elec.find(id => /all[_ ]?in/i.test(id) && !isSummary(id) && num(id) !== null)
+      || elec.find(id => /current[_ ]?(hour|electricity)|huidige/i.test(id) && !isSummary(id) && !isMarketId(id) && num(id) !== null)
+      || elec.find(id => /price|prijs/i.test(id) && !isSummary(id) && !isMarketId(id) && num(id) !== null)
       || elec.find(id => num(id) !== null);
     const current = curId ? num(curId) : null;
     const unit = curId ? (c.attr(curId, 'unit_of_measurement') || '€/kWh') : '€/kWh';
+    // Is de getoonde prijs zelf al een kale marktprijs, dan is er geen
+    // all-in prijs beschikbaar en moeten we dat niet suggereren.
+    const currentIsAllIn = !!curId && !isMarketId(curId);
 
     // Marktprijs (kale inkoopprijs, zonder belasting en btw). Die bepaalt of
     // terugleveren geld kost: de all-in prijs is door de energiebelasting
     // vrijwel nooit negatief, ook niet als de markt diep negatief staat.
-    const mktId = elec.find(id => /market[_ ]?price|marktprijs|marketprice/i.test(id)
-      && !/all[_ ]?in/i.test(id) && !isSummary(id) && num(id) !== null);
-    const market = mktId ? num(mktId) : null;
+    const mktId = pinnedMarket || elec.find(id => isMarketId(id) && !isSummary(id) && num(id) !== null);
+    const market = mktId && mktId !== curId ? num(mktId) : null;
 
     // Uurprijzen uit de attributen (naam verschilt per integratie).
     const readHourly = id => {
@@ -2026,6 +2051,7 @@ class App {
     return {
       current,
       market,
+      currentIsAllIn,
       unit,
       hourly,
       min: vals.length ? Math.min(...vals) : null,
@@ -2073,11 +2099,11 @@ class App {
     // Positieve prijs — eventueel waarschuwen voor negatieve uren later
     const soon = p.nextNegative;
     const warning = soon
-      ? ` Let op: vanaf <strong>${t(soon.t)}</strong> wordt de prijs negatief — dan kun je beter uitzetten.`
+      ? ` Let op: vanaf <strong>${t(soon.t)}</strong> wordt de prijs negatief, dan kun je beter uitzetten.`
       : '';
     if (!producing) {
       return { level: 'neutral', title: 'Geen opbrengst op dit moment',
-        body: `De ${label} is ${fmt(price)}/kWh, dus terugleveren zou lonen — maar je wekt nu vrijwel niets op.` + warning };
+        body: `De ${label} is ${fmt(price)}/kWh, dus terugleveren zou lonen, maar je wekt nu vrijwel niets op.` + warning };
     }
     return { level: 'good', title: 'Laat de panelen aanstaan',
       body: `De ${label} is ${fmt(price)}/kWh, dus terugleveren levert gewoon geld op.` + warning };
@@ -2114,12 +2140,13 @@ class App {
         <div class="price-head">
           <div>
             <div class="price-now ${p.current < 0 ? 'neg' : ''}">${esc(eur(p.current))}</div>
-            <div class="price-unit">${esc(p.unit)} · nu</div>
+            <div class="price-unit">${esc(p.unit)} · nu${p.currentIsAllIn ? ' · all-in' : ''}</div>
           </div>
           <div class="price-meta">
             ${p.min !== null ? `<span>laag ${esc(eur(p.min))}</span>` : ''}
             ${p.avg !== null ? `<span>gem ${esc(eur(p.avg))}</span>` : ''}
             ${p.max !== null ? `<span>hoog ${esc(eur(p.max))}</span>` : ''}
+            ${p.market !== null ? `<span>markt ${esc(eur(p.market))}</span>` : ''}
             ${p.cheapest ? `<span class="cheapest">goedkoopst om ${esc(t(p.cheapest.t))}</span>` : ''}
           </div>
         </div>
@@ -2500,7 +2527,7 @@ class App {
         <div class="hero">
           <h1>Afvalkalender</h1>
           <p>${next
-            ? `Eerstvolgend: <span class="accent">${esc(next.label)}</span> — ${esc(next.info.text.toLowerCase())}.`
+            ? `Eerstvolgend: <span class="accent">${esc(next.label)}</span>, ${esc(next.info.text.toLowerCase())}.`
             : 'Volgende ophaaldagen volgens de gemeentekalender.'}</p>
         </div>
 

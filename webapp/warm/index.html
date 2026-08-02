@@ -1356,11 +1356,11 @@ function getDateLabel() {
 function cozyMood(client) {
   const h = new Date().getHours();
   const dark = (client.state && client.state('sun.sun')) === 'below_horizon';
-  if (h < 6)  return 'De nacht is stil — slaap zacht.';
-  if (h < 12) return dark ? 'Nog even schemerig buiten — blijf lekker warm.' : 'Een nieuwe dag — geniet van het ochtendlicht.';
-  if (h < 18) return dark ? 'Grijze middag — tijd voor een kaarsje.' : 'Fijne middag thuis.';
-  if (h < 23) return dark ? 'De avond valt — tijd voor wat lamplicht.' : 'Een zachte avond gewenst.';
-  return 'Laat het rustig worden — welterusten straks.';
+  if (h < 6)  return 'De nacht is stil, slaap zacht.';
+  if (h < 12) return dark ? 'Nog even schemerig buiten, blijf lekker warm.' : 'Een nieuwe dag, geniet van het ochtendlicht.';
+  if (h < 18) return dark ? 'Grijze middag, tijd voor een kaarsje.' : 'Fijne middag thuis.';
+  if (h < 23) return dark ? 'De avond valt, tijd voor wat lamplicht.' : 'Een zachte avond gewenst.';
+  return 'Laat het rustig worden, welterusten straks.';
 }
 // Comfort-omschrijving voor de binnentemperatuur.
 function comfortLabel(t) {
