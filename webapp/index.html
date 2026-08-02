@@ -1086,6 +1086,7 @@ class HAClient {
 
   state(eid) { return this.states[eid] ? this.states[eid].state : ''; }
   attr(eid, a) { return this.states[eid] && this.states[eid].attributes ? this.states[eid].attributes[a] : ''; }
+  attrs(eid) { return (this.states[eid] && this.states[eid].attributes) || {}; }
   isOn(eid) { return this.state(eid) === 'on'; }
   userName() { return this._userName || ''; }
   lastChanged(eid) { return this.states[eid] ? this.states[eid].last_changed : null; }
@@ -1160,6 +1161,7 @@ class ParentHassClient {
   _st(eid) { const s = this.hass && this.hass.states; return s ? s[eid] : undefined; }
   state(eid) { const s = this._st(eid); return s ? s.state : ''; }
   attr(eid, a) { const s = this._st(eid); return s && s.attributes ? s.attributes[a] : ''; }
+  attrs(eid) { const s = this._st(eid); return (s && s.attributes) || {}; }
   isOn(eid) { return this.state(eid) === 'on'; }
   userName() { return (this.hass && this.hass.user && this.hass.user.name) || ''; }
   lastChanged(eid) { const s = this._st(eid); return s ? s.last_changed : null; }
@@ -1210,6 +1212,19 @@ const HA_REDIRECT_URI = HA_URL + location.pathname;               // terug naar 
 // ════════════════════════════════════════════════════════════════════════
 const PRICE_SENSOR_ALL_IN = '';   // bv. 'sensor.current_electricity_price_all_in'
 const PRICE_SENSOR_MARKET = '';   // bv. 'sensor.current_electricity_market_price'
+
+// Welke prijs bepaalt of terugleveren geld kost?
+//
+//   'allin'  — zolang saldering geldt (in Nederland t/m 31 december 2026)
+//              streept elke teruggeleverde kWh een verbruikte kWh weg. Die
+//              kWh is dus de all-in prijs waard, inclusief energiebelasting.
+//              Pas als de all-in prijs onder nul zakt kost terugleveren geld,
+//              en dat gebeurt rond een marktprijs van ongeveer -€ 0,15.
+//
+//   'market' — na afschaffing van de saldering, of voor het deel dat je méér
+//              teruglevert dan je verbruikt. Dan krijg je de kale
+//              terugleververgoeding en ligt de grens al bij € 0,00.
+const SOLAR_PRICE_BASIS = 'allin';
 
 function readHassTokens() {
   try { return JSON.parse(window.localStorage.getItem('hassTokens') || 'null'); }
@@ -2017,20 +2032,59 @@ class App {
     const mktId = pinnedMarket || elec.find(id => isMarketId(id) && !isSummary(id) && num(id) !== null);
     const market = mktId && mktId !== curId ? num(mktId) : null;
 
-    // Uurprijzen uit de attributen (naam verschilt per integratie).
+    // Uurprijzen uit de attributen. Elke integratie doet dit anders, dus we
+    // proberen eerst de bekende namen en scannen daarna gewoon alle
+    // attributen op iets dat eruitziet als een reeks tijd+prijs. Dat is
+    // robuuster dan een vaste lijst: die miste precies deze sensor.
+    const TIME_KEYS = ['time', 'start', 'from', 'datetime', 'readingDate',
+                       'startsAt', 'start_time', 'timestamp', 'date', 'hour'];
+    const VAL_KEYS = ['price', 'value', 'amount', 'electricityPrice', 'marketPrice',
+                      'total', 'price_per_kwh', 'cost', 'tarief'];
+    const pick = (o, keys) => { for (const k of keys) if (o[k] != null) return o[k]; return null; };
+    const parseSeries = arr => {
+      if (!Array.isArray(arr) || arr.length < 5) return null;
+      const out = arr.map(e => {
+        if (!e || typeof e !== 'object') return null;
+        const tv = pick(e, TIME_KEYS);
+        const vv = pick(e, VAL_KEYS);
+        if (tv == null || vv == null) return null;
+        const d = new Date(tv);
+        const n = parseFloat(vv);
+        return (isNaN(d.getTime()) || isNaN(n)) ? null : { t: d, v: n };
+      }).filter(Boolean);
+      return out.length >= 5 ? out : null;
+    };
+    const dedupe = list => {
+      const seen = new Map();
+      for (const h of list) seen.set(h.t.getTime(), h);
+      return [...seen.values()].sort((a, b) => a.t - b.t);
+    };
+    const PREFERRED = ['prices', 'raw_today', 'today', 'data', 'prices_today', 'hourly', 'forecast'];
     const readHourly = id => {
-      for (const key of ['prices', 'raw_today', 'today', 'data', 'prices_today']) {
-        const arr = c.attr(id, key);
-        if (!Array.isArray(arr) || arr.length < 5) continue;
-        const out = arr.map(e => {
-          if (!e || typeof e !== 'object') return null;
-          const t = e.time ?? e.start ?? e.from ?? e.datetime ?? e.readingDate;
-          const v = e.price ?? e.value ?? e.amount ?? e.electricityPrice;
-          const d = new Date(t);
+      const all = (c.attrs && c.attrs(id)) || {};
+      for (const key of PREFERRED) {
+        const found = parseSeries(all[key]);
+        if (!found) continue;
+        // today-achtige attributen hebben vaak een losse tomorrow-tegenhanger;
+        // die plakken we eraan zodat "wanneer wordt het negatief" verder kijkt.
+        const extra = /today$/.test(key) ? parseSeries(all[key.replace(/today$/, 'tomorrow')]) : null;
+        return dedupe(extra ? found.concat(extra) : found);
+      }
+      // Onbekende integratie: scan alle overige attributen.
+      for (const [key, val] of Object.entries(all)) {
+        if (PREFERRED.includes(key)) continue;
+        const found = parseSeries(val);
+        if (found) return dedupe(found);
+      }
+      // Variant waarin de prijzen een object zijn: { "2026-08-02T14:00": 0.11 }
+      for (const val of Object.values(all)) {
+        if (!val || typeof val !== 'object' || Array.isArray(val)) continue;
+        const out = Object.entries(val).map(([k, v]) => {
+          const d = new Date(k);
           const n = parseFloat(v);
-          return (t == null || v == null || isNaN(d.getTime()) || isNaN(n)) ? null : { t: d, v: n };
+          return (isNaN(d.getTime()) || isNaN(n)) ? null : { t: d, v: n };
         }).filter(Boolean);
-        if (out.length >= 5) return out.sort((a, b) => a.t - b.t);
+        if (out.length >= 5) return dedupe(out);
       }
       return null;
     };
@@ -2047,7 +2101,10 @@ class App {
     const now = Date.now();
     const fresh = arr => arr.filter(h => h.t.getTime() >= now - 3600000);
     const future = fresh(hourly);
-    const negSource = fresh(mktHourly || hourly);
+    // Dezelfde grondslag als het advies (zie SOLAR_PRICE_BASIS), anders zou de
+    // waarschuwing "vanaf 18:00 wordt het negatief" op een andere prijs slaan
+    // dan de conclusie eronder.
+    const negSource = fresh(SOLAR_PRICE_BASIS === 'market' ? (mktHourly || hourly) : hourly);
     return {
       current,
       market,
@@ -2072,10 +2129,11 @@ class App {
     // die stond op 0% terwijl de panelen bijna 4 kW stonden te leveren, dus
     // 0 betekent hier "geen begrenzing" en niet "uit". Het gemeten vermogen is
     // de enige ondubbelzinnige bron voor "lever ik op dit moment terug".
-    // Voor terugleveren telt de kale marktprijs, niet de all-in prijs: de
-    // energiebelasting zit wel in wat je betaalt, maar niet in wat je krijgt.
-    const price = p ? (p.market != null ? p.market : p.current) : null;
-    const label = p && p.market != null ? 'marktprijs' : 'stroomprijs';
+    // Zie SOLAR_PRICE_BASIS bovenin: onder saldering is een teruggeleverde kWh
+    // de all-in prijs waard, daarbuiten alleen de kale marktprijs.
+    const useMarket = SOLAR_PRICE_BASIS === 'market' && p && p.market != null;
+    const price = p ? (useMarket ? p.market : p.current) : null;
+    const label = useMarket ? 'marktprijs' : p && p.currentIsAllIn ? 'all-in prijs' : 'stroomprijs';
     const t = d => d.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
 
     if (price === null) {
