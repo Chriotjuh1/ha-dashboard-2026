@@ -1957,23 +1957,34 @@ class App {
   _priceInfo(c) {
     const ids = (c.entityIds && c.entityIds('sensor.')) || [];
     const elec = ids.filter(id =>
-      /energyzero|energiezero|nordpool|nord_pool|epex|frank_energie|entsoe|stroomprijs|electricity_price|energy_price|zonneplan/i.test(id)
+      /energyzero|energiezero|nordpool|nord_pool|epex|frank|entsoe|stroomprijs|electricity_price|energy_price|marktprijs|market_price|zonneplan/i.test(id)
       && !/gas|water|tank/i.test(id));
     if (!elec.length) return null;
 
     const num = id => { const v = parseFloat(c.state(id)); return isNaN(v) ? null : v; };
-    // Huidige prijs: eerst een expliciete "current hour"-sensor, anders de
-    // eerste bruikbare prijs-sensor (tijd-sensoren overslaan).
-    const curId = elec.find(id => /current[_ ]?(hour|electricity)|huidige/i.test(id))
-      || elec.find(id => /price/i.test(id) && !/time|_max_|_min_|average|next|hours/i.test(id) && num(id) !== null)
+    // Dagsamenvattingen (laagste/hoogste/gemiddelde) en tijdstip-sensoren zijn
+    // nooit "de prijs nu" — Frank Energie levert die namelijk ook aan.
+    const isSummary = id =>
+      /time|tijd|_max_|_min_|average|gemiddeld|lowest|highest|laagste|hoogste|next|hours|tomorrow|morgen/i.test(id);
+    // Huidige prijs: Frank Energie's all-in prijs krijgt voorrang — dat is wat
+    // je daadwerkelijk betaalt, inclusief belasting en opslag. Daarna een
+    // expliciete "current hour"-sensor, dan de eerste bruikbare prijs-sensor.
+    const curId = elec.find(id => /current[_ ]?electricity.*all[_ ]?in/i.test(id) && num(id) !== null)
+      || elec.find(id => /current[_ ]?(hour|electricity)|huidige/i.test(id) && !isSummary(id) && num(id) !== null)
+      || elec.find(id => /price|prijs/i.test(id) && !isSummary(id) && num(id) !== null)
       || elec.find(id => num(id) !== null);
     const current = curId ? num(curId) : null;
     const unit = curId ? (c.attr(curId, 'unit_of_measurement') || '€/kWh') : '€/kWh';
 
+    // Marktprijs (kale inkoopprijs, zonder belasting en btw). Die bepaalt of
+    // terugleveren geld kost: de all-in prijs is door de energiebelasting
+    // vrijwel nooit negatief, ook niet als de markt diep negatief staat.
+    const mktId = elec.find(id => /market[_ ]?price|marktprijs|marketprice/i.test(id)
+      && !/all[_ ]?in/i.test(id) && !isSummary(id) && num(id) !== null);
+    const market = mktId ? num(mktId) : null;
+
     // Uurprijzen uit de attributen (naam verschilt per integratie).
-    let hourly = [];
-    outer:
-    for (const id of elec) {
+    const readHourly = id => {
       for (const key of ['prices', 'raw_today', 'today', 'data', 'prices_today']) {
         const arr = c.attr(id, key);
         if (!Array.isArray(arr) || arr.length < 5) continue;
@@ -1985,22 +1996,34 @@ class App {
           const n = parseFloat(v);
           return (t == null || v == null || isNaN(d.getTime()) || isNaN(n)) ? null : { t: d, v: n };
         }).filter(Boolean);
-        if (out.length >= 5) { hourly = out.sort((a, b) => a.t - b.t); break outer; }
+        if (out.length >= 5) return out.sort((a, b) => a.t - b.t);
       }
-    }
+      return null;
+    };
+
+    // Voor de staafjes: de prijs die je zelf betaalt, dus bij voorkeur de
+    // sensor die ook bovenaan staat.
+    let hourly = (curId && readHourly(curId)) || null;
+    if (!hourly) { for (const id of elec) { hourly = readHourly(id); if (hourly) break; } }
+    hourly = hourly || [];
+    // Voor "wanneer wordt het negatief": marktprijzen als we die hebben.
+    const mktHourly = (mktId && readHourly(mktId)) || null;
 
     const vals = hourly.map(h => h.v);
     const now = Date.now();
-    const future = hourly.filter(h => h.t.getTime() >= now - 3600000);
+    const fresh = arr => arr.filter(h => h.t.getTime() >= now - 3600000);
+    const future = fresh(hourly);
+    const negSource = fresh(mktHourly || hourly);
     return {
       current,
+      market,
       unit,
       hourly,
       min: vals.length ? Math.min(...vals) : null,
       max: vals.length ? Math.max(...vals) : null,
       avg: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null,
       cheapest: future.length ? future.reduce((a, b) => (b.v < a.v ? b : a)) : null,
-      nextNegative: future.find(h => h.v < 0) || null,
+      nextNegative: negSource.find(h => h.v < 0) || null,
     };
   }
 
@@ -2012,7 +2035,10 @@ class App {
     const producing = power > 100;
     const limit = parseFloat(c.state('sensor.zonnepanelen_limiet_percentage'));
     const isOff = !isNaN(limit) && limit <= 0;
-    const price = p && p.current != null ? p.current : null;
+    // Voor terugleveren telt de kale marktprijs, niet de all-in prijs: de
+    // energiebelasting zit wel in wat je betaalt, maar niet in wat je krijgt.
+    const price = p ? (p.market != null ? p.market : p.current) : null;
+    const label = p && p.market != null ? 'marktprijs' : 'stroomprijs';
     const t = d => d.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
 
     if (price === null) {
@@ -2027,26 +2053,26 @@ class App {
       const perHour = (power / 1000) * Math.abs(price);
       if (producing && !isOff) {
         return { level: 'bad', title: 'Overweeg de panelen uit te zetten',
-          body: `De stroomprijs is nu <strong>−${fmt(price)}/kWh</strong>. Je levert ${formatNumber(power, 0)} W terug en betaalt daar op dit moment ongeveer <strong>${fmt(perHour)} per uur</strong> op toe.` };
+          body: `De ${label} is nu <strong>−${fmt(price)}/kWh</strong>. Je levert ${formatNumber(power, 0)} W terug en betaalt daar op dit moment ongeveer <strong>${fmt(perHour)} per uur</strong> op toe.` };
       }
       if (isOff) {
         return { level: 'good', title: 'Goed zo — panelen staan uit',
-          body: `De prijs is negatief (−${fmt(price)}/kWh). Zolang dat zo is, kost terugleveren geld.` };
+          body: `De ${label} is negatief (−${fmt(price)}/kWh). Zolang dat zo is, kost terugleveren geld.` };
       }
       return { level: 'warn', title: 'Prijs is negatief, maar je produceert niets',
-        body: `De stroomprijs is −${fmt(price)}/kWh. Je wekt nu vrijwel niets op, dus er is niets aan de hand.` };
+        body: `De ${label} is −${fmt(price)}/kWh. Je wekt nu vrijwel niets op, dus er is niets aan de hand.` };
     }
 
     // Positieve prijs, maar panelen staan uit → weer aanzetten
     if (isOff) {
       return { level: 'warn', title: 'Je kunt de panelen weer aanzetten',
-        body: `De prijs is weer positief (${fmt(price)}/kWh). Nu loop je opbrengst mis.` };
+        body: `De ${label} is weer positief (${fmt(price)}/kWh). Nu loop je opbrengst mis.` };
     }
 
     // Alles in orde — eventueel waarschuwen voor negatieve uren later
     const soon = p.nextNegative;
     return { level: 'good', title: 'Laat de panelen aanstaan',
-      body: `De stroomprijs is ${fmt(price)}/kWh, dus terugleveren levert gewoon geld op.`
+      body: `De ${label} is ${fmt(price)}/kWh, dus terugleveren levert gewoon geld op.`
         + (soon ? ` Let op: vanaf <strong>${t(soon.t)}</strong> wordt de prijs negatief — dan kun je beter uitzetten.` : '') };
   }
 
