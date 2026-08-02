@@ -442,6 +442,28 @@
       color: var(--claude-cream);
       font-family: var(--sans);
       font-size: 13px;
+      color-scheme: dark;   /* donkere native tijd-picker i.p.v. wit */
+    }
+    .timer input[type="time"]:focus {
+      outline: none;
+      border-color: var(--claude-primary-soft);
+      box-shadow: 0 0 0 3px rgba(217,119,87,0.14);
+    }
+    /* Het klok-icoontje is standaard bijna zwart en dus onzichtbaar op een
+       donkere achtergrond. invert(1) maakt 'm wit; volle opacity bij hover. */
+    .timer input[type="time"]::-webkit-calendar-picker-indicator {
+      filter: invert(1) brightness(1.6);
+      opacity: 0.75;
+      cursor: pointer;
+      padding: 2px;
+      margin-left: 2px;
+    }
+    .timer input[type="time"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+    .timer input[type="time"]::-webkit-datetime-edit,
+    .timer input[type="time"]::-webkit-datetime-edit-hour-field,
+    .timer input[type="time"]::-webkit-datetime-edit-minute-field,
+    .timer input[type="time"]::-webkit-datetime-edit-text {
+      color: var(--claude-cream);
     }
 
     /* ── Bottom nav ──────────────────────────────────────────── */
@@ -598,6 +620,88 @@
     .fan.on .switch::after { left: 16px; background: var(--claude-primary-soft); }
     .fan-speed { margin: 0; }
     .fan-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    /* ── Advies-kaart (zonnepanelen) ─────────────────────────── */
+    .advice {
+      display: flex; gap: 14px; align-items: flex-start;
+      border: 1px solid var(--claude-border);
+      border-left-width: 3px;
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin-bottom: 14px;
+      background: var(--claude-surface);
+    }
+    .advice-icon {
+      width: 26px; height: 26px; border-radius: 50%;
+      display: grid; place-items: center;
+      font-size: 14px; font-weight: 600;
+      flex-shrink: 0; margin-top: 1px;
+    }
+    .advice-text h3 {
+      font-family: var(--serif); font-weight: 400; font-size: 18px;
+      margin: 0 0 4px; color: var(--claude-cream);
+    }
+    .advice-text p { margin: 0; font-size: 13px; line-height: 1.55; color: var(--claude-cream-dim); }
+    .advice-text strong { color: var(--claude-cream); font-weight: 500; }
+    .advice.good      { border-left-color: var(--claude-success); }
+    .advice.good .advice-icon { background: rgba(127,176,105,0.18); color: var(--claude-success); }
+    .advice.warn      { border-left-color: var(--claude-warning); }
+    .advice.warn .advice-icon { background: rgba(232,184,110,0.18); color: var(--claude-warning); }
+    .advice.bad       { border-left-color: var(--claude-danger); }
+    .advice.bad .advice-icon  { background: rgba(217,109,109,0.20); color: var(--claude-danger); }
+    .advice.neutral   { border-left-color: var(--claude-muted-2); }
+    .advice.neutral .advice-icon { background: var(--claude-surface-2); color: var(--claude-muted); }
+
+    /* ── Stroomprijs ─────────────────────────────────────────── */
+    .price-card { padding: 18px; }
+    .price-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+    .price-now {
+      font-family: var(--serif); font-size: 34px; line-height: 1;
+      color: var(--claude-cream); font-variant-numeric: tabular-nums;
+    }
+    .price-now.neg { color: var(--claude-success); }
+    .price-unit { font-size: 11px; color: var(--claude-muted); margin-top: 6px;
+      text-transform: uppercase; letter-spacing: 0.08em; }
+    .price-meta { display: flex; flex-direction: column; gap: 3px; text-align: right;
+      font-size: 12px; color: var(--claude-muted); font-variant-numeric: tabular-nums; }
+    .price-meta .cheapest { color: var(--claude-success); }
+    .price-bars {
+      display: flex; align-items: flex-end; gap: 2px;
+      height: 90px; margin-top: 18px;
+    }
+    .pb {
+      flex: 1; min-width: 0;
+      background: var(--claude-surface-3);
+      border-radius: 2px 2px 0 0;
+      transition: opacity 150ms;
+    }
+    .pb.cheap { background: rgba(127,176,105,0.55); }
+    .pb.exp   { background: rgba(217,109,109,0.55); }
+    .pb.neg   { background: var(--claude-success); }
+    .pb.now   { background: var(--claude-primary); box-shadow: 0 0 8px rgba(201,99,66,0.5); }
+    .price-axis { display: flex; justify-content: space-between; margin-top: 6px;
+      font-size: 10px; color: var(--claude-muted-2); }
+
+    /* ── Afval ───────────────────────────────────────────────── */
+    .waste { position: relative; overflow: hidden; }
+    /* Gekleurd streepje links geeft de urgentie aan */
+    .waste.today::before,
+    .waste.tomorrow::before,
+    .waste.soon::before {
+      content: '';
+      position: absolute; left: 0; top: 0; bottom: 0;
+      width: 3px;
+    }
+    .waste.today::before    { background: var(--claude-danger); }
+    .waste.tomorrow::before { background: var(--claude-primary); }
+    .waste.soon::before     { background: var(--claude-warning); }
+    .waste.today .figure    { color: var(--claude-danger); }
+    .waste.tomorrow .figure { color: var(--claude-primary-soft); }
+    .waste-date {
+      font-size: 12px;
+      color: var(--claude-cream-dim);
+      margin-top: 6px;
+    }
+
     /* Lopende uitschakel-timer */
     .fan-timer {
       display: inline-flex; align-items: center; gap: 7px;
@@ -1848,6 +1952,148 @@ class App {
   // ──────────────────────────────────────────────────────────────────
   // VIEW: Zonnepanelen
   // ──────────────────────────────────────────────────────────────────
+  // Zoekt de dynamische stroomprijs-sensoren op naam, zodat dit werkt met
+  // EnergyZero, Nord Pool, Frank Energie, ENTSO-e enz. zonder vaste ids.
+  _priceInfo(c) {
+    const ids = (c.entityIds && c.entityIds('sensor.')) || [];
+    const elec = ids.filter(id =>
+      /energyzero|energiezero|nordpool|nord_pool|epex|frank_energie|entsoe|stroomprijs|electricity_price|energy_price|zonneplan/i.test(id)
+      && !/gas|water|tank/i.test(id));
+    if (!elec.length) return null;
+
+    const num = id => { const v = parseFloat(c.state(id)); return isNaN(v) ? null : v; };
+    // Huidige prijs: eerst een expliciete "current hour"-sensor, anders de
+    // eerste bruikbare prijs-sensor (tijd-sensoren overslaan).
+    const curId = elec.find(id => /current[_ ]?(hour|electricity)|huidige/i.test(id))
+      || elec.find(id => /price/i.test(id) && !/time|_max_|_min_|average|next|hours/i.test(id) && num(id) !== null)
+      || elec.find(id => num(id) !== null);
+    const current = curId ? num(curId) : null;
+    const unit = curId ? (c.attr(curId, 'unit_of_measurement') || '€/kWh') : '€/kWh';
+
+    // Uurprijzen uit de attributen (naam verschilt per integratie).
+    let hourly = [];
+    outer:
+    for (const id of elec) {
+      for (const key of ['prices', 'raw_today', 'today', 'data', 'prices_today']) {
+        const arr = c.attr(id, key);
+        if (!Array.isArray(arr) || arr.length < 5) continue;
+        const out = arr.map(e => {
+          if (!e || typeof e !== 'object') return null;
+          const t = e.time ?? e.start ?? e.from ?? e.datetime ?? e.readingDate;
+          const v = e.price ?? e.value ?? e.amount ?? e.electricityPrice;
+          const d = new Date(t);
+          const n = parseFloat(v);
+          return (t == null || v == null || isNaN(d.getTime()) || isNaN(n)) ? null : { t: d, v: n };
+        }).filter(Boolean);
+        if (out.length >= 5) { hourly = out.sort((a, b) => a.t - b.t); break outer; }
+      }
+    }
+
+    const vals = hourly.map(h => h.v);
+    const now = Date.now();
+    const future = hourly.filter(h => h.t.getTime() >= now - 3600000);
+    return {
+      current,
+      unit,
+      hourly,
+      min: vals.length ? Math.min(...vals) : null,
+      max: vals.length ? Math.max(...vals) : null,
+      avg: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null,
+      cheapest: future.length ? future.reduce((a, b) => (b.v < a.v ? b : a)) : null,
+      nextNegative: future.find(h => h.v < 0) || null,
+    };
+  }
+
+  // Advies of het slim is de zonnepanelen (tijdelijk) uit te zetten.
+  // Uitgangspunt: dynamisch contract — bij een negatieve prijs betaal je
+  // geld toe over elke kWh die je teruglevert.
+  _solarAdvice(c, p) {
+    const power = parseFloat(c.state('sensor.zonnepanelen_vermogen')) || 0;
+    const producing = power > 100;
+    const limit = parseFloat(c.state('sensor.zonnepanelen_limiet_percentage'));
+    const isOff = !isNaN(limit) && limit <= 0;
+    const price = p && p.current != null ? p.current : null;
+    const t = d => d.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+
+    if (price === null) {
+      return { level: 'neutral', title: 'Geen prijsinformatie',
+        body: 'Er is geen dynamische stroomprijs gevonden, dus ik kan geen advies geven.' };
+    }
+
+    const fmt = n => '€ ' + Math.abs(n).toLocaleString('nl-NL', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+
+    // Negatieve prijs → terugleveren kost geld
+    if (price < -0.001) {
+      const perHour = (power / 1000) * Math.abs(price);
+      if (producing && !isOff) {
+        return { level: 'bad', title: 'Overweeg de panelen uit te zetten',
+          body: `De stroomprijs is nu <strong>−${fmt(price)}/kWh</strong>. Je levert ${formatNumber(power, 0)} W terug en betaalt daar op dit moment ongeveer <strong>${fmt(perHour)} per uur</strong> op toe.` };
+      }
+      if (isOff) {
+        return { level: 'good', title: 'Goed zo — panelen staan uit',
+          body: `De prijs is negatief (−${fmt(price)}/kWh). Zolang dat zo is, kost terugleveren geld.` };
+      }
+      return { level: 'warn', title: 'Prijs is negatief, maar je produceert niets',
+        body: `De stroomprijs is −${fmt(price)}/kWh. Je wekt nu vrijwel niets op, dus er is niets aan de hand.` };
+    }
+
+    // Positieve prijs, maar panelen staan uit → weer aanzetten
+    if (isOff) {
+      return { level: 'warn', title: 'Je kunt de panelen weer aanzetten',
+        body: `De prijs is weer positief (${fmt(price)}/kWh). Nu loop je opbrengst mis.` };
+    }
+
+    // Alles in orde — eventueel waarschuwen voor negatieve uren later
+    const soon = p.nextNegative;
+    return { level: 'good', title: 'Laat de panelen aanstaan',
+      body: `De stroomprijs is ${fmt(price)}/kWh, dus terugleveren levert gewoon geld op.`
+        + (soon ? ` Let op: vanaf <strong>${t(soon.t)}</strong> wordt de prijs negatief — dan kun je beter uitzetten.` : '') };
+  }
+
+  // Stroomprijs-blok: prijs nu, dagcijfers en een staafje per uur.
+  _priceSection(c, p) {
+    const eur = n => '€ ' + n.toLocaleString('nl-NL', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+    const t = d => d.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+    const now = Date.now();
+
+    let bars = '';
+    if (p.hourly.length >= 5) {
+      const lo = Math.min(0, p.min);
+      const hi = Math.max(p.max, 0.001);
+      const span = (hi - lo) || 1;
+      bars = `
+        <div class="price-bars">
+          ${p.hourly.map(h => {
+            const isNow = now >= h.t.getTime() && now < h.t.getTime() + 3600000;
+            const cls = h.v < 0 ? 'neg' : (p.avg != null && h.v <= p.avg * 0.8) ? 'cheap'
+                      : (p.avg != null && h.v >= p.avg * 1.25) ? 'exp' : '';
+            const pct = Math.max(4, Math.round(((h.v - lo) / span) * 100));
+            return `<div class="pb ${cls}${isNow ? ' now' : ''}" style="height:${pct}%"
+                      title="${esc(t(h.t))} · ${esc(eur(h.v))}"></div>`;
+          }).join('')}
+        </div>
+        <div class="price-axis"><span>${esc(t(p.hourly[0].t))}</span><span>${esc(t(p.hourly[p.hourly.length - 1].t))}</span></div>`;
+    }
+
+    return `
+      <div class="subsection-title">Stroomprijs</div>
+      <div class="card price-card">
+        <div class="price-head">
+          <div>
+            <div class="price-now ${p.current < 0 ? 'neg' : ''}">${esc(eur(p.current))}</div>
+            <div class="price-unit">${esc(p.unit)} · nu</div>
+          </div>
+          <div class="price-meta">
+            ${p.min !== null ? `<span>laag ${esc(eur(p.min))}</span>` : ''}
+            ${p.avg !== null ? `<span>gem ${esc(eur(p.avg))}</span>` : ''}
+            ${p.max !== null ? `<span>hoog ${esc(eur(p.max))}</span>` : ''}
+            ${p.cheapest ? `<span class="cheapest">goedkoopst om ${esc(t(p.cheapest.t))}</span>` : ''}
+          </div>
+        </div>
+        ${bars}
+      </div>`;
+  }
+
   renderZon(c) {
     const power = parseFloat(c.state('sensor.zonnepanelen_vermogen')) || 0;
     const max = 6000;
@@ -1864,12 +2110,27 @@ class App {
     const needleX = endX;
     const needleY = endY;
 
+    const price = this._priceInfo(c);
+    const advice = this._solarAdvice(c, price);
+
     return `
       <div class="view active">
         <div class="hero">
           <h1>Zonnepanelen</h1>
           <p>Status <span class="accent">${esc(c.state('sensor.zonnepanelen_status')) || '—'}</span> · limiet <span class="accent">${esc(c.state('sensor.zonnepanelen_limiet_percentage')) || '—'}%</span></p>
         </div>
+
+        ${advice ? `
+          <div class="advice ${esc(advice.level)}">
+            <div class="advice-icon">${advice.level === 'good' ? '✓' : advice.level === 'bad' ? '!' : advice.level === 'warn' ? '~' : '?'}</div>
+            <div class="advice-text">
+              <h3>${esc(advice.title)}</h3>
+              <p>${advice.body}</p>
+            </div>
+          </div>
+        ` : ''}
+
+        ${price && price.current !== null ? this._priceSection(c, price) : ''}
 
         <div class="grid grid-4">
           <div class="card stat">
@@ -2106,36 +2367,103 @@ class App {
   // ──────────────────────────────────────────────────────────────────
   // VIEW: Afval
   // ──────────────────────────────────────────────────────────────────
+  // Zet de status van een afval-sensor om naar aantal dagen + datum.
+  // Werkt met de gangbare varianten: een datum in de attributen, een ISO- of
+  // dd-mm-jjjj-datum als status, of woorden ("Vandaag"/"Morgen"/"Overmorgen").
+  _wasteInfo(c, eid) {
+    const raw = String(c.state(eid) || '').trim();
+    if (!raw || raw === 'unknown' || raw === 'unavailable') return null;
+
+    const midnight = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+    const today = midnight(new Date());
+    let date = null;
+
+    // 1) Datum uit de attributen (veel afvalkalender-integraties leveren die mee)
+    for (const key of ['date', 'next_date', 'collection_date', 'Date', 'day']) {
+      const v = c.attr(eid, key);
+      if (v) { const d = new Date(v); if (!isNaN(d.getTime())) { date = midnight(d); break; } }
+    }
+    // 2) Datum in de status zelf
+    if (!date) {
+      if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
+        const d = new Date(raw);
+        if (!isNaN(d.getTime())) date = midnight(d);
+      } else {
+        const m = raw.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+        if (m) date = midnight(new Date(+m[3], +m[2] - 1, +m[1]));
+      }
+    }
+
+    // 3) Aantal dagen bepalen
+    let days = null;
+    if (date) {
+      days = Math.round((date.getTime() - today.getTime()) / 86400000);
+    } else {
+      const lc = raw.toLowerCase();
+      if (lc.includes('vandaag')) days = 0;
+      else if (lc.includes('overmorgen')) days = 2;      // vóór 'morgen' checken
+      else if (lc.includes('morgen')) days = 1;
+      else { const m = lc.match(/(\d+)\s*dag/); if (m) days = parseInt(m[1], 10); }
+    }
+
+    // Niets te rekenen → toon de ruwe status ongewijzigd
+    if (days === null || isNaN(days)) return { text: raw, sub: '', days: null, urgency: '' };
+    if (!date) date = new Date(today.getTime() + days * 86400000);
+
+    const text = days < 0 ? raw
+      : days === 0 ? 'Vandaag'
+      : days === 1 ? 'Morgen'
+      : days === 2 ? 'Overmorgen'
+      : `Over ${days} dagen`;
+    const sub = date.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
+    const urgency = days <= 0 ? 'today' : days === 1 ? 'tomorrow' : days <= 3 ? 'soon' : '';
+    return { text, sub, days, urgency };
+  }
+
   renderAfval(c) {
     const items = [
       { eid: 'sensor.pmd', label: 'PMD', desc: 'Plastic, metaal & drinkpakken' },
       { eid: 'sensor.restafval', label: 'Restafval', desc: 'Niet recyclebaar' },
       { eid: 'sensor.papier', label: 'Papier', desc: 'Karton & papier' },
-    ];
-    const tomorrowItems = items.filter(i => c.state(i.eid) === 'Morgen');
+    ].map(i => ({ ...i, info: this._wasteInfo(c, i.eid) }));
+
+    // Eerstvolgende ophaling bovenaan; onbekende status achteraan.
+    const sorted = [...items].sort((a, b) => {
+      const da = a.info && a.info.days != null ? a.info.days : 9999;
+      const db = b.info && b.info.days != null ? b.info.days : 9999;
+      return da - db;
+    });
+
+    const urgent = sorted.filter(i => i.info && (i.info.days === 0 || i.info.days === 1));
+    const next = sorted.find(i => i.info && i.info.days != null);
 
     return `
       <div class="view active">
         <div class="hero">
           <h1>Afvalkalender</h1>
-          <p>Volgende ophaaldagen volgens de gemeentekalender.</p>
+          <p>${next
+            ? `Eerstvolgend: <span class="accent">${esc(next.label)}</span> — ${esc(next.info.text.toLowerCase())}.`
+            : 'Volgende ophaaldagen volgens de gemeentekalender.'}</p>
         </div>
 
-        ${tomorrowItems.length ? `
+        ${urgent.length ? `
           <div class="alert">
-            <h2>✱ Morgen buitenzetten</h2>
-            <p>${tomorrowItems.map(i => i.label).join(' · ')}</p>
+            <h2>✱ ${urgent.some(i => i.info.days === 0) ? 'Vandaag' : 'Morgen'} buitenzetten</h2>
+            <p>${urgent.map(i => esc(i.label)).join(' · ')}</p>
           </div>
         ` : ''}
 
         <div class="grid grid-3">
-          ${items.map(i => `
-            <div class="card stat">
-              <div class="label">${i.label}</div>
-              <div><span class="figure small">${esc(c.state(i.eid)) || '—'}</span></div>
-              <div class="delta">${i.desc}</div>
-            </div>
-          `).join('')}
+          ${sorted.map(i => {
+            const inf = i.info;
+            return `
+            <div class="card stat waste ${inf ? esc(inf.urgency) : ''}">
+              <div class="label">${esc(i.label)}</div>
+              <div><span class="figure small">${inf ? esc(inf.text) : '—'}</span></div>
+              ${inf && inf.sub ? `<div class="waste-date">${esc(inf.sub)}</div>` : ''}
+              <div class="delta muted">${esc(i.desc)}</div>
+            </div>`;
+          }).join('')}
         </div>
       </div>
     `;

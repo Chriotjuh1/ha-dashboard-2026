@@ -693,6 +693,15 @@
       border-color: rgba(224,164,88,0.5);
       box-shadow: 0 0 0 3px rgba(224,164,88,0.12);
     }
+    /* Klok-icoontje is standaard bijna zwart → onzichtbaar op donker. */
+    .timer input[type="time"]::-webkit-calendar-picker-indicator {
+      filter: invert(1) brightness(1.6);
+      opacity: 0.75;
+      cursor: pointer;
+      padding: 2px;
+      margin-left: 2px;
+    }
+    .timer input[type="time"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 
     /* ── Bottom nav ──────────────────────────────────────────── */
     /* Werkt mits body NIET scrollt (overflow: hidden op body, .app scrollt
