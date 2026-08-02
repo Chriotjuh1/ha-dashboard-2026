@@ -598,6 +598,23 @@
     .fan.on .switch::after { left: 16px; background: var(--claude-primary-soft); }
     .fan-speed { margin: 0; }
     .fan-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    /* Lopende uitschakel-timer */
+    .fan-timer {
+      display: inline-flex; align-items: center; gap: 7px;
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--claude-primary-soft);
+      font-variant-numeric: tabular-nums;
+    }
+    .fan-timer [data-until] { font-weight: 500; }
+    .timer-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--claude-primary-soft);
+      flex-shrink: 0;
+      animation: timerpulse 2s ease-in-out infinite;
+    }
+    @keyframes timerpulse { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
+    @media (prefers-reduced-motion: reduce) { .timer-dot { animation: none; } }
     .fan-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
     .fan-rowlabel { font-size: 13px; color: var(--claude-muted); }
     .chip {
@@ -958,6 +975,7 @@ class HAClient {
   attr(eid, a) { return this.states[eid] && this.states[eid].attributes ? this.states[eid].attributes[a] : ''; }
   isOn(eid) { return this.state(eid) === 'on'; }
   userName() { return this._userName || ''; }
+  lastChanged(eid) { return this.states[eid] ? this.states[eid].last_changed : null; }
   entityIds(prefix) {
     return Object.keys(this.states).filter(id => !prefix || id.startsWith(prefix));
   }
@@ -1031,6 +1049,7 @@ class ParentHassClient {
   attr(eid, a) { const s = this._st(eid); return s && s.attributes ? s.attributes[a] : ''; }
   isOn(eid) { return this.state(eid) === 'on'; }
   userName() { return (this.hass && this.hass.user && this.hass.user.name) || ''; }
+  lastChanged(eid) { const s = this._st(eid); return s ? s.last_changed : null; }
   entityIds(prefix) {
     const s = this.hass && this.hass.states; if (!s) return [];
     return Object.keys(s).filter(id => !prefix || id.startsWith(prefix));
@@ -1662,6 +1681,36 @@ class App {
     if (this.activeView === 'start') {
       this._initMap();
     }
+
+    this._startCountdowns();
+  }
+
+  // Laat lopende timers per seconde meetellen. De HA-sensor levert alleen
+  // hele minuten, dus we tellen lokaal af richting het berekende eindtijdstip
+  // en hersyncen zodra HA een nieuwe waarde stuurt (nieuwe render → nieuwe
+  // data-until). Werkt de DOM rechtstreeks bij, zonder re-render, zodat
+  // scroll-positie en focus intact blijven.
+  _startCountdowns() {
+    if (this._cdTimer) { clearInterval(this._cdTimer); this._cdTimer = null; }
+    const tick = () => {
+      const els = this.root.querySelectorAll('[data-until]');
+      if (!els.length) { clearInterval(this._cdTimer); this._cdTimer = null; return; }
+      const now = Date.now();
+      let allDone = true;
+      els.forEach(el => {
+        const left = Math.max(0, Math.round((parseInt(el.dataset.until, 10) - now) / 1000));
+        if (left > 0) allDone = false;
+        const h = Math.floor(left / 3600);
+        const m = Math.floor((left % 3600) / 60);
+        const s = left % 60;
+        const p2 = n => String(n).padStart(2, '0');
+        el.textContent = h > 0 ? `${h}:${p2(m)}:${p2(s)}` : `${m}:${p2(s)}`;
+      });
+      // Timer afgelopen → laat HA de nieuwe toestand ophalen.
+      if (allDone) { clearInterval(this._cdTimer); this._cdTimer = null; this.scheduleRender(); }
+    };
+    tick();
+    if (this.root.querySelector('[data-until]')) this._cdTimer = setInterval(tick, 1000);
   }
 
   _initMap() {
@@ -2221,15 +2270,32 @@ class App {
     const fnLc = (c.attr(eid, 'friendly_name') || '').toLowerCase();
     const isPurifier = fnLc.includes('purifier') || fnLc.includes('luchtreiniger');
     const name = isPurifier ? 'Luchtreiniger' : 'Ventilator';
+    const devIds = (c.deviceEntities && c.deviceEntities(eid)) || [];
+
     // Luchtkwaliteit (PM2.5) van dezelfde luchtreiniger, als die er is.
     let airQuality = '';
     if (isPurifier) {
-      const devIds = (c.deviceEntities && c.deviceEntities(eid)) || [];
       const pmId = devIds.find(id => id.startsWith('sensor.') && /pm2/i.test(id));
       const pm = pmId ? parseFloat(c.state(pmId)) : NaN;
       if (!isNaN(pm)) {
         const label = pm <= 12 ? 'goed' : pm <= 35 ? 'matig' : 'slecht';
         airQuality = `PM2.5 ${Math.round(pm)} µg/m³ · ${label}`;
+      }
+    }
+
+    // Lopende uitschakel-timer. De "resterende tijd"-sensor staat in hele
+    // minuten en wordt dus maar 1x per minuut bijgewerkt. We rekenen het
+    // eindtijdstip uit (moment van die update + resterende minuten) zodat de
+    // teller lokaal per seconde kan meelopen en bij elke HA-update hersynct.
+    let timerUntil = 0;
+    const remId = devIds.find(id => id.startsWith('sensor.') && /remain|resterend/i.test(id));
+    if (remId) {
+      const mins = parseFloat(c.state(remId));
+      if (!isNaN(mins) && mins > 0) {
+        const base = c.lastChanged && c.lastChanged(remId);
+        const baseTs = base ? new Date(base).getTime() : Date.now();
+        const until = baseTs + mins * 60000;
+        if (until > Date.now()) timerUntil = until;
       }
     }
     const pct = Math.round(parseFloat(c.attr(eid, 'percentage')) || 0);
@@ -2271,6 +2337,7 @@ class App {
           <div class="fan-meta">
             <div class="fan-name">${esc(name)}</div>
             <div class="fan-state">${on ? (pct ? pct + '%' : 'Aan') : 'Uit'}${on && osc ? ' · oscilleert' : ''}${on && airQuality ? ' · ' + esc(airQuality) : ''}</div>
+            ${timerUntil ? `<div class="fan-timer"><span class="timer-dot"></span>Gaat uit over <span data-until="${timerUntil}">—</span></div>` : ''}
           </div>
           <div class="switch" data-fan-toggle="${esc(eid)}"></div>
         </div>
