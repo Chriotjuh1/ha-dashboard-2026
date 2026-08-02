@@ -449,14 +449,19 @@
       border-color: var(--claude-primary-soft);
       box-shadow: 0 0 0 3px rgba(217,119,87,0.14);
     }
-    /* Het klok-icoontje is standaard bijna zwart en dus onzichtbaar op een
-       donkere achtergrond. invert(1) maakt 'm wit; volle opacity bij hover. */
+    /* Het klok-icoontje van de browser is niet betrouwbaar te kleuren: met
+       color-scheme: dark tekent Chrome 'm al wit, en dan maakt een filter
+       zoals invert(1) 'm juist weer zwart. Daarom vervangen we het glyph
+       door een eigen SVG — die is altijd crème, ongeacht het thema. */
     .timer input[type="time"]::-webkit-calendar-picker-indicator {
-      filter: invert(1) brightness(1.6);
-      opacity: 0.75;
+      -webkit-appearance: none;
+      appearance: none;
+      width: 15px;
+      height: 15px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F0EEE6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E") center / contain no-repeat;
+      opacity: 0.7;
       cursor: pointer;
-      padding: 2px;
-      margin-left: 2px;
+      margin-left: 4px;
     }
     .timer input[type="time"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
     .timer input[type="time"]::-webkit-datetime-edit,
@@ -652,7 +657,11 @@
     .advice.neutral .advice-icon { background: var(--claude-surface-2); color: var(--claude-muted); }
 
     /* ── Stroomprijs ─────────────────────────────────────────── */
-    .price-card { padding: 18px; }
+    /* margin-bottom in lijn met .advice: blokken dragen hun eigen ruimte,
+       zodat het stat-grid eronder niet tegen de kaart aan plakt. */
+    /* Duidelijk meer dan de 10px grid-gap eronder, anders leest het stat-grid
+       als onderdeel van deze kaart in plaats van als eigen blok. */
+    .price-card { padding: 18px; margin-bottom: 20px; }
     .price-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
     .price-now {
       font-family: var(--serif); font-size: 34px; line-height: 1;
@@ -2033,8 +2042,10 @@ class App {
   _solarAdvice(c, p) {
     const power = parseFloat(c.state('sensor.zonnepanelen_vermogen')) || 0;
     const producing = power > 100;
-    const limit = parseFloat(c.state('sensor.zonnepanelen_limiet_percentage'));
-    const isOff = !isNaN(limit) && limit <= 0;
+    // Bewust GEEN aan/uit-conclusie uit sensor.zonnepanelen_limiet_percentage:
+    // die stond op 0% terwijl de panelen bijna 4 kW stonden te leveren, dus
+    // 0 betekent hier "geen begrenzing" en niet "uit". Het gemeten vermogen is
+    // de enige ondubbelzinnige bron voor "lever ik op dit moment terug".
     // Voor terugleveren telt de kale marktprijs, niet de all-in prijs: de
     // energiebelasting zit wel in wat je betaalt, maar niet in wat je krijgt.
     const price = p ? (p.market != null ? p.market : p.current) : null;
@@ -2050,30 +2061,26 @@ class App {
 
     // Negatieve prijs → terugleveren kost geld
     if (price < -0.001) {
-      const perHour = (power / 1000) * Math.abs(price);
-      if (producing && !isOff) {
+      if (producing) {
+        const perHour = (power / 1000) * Math.abs(price);
         return { level: 'bad', title: 'Overweeg de panelen uit te zetten',
           body: `De ${label} is nu <strong>−${fmt(price)}/kWh</strong>. Je levert ${formatNumber(power, 0)} W terug en betaalt daar op dit moment ongeveer <strong>${fmt(perHour)} per uur</strong> op toe.` };
       }
-      if (isOff) {
-        return { level: 'good', title: 'Goed zo — panelen staan uit',
-          body: `De ${label} is negatief (−${fmt(price)}/kWh). Zolang dat zo is, kost terugleveren geld.` };
-      }
-      return { level: 'warn', title: 'Prijs is negatief, maar je produceert niets',
-        body: `De ${label} is −${fmt(price)}/kWh. Je wekt nu vrijwel niets op, dus er is niets aan de hand.` };
+      return { level: 'good', title: 'Niets aan de hand',
+        body: `De ${label} is negatief (−${fmt(price)}/kWh), maar je levert nu niets terug. Zolang dat zo blijft, kost het je ook niets.` };
     }
 
-    // Positieve prijs, maar panelen staan uit → weer aanzetten
-    if (isOff) {
-      return { level: 'warn', title: 'Je kunt de panelen weer aanzetten',
-        body: `De ${label} is weer positief (${fmt(price)}/kWh). Nu loop je opbrengst mis.` };
-    }
-
-    // Alles in orde — eventueel waarschuwen voor negatieve uren later
+    // Positieve prijs — eventueel waarschuwen voor negatieve uren later
     const soon = p.nextNegative;
+    const warning = soon
+      ? ` Let op: vanaf <strong>${t(soon.t)}</strong> wordt de prijs negatief — dan kun je beter uitzetten.`
+      : '';
+    if (!producing) {
+      return { level: 'neutral', title: 'Geen opbrengst op dit moment',
+        body: `De ${label} is ${fmt(price)}/kWh, dus terugleveren zou lonen — maar je wekt nu vrijwel niets op.` + warning };
+    }
     return { level: 'good', title: 'Laat de panelen aanstaan',
-      body: `De ${label} is ${fmt(price)}/kWh, dus terugleveren levert gewoon geld op.`
-        + (soon ? ` Let op: vanaf <strong>${t(soon.t)}</strong> wordt de prijs negatief — dan kun je beter uitzetten.` : '') };
+      body: `De ${label} is ${fmt(price)}/kWh, dus terugleveren levert gewoon geld op.` + warning };
   }
 
   // Stroomprijs-blok: prijs nu, dagcijfers en een staafje per uur.
@@ -2139,11 +2146,36 @@ class App {
     const price = this._priceInfo(c);
     const advice = this._solarAdvice(c, price);
 
+    // "Limiet 0%" las alsof de panelen uit stonden, terwijl ze op dat moment
+    // bijna 4 kW leverden. 0 betekent hier "niet afgeregeld", dus tonen we dat
+    // ook zo — en het label is nu Begrenzing i.p.v. Limiet.
+    const limitRaw = parseFloat(c.state('sensor.zonnepanelen_limiet_percentage'));
+    const hasLimit = !isNaN(limitRaw);
+    const limitFigure = !hasLimit ? '—' : limitRaw <= 0 ? 'Geen' : formatNumber(limitRaw, 0);
+    const limitUnit = hasLimit && limitRaw > 0 ? '%' : '';
+    const limitText = !hasLimit ? '—' : limitRaw <= 0 ? 'geen' : formatNumber(limitRaw, 0) + '%';
+
+    // De opbrengst-sensoren staan in Wh, niet in kWh — hardcoded "kWh" gaf
+    // onzin (14.439.235 kWh = 14,4 GWh). Lees de echte eenheid en reken door
+    // naar kWh, zodat het klopt ongeacht hoe de integratie het aanlevert.
+    const energyTile = (eid) => {
+      const raw = parseFloat(c.state(eid));
+      if (isNaN(raw)) return { figure: '—', unit: '' };
+      const u = String(c.attr(eid, 'unit_of_measurement') || 'kWh');
+      let val = raw;
+      if (/^wh$/i.test(u)) val = raw / 1000;
+      else if (/^mwh$/i.test(u)) val = raw * 1000;
+      else if (!/^kwh$/i.test(u)) return { figure: formatNumber(raw, 0), unit: u };
+      return { figure: formatNumber(val, Math.abs(val) < 100 ? 1 : 0), unit: 'kWh' };
+    };
+    const vandaag = energyTile('sensor.sma_dagopbrengst');
+    const totaal = energyTile('sensor.sma_totale_opbrengst');
+
     return `
       <div class="view active">
         <div class="hero">
           <h1>Zonnepanelen</h1>
-          <p>Status <span class="accent">${esc(c.state('sensor.zonnepanelen_status')) || '—'}</span> · limiet <span class="accent">${esc(c.state('sensor.zonnepanelen_limiet_percentage')) || '—'}%</span></p>
+          <p>Status <span class="accent">${esc(c.state('sensor.zonnepanelen_status')) || '—'}</span> · begrenzing <span class="accent">${esc(limitText)}</span></p>
         </div>
 
         ${advice ? `
@@ -2165,15 +2197,15 @@ class App {
           </div>
           <div class="card stat">
             <div class="label">Vandaag</div>
-            <div><span class="figure">${formatNumber(c.state('sensor.sma_dagopbrengst'), 0)}</span><span class="unit">kWh</span></div>
+            <div><span class="figure">${esc(vandaag.figure)}</span><span class="unit">${esc(vandaag.unit)}</span></div>
           </div>
           <div class="card stat">
             <div class="label">Totaal</div>
-            <div><span class="figure">${formatNumber(c.state('sensor.sma_totale_opbrengst'), 0)}</span><span class="unit">kWh</span></div>
+            <div><span class="figure">${esc(totaal.figure)}</span><span class="unit">${esc(totaal.unit)}</span></div>
           </div>
           <div class="card stat">
-            <div class="label">Limiet</div>
-            <div><span class="figure">${esc(c.state('sensor.zonnepanelen_limiet_percentage')) || '—'}</span><span class="unit">%</span></div>
+            <div class="label">Begrenzing</div>
+            <div><span class="figure">${esc(limitFigure)}</span>${limitUnit ? `<span class="unit">${esc(limitUnit)}</span>` : ''}</div>
           </div>
         </div>
 

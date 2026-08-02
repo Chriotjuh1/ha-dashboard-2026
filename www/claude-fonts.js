@@ -379,8 +379,14 @@
     input[type="time"]::-webkit-datetime-edit-text{
       color:${CREAM}!important;background-color:transparent!important
     }
-    input[type="time"]::-webkit-calendar-picker-indicator{
-      filter:invert(0.85);opacity:0.6;cursor:pointer
+    /* Eigen SVG i.p.v. het browser-glyph: met color-scheme:dark tekent
+       Chrome dat glyph al licht, en dan maakt een invert-filter 'm zwart. */
+    input[type="time"]::-webkit-calendar-picker-indicator,
+    input[type="date"]::-webkit-calendar-picker-indicator{
+      -webkit-appearance:none;appearance:none;
+      width:15px;height:15px;
+      background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F0EEE6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E") center / contain no-repeat;
+      opacity:0.7;cursor:pointer;margin-left:4px
     }
     /* Override de nieuwe --ha-color-* tokens binnen deze shadow root */
     :host {

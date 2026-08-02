@@ -693,13 +693,18 @@
       border-color: rgba(224,164,88,0.5);
       box-shadow: 0 0 0 3px rgba(224,164,88,0.12);
     }
-    /* Klok-icoontje is standaard bijna zwart → onzichtbaar op donker. */
+    /* Het browser-glyph is niet betrouwbaar te kleuren (met color-scheme:
+       dark is 'ie al licht, en dan maakt invert(1) 'm juist zwart), dus
+       vervangen we 'm door een eigen SVG-klokje. */
     .timer input[type="time"]::-webkit-calendar-picker-indicator {
-      filter: invert(1) brightness(1.6);
-      opacity: 0.75;
+      -webkit-appearance: none;
+      appearance: none;
+      width: 15px;
+      height: 15px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F2E4D0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E") center / contain no-repeat;
+      opacity: 0.7;
       cursor: pointer;
-      padding: 2px;
-      margin-left: 2px;
+      margin-left: 4px;
     }
     .timer input[type="time"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 
