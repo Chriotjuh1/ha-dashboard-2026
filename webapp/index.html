@@ -2785,10 +2785,14 @@ class App {
     let speedHtml;
     if (levels >= 2 && levels <= 6) {
       const names3 = ['Laag', 'Midden', 'Hoog'];
-      const curLvl = pct <= 0 ? 0 : Math.min(levels, Math.round(pct / (100 / levels)));
+      const curLvl = pct <= 0 ? 0 : Math.min(levels, Math.max(1, Math.round(pct / pStep)));
       const btns = Array.from({ length: levels }, (_, i) => {
         const lvl = i + 1;
-        const val = Math.round((lvl / levels) * 100);
+        // Naar BENEDEN afronden, niet naar het dichtstbijzijnde. Home Assistant
+        // rekent een percentage terug naar een stand met ceil(pct/100 * standen),
+        // dus 67% op een 3-standen ventilator werd stand 3 en was de middelste
+        // stand onbereikbaar. floor(2 * 33,33) = 66 landt wel goed.
+        const val = lvl === levels ? 100 : Math.floor(lvl * pStep);
         const label = (levels === 3) ? names3[i] : (levels === 2 ? (i === 0 ? 'Laag' : 'Hoog') : val + '%');
         return `<button class="chip ${lvl === curLvl ? 'active' : ''}" data-fan-speed="${esc(eid)}" data-pct="${val}">${label}</button>`;
       }).join('');
