@@ -2178,10 +2178,16 @@ class App {
       const lo = Math.min(0, p.min);
       const hi = Math.max(p.max, 0.001);
       const span = (hi - lo) || 1;
+      // Slotlengte uit de data zelf halen: Nord Pool levert sinds kort
+      // kwartierprijzen, dus een vaste 60 minuten zou het "nu"-staafje
+      // vier vakjes te breed maken.
+      const slot = p.hourly.length > 1
+        ? Math.max(60000, p.hourly[1].t.getTime() - p.hourly[0].t.getTime())
+        : 3600000;
       bars = `
         <div class="price-bars">
           ${p.hourly.map(h => {
-            const isNow = now >= h.t.getTime() && now < h.t.getTime() + 3600000;
+            const isNow = now >= h.t.getTime() && now < h.t.getTime() + slot;
             const cls = h.v < 0 ? 'neg' : (p.avg != null && h.v <= p.avg * 0.8) ? 'cheap'
                       : (p.avg != null && h.v >= p.avg * 1.25) ? 'exp' : '';
             const pct = Math.max(4, Math.round(((h.v - lo) / span) * 100));
